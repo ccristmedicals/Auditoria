@@ -114,5 +114,24 @@ export const apiService = {
             console.error("Get segmentos error:", error);
             throw error;
         }
+    },
+
+    getBitrixCompanies: async (start = 0) => {
+        try {
+            // Usamos el endpoint que me diste
+            const response = await fetch(`${BASE_URL}/clientes/companies?start=${start}`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${localStorage.getItem("authToken")}`
+                }
+            });
+
+            if (!response.ok) throw new Error("Error al obtener datos de Bitrix");
+            return await response.json();
+        } catch (error) {
+            console.error("Get companies error:", error);
+            throw error;
+        }
     }
 };
