@@ -1,4 +1,5 @@
-import { Calculator, CalendarCheck, Database, DatabaseBackup, Moon, Route, Sun, User, UserCog, UserCog2, UserPlus, UserSearch } from "lucide-react";
+/* eslint-disable react-hooks/set-state-in-effect */
+import { Database, DatabaseZap, Moon, Sun, User } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 
@@ -24,7 +25,7 @@ export default function Sidebar() {
   const links = [
     { to: "/gestion-usuarios", label: "Gestion de Usuarios", icon: <User /> },
     { to: "/base-datos-bitrix", label: "Base de Datos Bitrix", icon: <Database /> },
-    // { to: "/resumen", label: "Resumen de Vendedores", icon: <UserSearch /> },
+    { to: "/base-datos-profit", label: "Base de Datos Profit", icon: <DatabaseZap /> },
     // { to: "/calculo", label: "Cálculo de Comisiones", icon: <Calculator /> },
   ];
 

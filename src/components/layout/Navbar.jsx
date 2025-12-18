@@ -3,7 +3,7 @@ import Logo from "../../assets/Logo.png";
 
 export default function Navbar({
   nombreNegocio = "CristMedicals Auditoria",
-  user = null,
+  user = user.usuario,
   onLogout = () => { },
 }) {
   return (

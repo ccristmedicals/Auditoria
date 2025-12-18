@@ -5,6 +5,7 @@ import MainLayout from "../components/layout/MainLayout";
 import GestionUsuarios from "../pages/GestionUsuarios";
 import BaseDatosBitrix from "../pages/BaseDatosBitrix";
 import RegisterPage from "../pages/RegisterPage";
+import AuditoriaGeo from "../pages/AuditoriaGeo";
 
 const AppRoutes = () => {
     return (
@@ -24,6 +25,7 @@ const AppRoutes = () => {
             >
                 <Route path="/gestion-usuarios" element={<GestionUsuarios />} />
                 <Route path="/base-datos-bitrix" element={<BaseDatosBitrix />} />
+                <Route path="/base-datos-profit" element={<AuditoriaGeo />} />
             </Route>
 
             {/* Ruta para manejar páginas no encontradas */}

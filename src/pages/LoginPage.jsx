@@ -7,7 +7,7 @@ const LoginPage = () => {
       <div className="w-full max-w-lg text-center">
         <img src={Logo} alt="Logo de CristMedical" className="mx-auto h-24" />
 
-        <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 dark:text-white mb-6">
+        <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 dark:text-white mb-4">
           Iniciar Sesión
         </h1>
         <LoginForm />

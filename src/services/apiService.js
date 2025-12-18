@@ -1,26 +1,42 @@
 const BASE_URL = "http://192.168.4.69:8001/api";
+const BASE_AUTH_URL = "http://192.168.4.69:8001/api/usuarios";
+
+async function fetchJson(url, options = {}) {
+    const response = await fetch(url, options);
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+            `Error ${response.status}: ${errorData.message || response.statusText}`
+        );
+    }
+
+    // Si no hay contenido (ej. en un POST exitoso sin respuesta), no intentes parsear JSON
+    if (
+        response.status === 204 ||
+        !response.headers.get("content-type")?.includes("application/json")
+    ) {
+        return null;
+    }
+    return response.json();
+}
 
 export const apiService = {
-    // --- AUTH ---
+    // --- AUTENTICACIÓN ---
     login: async (credentials) => {
-        // MOCK LOGIN (Mantener igual o descomentar el fetch real cuando el backend esté listo)
-        console.log("Mock Login initiated with:", credentials);
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        const response = await fetch(`${BASE_AUTH_URL}/login`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(credentials),
+        });
 
-        if (credentials.usuario && credentials.contraseña) {
-            return {
-                token: "mock-token-xyz-123",
-                user: {
-                    id: 1,
-                    usuario: credentials.usuario,
-                    nombre: "Usuario Prueba",
-                    role: "administrador",
-                    permisos: { ver_dashboard: true }
-                }
-            };
-        } else {
-            throw new Error("Credenciales requeridas");
+        const data = await response.json();
+
+        if (!response.ok || data.message !== "Login exitoso") {
+            throw new Error(data.message || "Credenciales incorrectas");
         }
+        return data;
     },
 
     // --- USUARIOS ---
@@ -133,5 +149,34 @@ export const apiService = {
             console.error("Get companies error:", error);
             throw error;
         }
-    }
+    },
+
+    // Guardar configuración
+    saveConfig: (payload) => {
+        const url = `${BASE_URL}/auditoria`;
+        return fetchJson(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        }).then((data) => {
+            return data;
+        });
+    },
+
+    // NUEVO MÉTODO PARA AUDITORÍA GEO
+    getGeoAudit: async (offset = 0) => {
+        try {
+            // Usamos la IP que me diste
+            const response = await fetch(`http://192.168.4.69:8001/api/profit-bitrix?start=${offset}`);
+
+            if (!response.ok) {
+                throw new Error(`Error HTTP: ${response.status}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error("Error en getGeoAudit:", error);
+            throw error;
+        }
+    },
 };

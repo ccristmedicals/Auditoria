@@ -1,5 +1,4 @@
-/* eslint-disable no-unused-vars */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { apiService } from "../services/apiService";
 
 export const useBaseDatosBitrix = () => {
@@ -7,135 +6,110 @@ export const useBaseDatosBitrix = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    // --- PAGINACIÓN ---
+    const [page, setPage] = useState(1);
+    const ITEMS_PER_PAGE = 50;
+    const [totalRecords, setTotalRecords] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
+
     useEffect(() => {
         fetchCompanies();
-    }, []);
+    }, [page]);
 
     const fetchCompanies = async () => {
         setLoading(true);
+        setError(null);
+
+        // Calculamos el start (offset) para la API
+        const startOffset = (page - 1) * ITEMS_PER_PAGE;
+
         try {
-            const data = await apiService.getBitrixCompanies(1100);
-            const rawList = Array.isArray(data) ? data : data.data || [];
+            const response = await apiService.getBitrixCompanies(startOffset);
+
+            // 1. OBTENEMOS EL TOTAL REAL DEL BACKEND
+            // Usamos response.total (5554 según tu ejemplo)
+            const realTotal = response.total || 0;
+            setTotalRecords(realTotal);
+            setTotalPages(Math.ceil(realTotal / ITEMS_PER_PAGE));
+
+            // 2. OBTENEMOS EL ARRAY DE DATOS
+            const rawList = response.data || [];
 
             const formattedData = rawList.map((item, index) => {
                 const b = item.bitrix || {};
                 const p = item.profit || {};
 
                 return {
-                    id_interno: index,
-                    // --- BITRIX ---
+                    // ID único para React (Página + Índice)
+                    id_interno: `${page}-${index}`,
+
+                    // DATOS BITRIX
                     id: b.ID || "",
                     nombre: b.TITLE || "Sin Nombre",
                     codigo_profit: b.UF_CRM_1634787828 || "",
                     ciudad: b.UF_CRM_1635903069 || "",
                     segmento: b.UF_CRM_1638457710 || "",
                     coordenadas: b.UF_CRM_1651251237102 || "",
-                    dias_visita: Array.isArray(b.UF_CRM_1686015739936)
-                        ? b.UF_CRM_1686015739936.join(", ")
-                        : (b.UF_CRM_1686015739936 || ""),
+                    dias_visita: Array.isArray(b.UF_CRM_1686015739936) ? b.UF_CRM_1686015739936.join(", ") : (b.UF_CRM_1686015739936 || ""),
 
-                    // --- PROFIT ---
-                    // 'login' parece ser el Límite de Crédito o un identificador numérico
+                    // DATOS PROFIT
                     limite_credito: p.login || 0,
-
                     saldo_transito: parseFloat(p.saldo_trancito) || 0,
                     saldo_vencido: parseFloat(p.saldo_vencido) || 0,
-
                     fecha_compra: p.fecha_ultima_compra || "-",
-
-                    // Puede venir como null o string "factura / fecha"
                     factura_morosidad: p.factura_mayor_morosidad || "-",
-
                     ultimo_cobro: parseFloat(p.ultimo_cobro) || 0,
                     sku_mes: parseInt(p.sku_mes) || 0,
-
-                    // 'horar_caja' mapea a Clasificación (ej: "D")
                     clasificacion: p.horar_caja || "-",
-
-                    // Nuevos campos de ventas
                     ventas_actual: parseFloat(p.ventas_mes_actual) || 0,
                     ventas_anterior: parseFloat(p.ventas_mes_pasado) || 0,
-
-                    // Campo calculado o placeholder si no viene en el JSON
                     convenio: "N/A",
 
-                    // Inicializamos vacíos ya que el usuario los llenará
-                    bitacora: "",
-                    obs_ejecutiva: "",
-
-                    // Lunes
-                    lunes_accion: "",
-                    lunes_ejecucion: "",
-                    // Martes
-                    martes_accion: "",
-                    martes_ejecucion: "",
-                    // Miercoles
-                    miercoles_accion: "",
-                    miercoles_ejecucion: "",
-                    // Jueves
-                    jueves_accion: "",
-                    jueves_ejecucion: "",
-                    // Viernes
-                    viernes_accion: "",
-                    viernes_ejecucion: ""
+                    // CAMPOS MANUALES (Inicializados vacíos)
+                    bitacora: "", obs_ejecutiva: "",
+                    lunes_accion: "", lunes_ejecucion: "",
+                    martes_accion: "", martes_ejecucion: "",
+                    miercoles_accion: "", miercoles_ejecucion: "",
+                    jueves_accion: "", jueves_ejecucion: "",
+                    viernes_accion: "", viernes_ejecucion: ""
                 };
             });
 
             setCompanies(formattedData);
 
         } catch (err) {
-            console.warn("⚠️ Error backend Bitrix. Usando Mock Data.");
-            setError("Modo Offline: Datos simulados.");
+            console.error("Error fetching companies:", err);
+            setError("Error al cargar datos.");
 
-            // DATA SIMULADA ACTUALIZADA CON TU EJEMPLO REAL
-            setCompanies([
-                {
-                    id_interno: 1,
-                    id: "4931",
-                    nombre: "FARMACIA LA PAZ 2011",
-                    codigo_profit: "FAR00708",
-                    ciudad: "Portuguesa Alta (Portuguesa)",
-                    segmento: "Portuguesa Alta - CAPITAL",
-                    coordenadas: "9.555756, -69.211128",
-                    dias_visita: "Lunes, Miercoles, Viernes",
-                    convenio: "N/A",
-                    limite_credito: 400,
-                    saldo_transito: 918.2,
-                    saldo_vencido: 0,
-                    fecha_compra: "2025-12-09",
-                    factura_morosidad: "305127 / 2025-12-03",
-                    ultimo_cobro: 270514,
-                    sku_mes: 16,
-                    clasificacion: "D",
-                    ventas_actual: 950.48,
-                    ventas_anterior: 401.02
-                },
-                {
-                    id_interno: 2,
-                    id: "9999",
-                    nombre: "CLIENTE SIN COORDENADAS C.A.",
-                    codigo_profit: "0", // Provoca alerta roja
-                    ciudad: "Caracas",
-                    segmento: "Capital",
-                    coordenadas: "0", // Provoca alerta roja
-                    dias_visita: "Martes",
-                    convenio: "N/A",
-                    limite_credito: 0,
-                    saldo_transito: 0,
-                    saldo_vencido: 150.50, // Rojo por deuda
-                    fecha_compra: "2024-01-01",
-                    factura_morosidad: "-",
-                    ultimo_cobro: 0,
-                    sku_mes: 0,
-                    clasificacion: "Z",
-                    ventas_actual: 0,
-                    ventas_anterior: 0
-                }
-            ]);
+            // MOCK DE RESPALDO (Por si el backend falla mientras pruebas)
+            setTotalRecords(100);
+            setTotalPages(2);
+            setCompanies([]);
         } finally {
             setLoading(false);
         }
     };
 
-    return { companies, loading, error };
+    const goToPage = (pageNumber) => {
+        if (pageNumber >= 1 && pageNumber <= totalPages) {
+            setPage(pageNumber);
+        }
+    };
+
+    const handleCompanyChange = useCallback((id_interno, field, value) => {
+        setCompanies(prev => prev.map(c =>
+            c.id_interno === id_interno ? { ...c, [field]: value } : c
+        ));
+    }, []);
+
+    return {
+        companies,
+        loading,
+        error,
+        handleCompanyChange,
+        page,
+        totalPages,
+        totalRecords,
+        goToPage
+    };
 };

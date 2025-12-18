@@ -7,11 +7,7 @@ const LoginForm = () => {
     const navigate = useNavigate();
     // Desestructuramos login, loading y error del hook
     const { login, loading, error } = useAuth();
-
-    const [credentials, setCredentials] = useState({
-        username: "admin",
-        password: "admin",
-    });
+    const [credentials, setCredentials] = useState({});
     const [passwordVisible, setPasswordVisible] = useState(false);
 
     const handleChange = (e) => {
@@ -39,7 +35,7 @@ const LoginForm = () => {
     return (
         <form
             onSubmit={handleSubmit}
-            className="dark:bg-[#1b1b1b] p-8 rounded-lg shadow-xl max-w-sm w-full mx-auto my-10 border border-white/10"
+            className="dark:bg-[#1b1b1b] p-8 rounded-lg shadow-xl max-w-sm w-full mx-auto my- border border-white/10"
         >
             <h2 className="text-3xl font-bold text-center dark:text-white text-[#191919] mb-6">
                 Ingresar al Sistema de Auditoria
