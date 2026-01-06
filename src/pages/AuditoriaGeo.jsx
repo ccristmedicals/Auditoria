@@ -30,13 +30,13 @@ import {
 const getRowColor = (status) => {
     switch (status) {
         case "MATCH":
-            return "bg-green-50/50 hover:bg-green-100/50 dark:bg-green-900/10 dark:hover:bg-green-900/20";
+            return "bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:hover:bg-green-900/30";
         case "CLOSE":
-            return "bg-yellow-50/50 hover:bg-yellow-100/50 dark:bg-yellow-900/10 dark:hover:bg-yellow-900/20";
+            return "bg-yellow-50 hover:bg-yellow-100 dark:bg-yellow-900/20 dark:hover:bg-yellow-900/30";
         case "MISSING_BOTH":
         case "MISSING_PROFIT":
         case "MISSING_BITRIX":
-            return "bg-red-50/50 hover:bg-red-100/50 dark:bg-red-900/10 dark:hover:bg-red-900/20";
+            return "bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30";
         default:
             return "bg-white hover:bg-gray-50 dark:bg-[#191919] dark:hover:bg-[#202020]";
     }
@@ -93,9 +93,9 @@ const EditableCell = ({ value, onChange, placeholder = "..." }) => (
             value={value || ""}
             onChange={(e) => onChange(e.target.value)}
             placeholder={placeholder}
-            className="w-full min-w-[100px] bg-transparent border-b border-transparent hover:border-gray-300 focus:border-[#1a9888] focus:bg-white dark:focus:bg-[#333] px-1 py-1 text-sm outline-none transition-colors placeholder-gray-300 dark:text-gray-200"
+            className="w-full min-w-[100px] bg-white dark:bg-[#262626] border border-gray-300 dark:border-gray-600 rounded px-2 py-1.5 text-sm outline-none transition-all placeholder-gray-400 focus:ring-2 focus:ring-[#1a9888] focus:border-transparent dark:text-gray-200"
         />
-        <Edit3 size={10} className="absolute right-1 top-2 text-gray-300 pointer-events-none opacity-50" />
+        <Edit3 size={12} className="absolute right-2 top-2.5 text-gray-400 pointer-events-none opacity-50" />
     </div>
 );
 
@@ -159,9 +159,9 @@ const AuditoriaGeo = () => {
                             */}
                             <Tr className="border-b-0">
                                 <Th colSpan={2} stickyLeft stickyTop className="border-b border-r border-gray-200 dark:border-[#333] text-[#1a9888] bg-gray-50 dark:bg-[#1e1e1e] z-20">CLIENTE</Th>
-                                <Th colSpan={2} stickyTop className="border-b border-r border-gray-200 dark:border-[#333] bg-blue-100 dark:bg-blue-900/20 text-blue-600 z-20">UBICACIÓN</Th>
-                                <Th colSpan={1} stickyTop className="border-b border-r border-gray-200 dark:border-[#333] text-green-600 bg-green-50/50 dark:bg-green-900/10 z-20">PROFIT</Th>
-                                <Th colSpan={2} stickyTop className="border-b border-r border-gray-200 dark:border-[#333] text-blue-600 bg-blue-50/50 dark:bg-blue-900/10 z-20">BITRIX</Th>
+                                <Th colSpan={2} stickyTop className="border-b border-r border-gray-200 dark:border-[#333] bg-blue-100 dark:bg-blue-900 text-blue-600 z-20">UBICACIÓN</Th>
+                                <Th colSpan={1} stickyTop className="border-b border-r border-gray-200 dark:border-[#333] text-green-600 bg-green-50 dark:bg-green-900 z-20">PROFIT</Th>
+                                <Th colSpan={2} stickyTop className="border-b border-r border-gray-200 dark:border-[#333] text-blue-600 bg-blue-50 dark:bg-blue-900 z-20">BITRIX</Th>
                                 <Th colSpan={2} stickyTop className="border-b border-gray-200 dark:border-[#333] text-gray-600 font-bold bg-gray-100 dark:bg-gray-800 z-20">AUDITORÍA</Th>
                             </Tr>
 
@@ -176,13 +176,13 @@ const AuditoriaGeo = () => {
                                 <Th className="min-w-[150px] bg-white dark:bg-[#1e1e1e]">Zona</Th>
                                 <Th className="min-w-[120px] bg-white dark:bg-[#1e1e1e]">Ruta</Th>
 
-                                <Th className="min-w-[180px] bg-green-50/20 dark:bg-green-900/5">Coordenadas</Th>
+                                <Th className="min-w-[180px] bg-green-50 dark:bg-green-900">Coordenadas</Th>
 
-                                <Th className="min-w-[100px] bg-blue-50/20 dark:bg-blue-900/5">ID</Th>
-                                <Th className="min-w-[180px] bg-blue-50/20 dark:bg-blue-900/5">Coordenadas</Th>
+                                <Th className="min-w-[100px] bg-blue-50 dark:bg-blue-900">ID</Th>
+                                <Th className="min-w-[180px] bg-blue-50 dark:bg-blue-900">Coordenadas</Th>
 
-                                <Th className="min-w-[160px] text-center bg-gray-50/50 dark:bg-gray-800">Estado</Th>
-                                <Th className="min-w-[200px] bg-gray-50/50 dark:bg-gray-800">Observación</Th>
+                                <Th className="min-w-[160px] text-center bg-gray-100 dark:bg-gray-800">Estado</Th>
+                                <Th className="min-w-[200px] bg-gray-100 dark:bg-gray-800">Observación</Th>
                             </Tr>
                         </Thead>
 
@@ -206,23 +206,23 @@ const AuditoriaGeo = () => {
                                     </Td>
 
                                     {/* Profit */}
-                                    <Td className="font-mono text-[10px] text-gray-500 bg-green-50/10 border-l border-gray-200/50">
+                                    <Td className="font-mono text-[10px] text-gray-500 bg-green-50 border-l border-gray-200 dark:bg-green-900/10 dark:border-[#333]">
                                         {row.coords_profit || "-"}
                                     </Td>
 
                                     {/* Bitrix */}
-                                    <Td className="font-mono text-xs text-blue-600 font-bold bg-blue-50/10 border-l border-gray-200/50">
+                                    <Td className="font-mono text-xs text-blue-600 font-bold bg-blue-50 border-l border-gray-200 dark:bg-blue-900/10 dark:border-[#333]">
                                         {row.id_bitrix}
                                     </Td>
-                                    <Td className="font-mono text-[10px] text-gray-500 bg-blue-50/10">
+                                    <Td className="font-mono text-[10px] text-gray-500 bg-blue-50 dark:bg-blue-900/10">
                                         {row.coords_bitrix || "-"}
                                     </Td>
 
                                     {/* Auditoría */}
-                                    <Td className="flex justify-center border-l border-gray-200/50">
+                                    <Td className="flex justify-center border-l border-gray-200 dark:border-[#333]">
                                         <GeoStatusBadge status={row.status} distance={row.distancia} />
                                     </Td>
-                                    <Td className="bg-white/40 dark:bg-black/20">
+                                    <Td className="bg-white dark:bg-[#191919]">
                                         <EditableCell
                                             value={row.obs_auditor}
                                             onChange={(val) => handleAuditChange(row.id_interno, val)}

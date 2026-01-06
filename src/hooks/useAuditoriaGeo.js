@@ -8,7 +8,7 @@ export const useAuditoriaGeo = () => {
 
     // --- PAGINACIÓN ---
     const [page, setPage] = useState(1);
-    const ITEMS_PER_PAGE = 50;
+    const ITEMS_PER_PAGE = 25;
     const [totalRecords, setTotalRecords] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
 
@@ -32,8 +32,8 @@ export const useAuditoriaGeo = () => {
             setTotalRecords(realTotal);
             setTotalPages(Math.ceil(realTotal / ITEMS_PER_PAGE));
 
-            // 3. Mapeo de la estructura
-            const rawList = response.data || [];
+            // 3. Mapeo de la estructura (Limitamos a 25 si la API devuelve más)
+            const rawList = (response.data || []).slice(0, ITEMS_PER_PAGE);
 
             const formattedData = rawList.map((item, index) => {
                 const p = item.profit || {};

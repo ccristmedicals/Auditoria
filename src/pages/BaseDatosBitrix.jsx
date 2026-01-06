@@ -59,9 +59,9 @@ const EditableCell = ({ value, onChange, placeholder = "..." }) => (
             value={value !== undefined && value !== null ? value : ""}
             onChange={(e) => onChange(e.target.value)}
             placeholder={placeholder}
-            className="w-full min-w-[100px] bg-transparent border-b border-transparent hover:border-gray-300 focus:border-[#1a9888] focus:bg-white dark:focus:bg-[#333] px-1 py-1 text-sm outline-none transition-colors placeholder-gray-300 dark:text-gray-200"
+            className="w-full min-w-[100px] bg-white dark:bg-[#262626] border border-gray-300 dark:border-gray-600 rounded px-2 py-1.5 text-sm outline-none transition-all placeholder-gray-400 focus:ring-2 focus:ring-[#1a9888] focus:border-transparent dark:text-gray-200"
         />
-        <Edit3 size={10} className="absolute right-1 top-2 text-gray-300 pointer-events-none opacity-50" />
+        <Edit3 size={12} className="absolute right-2 top-2.5 text-gray-400 pointer-events-none opacity-50" />
     </div>
 );
 
@@ -76,7 +76,7 @@ const SelectCell = ({ value, onChange, options }) => {
             <select
                 value={value || ""}
                 onChange={(e) => onChange(e.target.value)}
-                className={`w-full bg-transparent border-b border-transparent hover:border-gray-300 focus:border-[#1a9888] px-1 py-1 text-xs outline-none cursor-pointer appearance-none ${textColor}`}
+                className={`w-full bg-white dark:bg-[#262626] border border-gray-300 dark:border-gray-600 rounded px-2 py-1.5 text-xs outline-none cursor-pointer appearance-none transition-all focus:ring-2 focus:ring-[#1a9888] focus:border-transparent ${textColor}`}
                 style={{ paddingRight: '1.5rem' }}
             >
                 {options.map((opt) => (
@@ -85,7 +85,7 @@ const SelectCell = ({ value, onChange, options }) => {
                     </option>
                 ))}
             </select>
-            <ChevronDown size={12} className="absolute right-1 top-1.5 text-gray-400 pointer-events-none" />
+            <ChevronDown size={14} className="absolute right-2 top-2 text-gray-400 pointer-events-none" />
         </div>
     );
 };
@@ -254,12 +254,12 @@ const BaseDatosBitrix = () => {
                                         checked={companies.length > 0 && selectedIds.length === companies.length}
                                     />
                                 </Th>
-                                <Th colSpan={2} stickyLeft stickyTop className="border-b border-r border-gray-200 dark:border-[#333] text-[#1a9888]">Empresa</Th>
-                                <Th colSpan={6} className="border-b border-r border-gray-200 dark:border-[#333] bg-blue-100 dark:bg-blue-900/20 text-blue-600 text-center">Datos Bitrix</Th>
-                                <Th colSpan={8} className="border-b border-r border-gray-200 dark:border-[#333] bg-green-100 dark:bg-green-900/20 text-green-600 text-center">Datos Profit</Th>
-                                <Th colSpan={2} className="border-b border-r border-gray-200 dark:border-[#333] text-purple-600 text-center">Ventas</Th>
+                                <Th colSpan={2} stickyLeft stickyTop className="border-b border-r border-gray-200 dark:border-[#333] text-[#1a9888] bg-white dark:bg-[#1e1e1e]">Empresa</Th>
+                                <Th colSpan={6} className="border-b border-r border-gray-200 dark:border-[#333] bg-blue-50 dark:bg-blue-900 text-blue-600 text-center">Datos Bitrix</Th>
+                                <Th colSpan={8} className="border-b border-r border-gray-200 dark:border-[#333] bg-green-50 dark:bg-green-900 text-green-600 text-center">Datos Profit</Th>
+                                <Th colSpan={2} className="border-b border-r border-gray-200 dark:border-[#333] text-purple-600 text-center bg-white dark:bg-[#1e1e1e]">Ventas</Th>
                                 <Th colSpan={2} className="border-b border-r border-gray-200 dark:border-[#333] text-gray-600 font-bold bg-gray-100 dark:bg-gray-800 text-center">Gestión</Th>
-                                <Th colSpan={10} className="border-b border-r border-gray-200 dark:border-[#333] text-indigo-600 bg-indigo-50/50 dark:bg-indigo-900/10 text-center">Agenda Semanal</Th>
+                                <Th colSpan={10} className="border-b border-r border-gray-200 dark:border-[#333] text-indigo-600 bg-indigo-50 dark:bg-indigo-900 text-center">Agenda Semanal</Th>
                                 <Th stickyRight className="bg-white dark:bg-[#191919] border-l border-gray-200 dark:border-[#333]"></Th>
                             </Tr>
                             <Tr>
@@ -283,19 +283,19 @@ const BaseDatosBitrix = () => {
                                 <Th className="min-w-[70px]">Clasif.</Th>
                                 <Th className="min-w-[110px]">Actual</Th>
                                 <Th className="min-w-[110px]">Anterior</Th>
-                                <Th className="min-w-[160px] bg-gray-50/50 dark:bg-gray-800">Bitácora</Th>
-                                <Th className="min-w-[160px] bg-gray-50/50 dark:bg-gray-800">Obs. Ejec.</Th>
+                                <Th className="min-w-[160px] bg-gray-100 dark:bg-gray-800">Bitácora</Th>
+                                <Th className="min-w-[160px] bg-gray-100 dark:bg-gray-800">Obs. Ejec.</Th>
                                 {/* Días de la semana ... */}
-                                <Th className="min-w-[140px] bg-indigo-50/30 dark:bg-indigo-900/20">Lun-Acc</Th>
-                                <Th className="min-w-[140px] bg-indigo-50/30 dark:bg-indigo-900/20">Lun-Eje</Th>
-                                <Th className="min-w-[140px]">Mar-Acc</Th>
-                                <Th className="min-w-[140px]">Mar-Eje</Th>
-                                <Th className="min-w-[140px] bg-indigo-50/30 dark:bg-indigo-900/20">Mie-Acc</Th>
-                                <Th className="min-w-[140px] bg-indigo-50/30 dark:bg-indigo-900/20">Mie-Eje</Th>
-                                <Th className="min-w-[140px]">Jue-Acc</Th>
-                                <Th className="min-w-[140px]">Jue-Eje</Th>
-                                <Th className="min-w-[140px] bg-indigo-50/30 dark:bg-indigo-900/20">Vie-Acc</Th>
-                                <Th className="min-w-[140px] bg-indigo-50/30 dark:bg-indigo-900/20">Vie-Eje</Th>
+                                <Th className="min-w-[140px] bg-indigo-50 dark:bg-indigo-900">Lun-Acc</Th>
+                                <Th className="min-w-[140px] bg-indigo-50 dark:bg-indigo-900">Lun-Eje</Th>
+                                <Th className="min-w-[140px] bg-white dark:bg-[#1e1e1e]">Mar-Acc</Th>
+                                <Th className="min-w-[140px] bg-white dark:bg-[#1e1e1e]">Mar-Eje</Th>
+                                <Th className="min-w-[140px] bg-indigo-50 dark:bg-indigo-900">Mie-Acc</Th>
+                                <Th className="min-w-[140px] bg-indigo-50 dark:bg-indigo-900">Mie-Eje</Th>
+                                <Th className="min-w-[140px] bg-white dark:bg-[#1e1e1e]">Jue-Acc</Th>
+                                <Th className="min-w-[140px] bg-white dark:bg-[#1e1e1e]">Jue-Eje</Th>
+                                <Th className="min-w-[140px] bg-indigo-50 dark:bg-indigo-900">Vie-Acc</Th>
+                                <Th className="min-w-[140px] bg-indigo-50 dark:bg-indigo-900">Vie-Eje</Th>
                                 <Th stickyRight className="min-w-[80px] bg-white dark:bg-[#191919] border-l shadow-[-4px_0_5px_-2px_rgba(0,0,0,0.1)] text-center">Guardar</Th>
                             </Tr>
                         </Thead>
@@ -339,24 +339,24 @@ const BaseDatosBitrix = () => {
                                     <Td align="right" className="font-mono text-xs text-gray-500 bg-gray-50 dark:bg-[#202020]">{formatCurrency(row.ventas_anterior)}</Td>
 
                                     {/* Celdas Editables */}
-                                    <Td className="bg-gray-50/30 dark:bg-gray-800/30 border-l border-gray-200 dark:border-[#333]"><EditableCell value={row.bitacora} onChange={(val) => handleCompanyChange(row.id_interno, 'bitacora', val)} /></Td>
-                                    <Td className="bg-gray-50/30 dark:bg-gray-800/30 border-r border-gray-200 dark:border-[#333]"><EditableCell value={row.obs_ejecutiva} onChange={(val) => handleCompanyChange(row.id_interno, 'obs_ejecutiva', val)} /></Td>
+                                    <Td className="bg-gray-50 dark:bg-gray-800 border-l border-gray-200 dark:border-[#333]"><EditableCell value={row.bitacora} onChange={(val) => handleCompanyChange(row.id_interno, 'bitacora', val)} /></Td>
+                                    <Td className="bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-[#333]"><EditableCell value={row.obs_ejecutiva} onChange={(val) => handleCompanyChange(row.id_interno, 'obs_ejecutiva', val)} /></Td>
 
                                     {/* Lunes */}
-                                    <Td className="bg-indigo-50/20 dark:bg-indigo-900/10"><EditableCell value={row.lunes_accion} onChange={(val) => handleCompanyChange(row.id_interno, 'lunes_accion', val)} /></Td>
-                                    <Td className="bg-indigo-50/20 dark:bg-indigo-900/10 border-r border-gray-200 dark:border-[#333]"><SelectCell value={row.lunes_ejecucion} onChange={(val) => handleCompanyChange(row.id_interno, 'lunes_ejecucion', val)} options={OPCIONES_EJECUCION} /></Td>
+                                    <Td className="bg-indigo-50 dark:bg-indigo-900/20"><EditableCell value={row.lunes_accion} onChange={(val) => handleCompanyChange(row.id_interno, 'lunes_accion', val)} /></Td>
+                                    <Td className="bg-indigo-50 dark:bg-indigo-900/20 border-r border-gray-200 dark:border-[#333]"><SelectCell value={row.lunes_ejecucion} onChange={(val) => handleCompanyChange(row.id_interno, 'lunes_ejecucion', val)} options={OPCIONES_EJECUCION} /></Td>
                                     {/* Martes */}
                                     <Td><EditableCell value={row.martes_accion} onChange={(val) => handleCompanyChange(row.id_interno, 'martes_accion', val)} /></Td>
                                     <Td className="border-r border-gray-200 dark:border-[#333]"><SelectCell value={row.martes_ejecucion} onChange={(val) => handleCompanyChange(row.id_interno, 'martes_ejecucion', val)} options={OPCIONES_EJECUCION} /></Td>
                                     {/* Miércoles */}
-                                    <Td className="bg-indigo-50/20 dark:bg-indigo-900/10"><EditableCell value={row.miercoles_accion} onChange={(val) => handleCompanyChange(row.id_interno, 'miercoles_accion', val)} /></Td>
-                                    <Td className="bg-indigo-50/20 dark:bg-indigo-900/10 border-r border-gray-200 dark:border-[#333]"><SelectCell value={row.miercoles_ejecucion} onChange={(val) => handleCompanyChange(row.id_interno, 'miercoles_ejecucion', val)} options={OPCIONES_EJECUCION} /></Td>
+                                    <Td className="bg-indigo-50 dark:bg-indigo-900/20"><EditableCell value={row.miercoles_accion} onChange={(val) => handleCompanyChange(row.id_interno, 'miercoles_accion', val)} /></Td>
+                                    <Td className="bg-indigo-50 dark:bg-indigo-900/20 border-r border-gray-200 dark:border-[#333]"><SelectCell value={row.miercoles_ejecucion} onChange={(val) => handleCompanyChange(row.id_interno, 'miercoles_ejecucion', val)} options={OPCIONES_EJECUCION} /></Td>
                                     {/* Jueves */}
                                     <Td><EditableCell value={row.jueves_accion} onChange={(val) => handleCompanyChange(row.id_interno, 'jueves_accion', val)} /></Td>
                                     <Td className="border-r border-gray-200 dark:border-[#333]"><SelectCell value={row.jueves_ejecucion} onChange={(val) => handleCompanyChange(row.id_interno, 'jueves_ejecucion', val)} options={OPCIONES_EJECUCION} /></Td>
                                     {/* Viernes */}
-                                    <Td className="bg-indigo-50/20 dark:bg-indigo-900/10"><EditableCell value={row.viernes_accion} onChange={(val) => handleCompanyChange(row.id_interno, 'viernes_accion', val)} /></Td>
-                                    <Td className="bg-indigo-50/20 dark:bg-indigo-900/10"><SelectCell value={row.viernes_ejecucion} onChange={(val) => handleCompanyChange(row.id_interno, 'viernes_ejecucion', val)} options={OPCIONES_EJECUCION} /></Td>
+                                    <Td className="bg-indigo-50 dark:bg-indigo-900/20"><EditableCell value={row.viernes_accion} onChange={(val) => handleCompanyChange(row.id_interno, 'viernes_accion', val)} /></Td>
+                                    <Td className="bg-indigo-50 dark:bg-indigo-900/20"><SelectCell value={row.viernes_ejecucion} onChange={(val) => handleCompanyChange(row.id_interno, 'viernes_ejecucion', val)} options={OPCIONES_EJECUCION} /></Td>
 
                                     {/* Guardar */}
                                     <Td stickyRight className="bg-white dark:bg-[#191919] border-l shadow-[-4px_0_5px_-2px_rgba(0,0,0,0.1)]">

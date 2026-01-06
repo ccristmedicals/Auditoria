@@ -179,4 +179,17 @@ export const apiService = {
             throw error;
         }
     },
+
+    // Obtener todas las compañías (Bitrix + Profit)
+    getAllCompanies: () => {
+        // Ajusta la IP si cambia, según tu contexto
+        const url = "http://192.168.4.69:8001/api/clientes/companies/all";
+        return fetchJson(url);
+    },
+
+    // Placeholder para guardar la auditoría cuando esté lista la API
+    saveAuditoria: (payload) => {
+        console.log("Guardando auditoría:", payload);
+        return new Promise((resolve) => setTimeout(() => resolve({ success: true }), 1000));
+    }
 };

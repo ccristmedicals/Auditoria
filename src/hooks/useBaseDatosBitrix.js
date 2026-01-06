@@ -8,7 +8,7 @@ export const useBaseDatosBitrix = () => {
 
     // --- PAGINACIÓN ---
     const [page, setPage] = useState(1);
-    const ITEMS_PER_PAGE = 50;
+    const ITEMS_PER_PAGE = 25;
     const [totalRecords, setTotalRecords] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
 
@@ -32,8 +32,8 @@ export const useBaseDatosBitrix = () => {
             setTotalRecords(realTotal);
             setTotalPages(Math.ceil(realTotal / ITEMS_PER_PAGE));
 
-            // 2. OBTENEMOS EL ARRAY DE DATOS
-            const rawList = response.data || [];
+            // 2. OBTENEMOS EL ARRAY DE DATOS (Limitamos a 25 si la API devuelve más)
+            const rawList = (response.data || []).slice(0, ITEMS_PER_PAGE);
 
             const formattedData = rawList.map((item, index) => {
                 const b = item.bitrix || {};
