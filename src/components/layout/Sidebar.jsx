@@ -1,5 +1,12 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import { Database, DatabaseZap, Moon, Sun, User, Container } from "lucide-react";
+import {
+  Database,
+  DatabaseZap,
+  Moon,
+  Sun,
+  User,
+  Container,
+} from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 
@@ -8,14 +15,12 @@ export default function Sidebar() {
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
-    // ... (lógica de modo oscuro sin cambios)
     const modoOscuro = localStorage.getItem("modoOscuro") === "true";
     setIsDark(modoOscuro);
     document.documentElement.classList.toggle("dark", modoOscuro);
   }, []);
 
   const toggleDarkMode = () => {
-    // ... (lógica de modo oscuro sin cambios)
     const nuevoEstado = !isDark;
     setIsDark(nuevoEstado);
     document.documentElement.classList.toggle("dark", nuevoEstado);
@@ -24,37 +29,42 @@ export default function Sidebar() {
 
   const links = [
     { to: "/gestion-usuarios", label: "Gestion de Usuarios", icon: <User /> },
-    { to: "/base-datos-bitrix", label: "Base de Datos Bitrix", icon: <Database /> },
-    { to: "/base-datos-profit", label: "Base de Datos Profit", icon: <DatabaseZap /> },
+    {
+      to: "/base-datos-bitrix",
+      label: "Base de Datos Bitrix",
+      icon: <Database />,
+    },
+    {
+      to: "/base-datos-profit",
+      label: "Base de Datos Profit",
+      icon: <DatabaseZap />,
+    },
     { to: "/matriz", label: "Matriz", icon: <Container /> },
-    // { to: "/calculo", label: "Cálculo de Comisiones", icon: <Calculator /> },
   ];
 
   return (
     <aside className="w-64 min-w-[16rem] max-w-[16rem] bg-gradient-to-b from-[#1a9888] to-[#023831] text-white h-screen py-6 px-4 shadow-2xl sticky top-0 transition-all duration-300 flex flex-col">
-      {/* Título: Le añadimos padding horizontal para alinear con los links */}
       <div className="text-2xl font-bold mb-6 tracking-wide px-3">Menú</div>
       <nav className="flex flex-col gap-2 flex-1 overflow-y-auto pr-2 sidebar-nav">
         {links.map(({ to, label, icon }, index) => {
-          // Añadido 'index' para una key única
           const isActive = location.pathname === to;
           return (
             <Link
-              key={`${to}-${index}`} // Key única en caso de links repetidos
+              key={`${to}-${index}`}
               to={to}
-              className={`flex space-x-3 items-center py-3 px-3 rounded-lg transition-all duration-200 group ${isActive
-                ? "bg-[#1a9888] text-white font-bold border-l-4 border-[#1a9888]"
-                : "text-teal-200 hover:bg-[#1a9888]/50 hover:text-white border-l-4 border-transparent font-medium"
-                }`}
+              className={`flex space-x-3 items-center py-3 px-3 rounded-lg transition-all duration-200 group ${
+                isActive
+                  ? "bg-[#1a9888] text-white font-bold border-l-4 border-[#1a9888]"
+                  : "text-teal-200 hover:bg-[#1a9888]/50 hover:text-white border-l-4 border-transparent font-medium"
+              }`}
               title={label}
             >
               <span
                 className={`text-xl ${
-                  // Dejé 'text-xl', 'text-2xl' era muy grande
                   isActive
                     ? "text-white"
                     : "text-teal-200 group-hover:text-white"
-                  }`}
+                }`}
               >
                 {icon}
               </span>
@@ -66,7 +76,6 @@ export default function Sidebar() {
 
       {/* Botón modo oscuro (sin cambios) */}
       <div className="mt-auto pt-6 space-y-3">
-
         <div className="border-t border-green-300/40 dark:border-green-100/20 pt-4">
           <button
             onClick={toggleDarkMode}

@@ -5,7 +5,6 @@ import { useAuth } from "../hooks/useAuth";
 
 const LoginForm = () => {
     const navigate = useNavigate();
-    // Desestructuramos login, loading y error del hook
     const { login, loading, error } = useAuth();
     const [credentials, setCredentials] = useState({});
     const [passwordVisible, setPasswordVisible] = useState(false);
@@ -20,14 +19,9 @@ const LoginForm = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            // 1. Intentamos hacer login
             await login(credentials.username, credentials.password);
-
-            // 2. Si el login es exitoso (no lanza error), navegamos a la ruta deseada
             navigate('/gestion-usuarios');
-
         } catch (err) {
-            // Si el login falla, el catch captura el error y NO navega
             console.error("Login failed:", err);
         }
     };
@@ -41,7 +35,6 @@ const LoginForm = () => {
                 Ingresar al Sistema de Auditoria
             </h2>
 
-            {/* Campo de Usuario */}
             <div className="mb-6">
                 <label
                     htmlFor="username"
@@ -66,7 +59,6 @@ const LoginForm = () => {
                 </div>
             </div>
 
-            {/* Campo de Contraseña */}
             <div className="mb-8">
                 <label
                     htmlFor="password"
@@ -102,7 +94,6 @@ const LoginForm = () => {
                 </div>
             </div>
 
-            {/* Mensaje de Error */}
             {error && (
                 <div
                     className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4 dark:bg-red-900/30 dark:text-red-200 dark:border-red-800"
@@ -112,7 +103,6 @@ const LoginForm = () => {
                 </div>
             )}
 
-            {/* Botón de Submit */}
             <button
                 type="submit"
                 className="w-full bg-[#1a9888] hover:bg-[#056356] text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:shadow-outline transition-colors duration-200 transform hover:scale-105 disabled:bg-gray-400 disabled:transform-none dark:bg-green-600 dark:text-white dark:border-green-600 dark:hover:bg-green-700"
