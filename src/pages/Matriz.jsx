@@ -329,28 +329,28 @@ const Matriz = () => {
                 <Th
                   colSpan={8}
                   stickyTop
-                  className="p-0 border-r border-green-200 bg-green-100 h-1"
+                  className="p-0 border-r border-green-200 dark:border-green-600 bg-green-100 dark:bg-green-900 h-1"
                 ></Th>
                 <Th
                   colSpan={10}
                   stickyTop
-                  className="p-0 border-r border-blue-200 bg-blue-100 h-1"
+                  className="p-0 border-r border-blue-200 dark:border-blue-600 bg-blue-100 dark:bg-blue-900 h-1"
                 ></Th>
                 <Th
                   colSpan={19}
                   stickyTop
-                  className="bg-purple-100 text-purple-800 text-center border-r border-purple-200 z-20"
+                  className="bg-purple-100 text-purple-800 text-center border-r border-purple-200 z-20 dark:bg-purple-900 dark:text-purple-200"
                 >
                   GESTIÓN DIARIA:
                   <span className="uppercase font-bold">{selectedDay}</span>
                 </Th>
                 <Th
                   colSpan={4}
-                  className="p-0 border-r border-gray-200 bg-gray-200 h-1"
+                  className="p-0 border-r border-gray-200 dark:border-gray-600 bg-gray-200 dark:bg-gray-900 h-1"
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="p-0 border-r border-pink-200 bg-pink-200 h-1"
+                  className="p-0 border-r border-pink-200 dark:border-pink-600 bg-pink-200 dark:bg-pink-900 h-1"
                 ></Th>
               </Tr>
 
@@ -358,48 +358,48 @@ const Matriz = () => {
               <Tr>
                 <Th
                   colSpan={8}
-                  className="p-0 border-r border-green-200 bg-green-100 h-1"
+                  className="p-0 border-r border-green-200 dark:border-green-600 bg-green-100 dark:bg-green-900 h-1"
                 ></Th>
                 <Th
                   colSpan={10}
-                  className="p-0 border-r border-blue-200 bg-blue-100 h-1"
+                  className="p-0 border-r border-blue-200 dark:border-blue-600 bg-blue-100 dark:bg-blue-900 h-1"
                 ></Th>
 
                 <Th
                   colSpan={2}
-                  className="text-center text-[10px] uppercase bg-yellow-50 border-r border-yellow-200 text-gray-500"
+                  className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-yellow-900 border-r border-yellow-200 dark:border-yellow-600 text-gray-500"
                 >
                   Inicios
                 </Th>
                 <Th
                   colSpan={6}
-                  className="text-center text-[10px] uppercase bg-yellow-50 border-r border-yellow-200 text-gray-500"
+                  className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-yellow-900 border-r border-yellow-200 dark:border-yellow-600 text-gray-500"
                 >
                   Acción Realizada
                 </Th>
                 <Th
                   colSpan={1}
-                  className="p-0 border-r border-green-300 bg-slate-300 h-1"
+                  className="p-0 border-r border-green-300 dark:border-green-600 bg-slate-300 dark:bg-slate-900 h-1"
                 ></Th>
                 <Th
                   colSpan={6}
-                  className="text-center text-[10px] uppercase bg-yellow-50 border-r border-yellow-200 text-gray-500"
+                  className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-yellow-900 border-r border-yellow-200 dark:border-yellow-600 text-gray-500"
                 >
                   Llamadas
                 </Th>
                 <Th
                   colSpan={4}
-                  className="text-center text-[10px] uppercase bg-yellow-50 border-r border-yellow-200 text-gray-500"
+                  className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-yellow-900 border-r border-yellow-200 dark:border-yellow-600 text-gray-500"
                 >
                   Visitas Asesor de Venta
                 </Th>
                 <Th
                   colSpan={4}
-                  className="p-0 border-r border-gray-200 bg-gray-200 h-1"
+                  className="p-0 border-r border-gray-200 dark:border-gray-600 bg-gray-200 dark:bg-gray-900 h-1"
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="p-0 border-r border-pink-200 bg-pink-200 h-1"
+                  className="p-0 border-r border-pink-200 dark:border-pink-600 bg-pink-200 dark:bg-pink-900 h-1"
                 ></Th>
               </Tr>
 
@@ -407,62 +407,62 @@ const Matriz = () => {
               <Tr>
                 <Th
                   colSpan={8}
-                  className="p-0 border-r border-green-200 bg-green-100 h-1"
+                  className="p-0 border-r border-green-200 dark:border-green-600 bg-green-100 dark:bg-green-900 h-1"
                 ></Th>
                 <Th
                   colSpan={10}
-                  className="p-0 border-r border-blue-200 bg-blue-100 h-1"
+                  className="p-0 border-r border-blue-200 dark:border-blue-600 bg-blue-100 dark:bg-blue-900 h-1"
                 ></Th>
 
                 <Th
                   colSpan={2}
-                  className="p-0 border-r border-yellow-200 bg-yellow-50 h-1"
+                  className="p-0 border-r border-yellow-200 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-900 h-1"
                 ></Th>
                 <Th
                   colSpan={6}
-                  className="p-0 border-r border-yellow-200 bg-yellow-50 h-1"
+                  className="p-0 border-r border-yellow-200 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-900 h-1"
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="p-0 border-r border-green-300 bg-slate-300 h-1"
+                  className="p-0 border-r border-green-300 dark:border-green-600 bg-slate-300 dark:bg-slate-900 h-1"
                 ></Th>
                 <Th
                   colSpan={6}
-                  className="p-0 border-r border-yellow-200 bg-yellow-50 h-1"
+                  className="p-0 border-r border-yellow-200 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-900 h-1"
                 ></Th>
 
                 <Th
                   colSpan={1}
-                  className="p-0 border-r border-yellow-200 bg-yellow-50 h-1"
+                  className="p-0 border-r border-yellow-200 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-900 h-1"
                 >
                   Puestas
                 </Th>
                 <Th
                   colSpan={1}
-                  className="p-0 border-r border-yellow-200 bg-yellow-50 h-1"
+                  className="p-0 border-r border-yellow-200 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-900 h-1"
                 >
                   Cumplidos
                 </Th>
                 <Th
                   colSpan={1}
-                  className="p-0 border-r border-yellow-200 bg-yellow-50 h-1"
+                  className="p-0 border-r border-yellow-200 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-900 h-1"
                 >
                   Visitas del dia
                 </Th>
                 <Th
                   colSpan={1}
-                  className="p-0 border-r border-yellow-200 bg-yellow-50 h-1"
+                  className="p-0 border-r border-yellow-200 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-900 h-1"
                 >
                   % de Planificación
                 </Th>
 
                 <Th
                   colSpan={4}
-                  className="p-0 border-r border-gray-200 bg-gray-200 h-1"
+                  className="p-0 border-r border-gray-200 dark:border-gray-600 bg-gray-200 dark:bg-gray-900 h-1"
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="p-0 border-r border-pink-200 bg-pink-200 h-1"
+                  className="p-0 border-r border-pink-200 dark:border-pink-600 bg-pink-200 dark:bg-pink-900 h-1"
                 ></Th>
               </Tr>
 
@@ -470,13 +470,13 @@ const Matriz = () => {
               <Tr>
                 <Th
                   colSpan={8}
-                  className=" bg-green-100 text-green-800 text-center border-r border-green-200 z-20 text-[15px]"
+                  className=" bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-center border-r border-green-200 z-20 text-[15px]"
                 >
                   DATOS DEL CLIENTE (BITRIX)
                 </Th>
                 <Th
                   colSpan={10}
-                  className="bg-blue-100 text-blue-800 text-center border-r border-blue-200 z-20 text-[15px]"
+                  className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-center border-r border-blue-200 dark:border-blue-600 z-20 text-[15px]"
                 >
                   DATOS FINANCIEROS (PROFIT)
                 </Th>
@@ -528,7 +528,7 @@ const Matriz = () => {
                 </Th>
                 <Th
                   colSpan={1}
-                  className="p-0 border-r border-green-300 bg-slate-300 h-1"
+                  className="p-0 border-r border-green-300 dark:border-green-600 bg-slate-300 dark:bg-slate-900 h-1"
                 ></Th>
 
                 {/* Llamadas Venta */}
@@ -581,13 +581,13 @@ const Matriz = () => {
 
                 <Th
                   colSpan={4}
-                  className="text-center text-[15px] uppercase bg-gray-200 border-r border-gray-200 text-gray-700"
+                  className="text-center text-[15px] uppercase bg-gray-200 dark:bg-gray-900 border-r dark:border-gray-600 border-gray-200 text-gray-700 dark:text-gray-200"
                 >
                   Vendedores
                 </Th>
                 <Th
                   colSpan={1}
-                  className="text-center text-[10px] uppercase bg-pink-200 border-r border-pink-200 text-pink-700"
+                  className="text-center text-[10px] uppercase bg-pink-200 dark:bg-pink-900 border-r dark:border-pink-600 border-pink-200 text-pink-700 dark:text-pink-200"
                 >
                   Observación
                 </Th>
@@ -597,49 +597,49 @@ const Matriz = () => {
               <Tr>
                 <Th
                   colSpan={8}
-                  className="p-0 border-r border-green-200 bg-green-100 h-1"
+                  className="p-0 border-r border-green-200 dark:border-green-600 bg-green-100 dark:bg-green-900 h-1"
                 ></Th>
                 <Th
                   colSpan={10}
-                  className="p-0 border-r border-blue-200 bg-blue-100 h-1"
+                  className="p-0 border-r border-blue-200 dark:border-blue-600 bg-blue-100 dark:bg-blue-900 h-1"
                 ></Th>
 
                 <Th
                   colSpan={2}
-                  className="text-center text-[10px] uppercase bg-green-50 border-r border-green-200 text-green-700"
+                  className="text-center text-[10px] uppercase bg-green-50 dark:bg-green-900 border-r dark:border-green-600 border-green-200 text-green-700 dark:text-green-200"
                 >
                   Inicio WhatsApp
                 </Th>
                 <Th
                   colSpan={6}
-                  className="text-center text-[10px] uppercase bg-blue-50 border-r border-blue-200 text-blue-700"
+                  className="text-center text-[10px] uppercase bg-blue-50 dark:bg-blue-900 border-r dark:border-blue-600 border-blue-200 text-blue-700 dark:text-blue-200"
                 >
                   Acción Realizada
                 </Th>
                 <Th
                   colSpan={1}
-                  className="p-0 border-r border-green-300 bg-slate-300 h-1"
+                  className="p-0 border-r border-green-300 dark:border-green-600 bg-slate-300 dark:bg-slate-900 h-1"
                 ></Th>
                 <Th
                   colSpan={6}
-                  className="text-center text-[10px] uppercase bg-teal-50 border-r border-teal-200 text-teal-700"
+                  className="text-center text-[10px] uppercase bg-teal-50 dark:bg-teal-900 border-r dark:border-teal-600 border-teal-200 text-teal-700 dark:text-teal-200"
                 >
                   Llamadas
                 </Th>
 
                 <Th
                   colSpan={4}
-                  className="text-center text-[10px] uppercase bg-yellow-50 border-r border-yellow-200 text-yellow-700"
+                  className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-yellow-900 border-r dark:border-yellow-600 border-yellow-200 text-yellow-700 dark:text-yellow-200"
                 >
                   Visitas Asesor de Venta
                 </Th>
                 <Th
                   colSpan={4}
-                  className="p-0 border-r border-gray-200 bg-gray-200 h-1"
+                  className="p-0 border-r border-gray-200 dark:border-gray-600 bg-gray-200 dark:bg-gray-900 h-1"
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="p-0 border-r border-pink-200 bg-pink-200 h-1"
+                  className="p-0 border-r border-pink-200 dark:border-pink-600 bg-pink-200 dark:bg-pink-900 h-1"
                 ></Th>
               </Tr>
 
@@ -647,58 +647,58 @@ const Matriz = () => {
               <Tr>
                 <Th
                   colSpan={8}
-                  className="p-0 border-r border-green-200 bg-green-100 h-1"
+                  className="p-0 border-r border-green-200 dark:border-green-600 bg-green-100 dark:bg-green-900 h-1"
                 ></Th>
                 <Th
                   colSpan={10}
-                  className="p-0 border-r border-blue-200 bg-blue-100 h-1"
+                  className="p-0 border-r border-blue-200 dark:border-blue-600 bg-blue-100 dark:bg-blue-900 h-1"
                 ></Th>
 
                 <Th
                   colSpan={2}
-                  className="p-0 border-r border-green-200 bg-green-50 h-1"
+                  className="p-0 border-r border-green-200 dark:border-green-600 bg-green-50 dark:bg-green-900 h-1"
                 ></Th>
 
                 <Th
                   colSpan={3}
-                  className="text-center text-[10px] uppercase bg-blue-50 border-r border-blue-200 text-blue-700"
+                  className="text-center text-[10px] uppercase bg-blue-50 dark:bg-blue-900 border-r dark:border-blue-600 border-blue-200 text-blue-700 dark:text-blue-200"
                 >
                   Venta
                 </Th>
                 <Th
                   colSpan={3}
-                  className="text-center text-[10px] uppercase bg-blue-50 border-r border-blue-200 text-blue-700"
+                  className="text-center text-[10px] uppercase bg-blue-50 dark:bg-blue-900 border-r dark:border-blue-600 border-blue-200 text-blue-700 dark:text-blue-200"
                 >
                   Cobranza
                 </Th>
                 <Th
                   colSpan={1}
-                  className="p-0 border-r border-green-300 bg-slate-300 h-1"
+                  className="p-0 border-r border-green-300 dark:border-green-600 bg-slate-300 dark:bg-slate-900 h-1"
                 ></Th>
                 <Th
                   colSpan={3}
-                  className="text-center text-[10px] uppercase bg-teal-50 border-r border-teal-200 text-teal-700"
+                  className="text-center text-[10px] uppercase bg-teal-50 dark:bg-teal-900 border-r dark:border-teal-600 border-teal-200 text-teal-700 dark:text-teal-200"
                 >
                   Venta
                 </Th>
                 <Th
                   colSpan={3}
-                  className="text-center text-[10px] uppercase bg-teal-50 border-r border-teal-200 text-teal-700"
+                  className="text-center text-[10px] uppercase bg-teal-50 dark:bg-teal-900 border-r dark:border-teal-600 border-teal-200 text-teal-700 dark:text-teal-200"
                 >
                   Cobranza
                 </Th>
 
                 <Th
                   colSpan={4}
-                  className="p-0 border-r border-yellow-200 bg-yellow-50 h-1"
+                  className="p-0 border-r border-yellow-200 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-900 h-1"
                 ></Th>
                 <Th
                   colSpan={4}
-                  className="p-0 border-r border-gray-200 bg-gray-200 h-1"
+                  className="p-0 border-r border-gray-200 dark:border-gray-600 bg-gray-200 dark:bg-gray-900 h-1"
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="p-0 border-r border-pink-200 bg-pink-200 h-1"
+                  className="p-0 border-r border-pink-200 dark:border-pink-600 bg-pink-200 dark:bg-pink-900 h-1"
                 ></Th>
               </Tr>
 
@@ -752,7 +752,7 @@ const Matriz = () => {
                 <Th className="min-w-[80px] text-xs border-t">
                   Posee Convenio
                 </Th>
-                <Th className="min-w-[100px] text-xs bg-blue-50 border-t">
+                <Th className="min-w-[100px] text-xs border-t">
                   Venta Mes Actual
                 </Th>
                 <Th className="min-w-[100px] text-xs border-t">
@@ -761,13 +761,13 @@ const Matriz = () => {
 
                 {/* Inicio WhatsApp */}
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-green-50 text-[10px] border-l border-green-200"
+                  className="min-w-[30px] font-bold text-center bg-green-50 dark:bg-green-900 dark:text-green-200 text-[10px] border-l border-green-200"
                   title="Enviado"
                 >
                   EJECUTIVA
                 </Th>
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-green-50 text-[10px] border-r border-green-200"
+                  className="min-w-[30px] font-bold text-center bg-green-50 dark:bg-green-900 dark:text-green-200 text-[10px] border-r border-green-200"
                   title="Contestado"
                 >
                   CLIENTE
@@ -775,114 +775,114 @@ const Matriz = () => {
 
                 {/* Acción Realizada (Venta / Cobranza) */}
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-blue-50 text-[10px] border-l border-blue-200"
+                  className="min-w-[30px] font-bold text-center bg-blue-50 dark:bg-blue-900 dark:text-blue-200 text-[10px] border-l border-blue-200"
                   title="Venta Enviado"
                 >
                   E
                 </Th>
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-blue-50 text-[10px]"
+                  className="min-w-[30px] font-bold text-center bg-blue-50 dark:bg-blue-900 dark:text-blue-200 text-[10px]"
                   title="Venta Pendiente"
                 >
                   P
                 </Th>
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-blue-50 text-[10px] border-r border-blue-200"
+                  className="min-w-[30px] font-bold text-center bg-blue-50 dark:bg-blue-900 dark:text-blue-200 text-[10px] border-r border-blue-200"
                   title="Venta Negada"
                 >
                   N
                 </Th>
 
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-blue-50 text-[10px]"
+                  className="min-w-[30px] font-bold text-center bg-blue-50 dark:bg-blue-900 dark:text-blue-200 text-[10px]"
                   title="Cobranza Enviado"
                 >
                   E
                 </Th>
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-blue-50 text-[10px]"
+                  className="min-w-[30px] font-bold text-center bg-blue-50 dark:bg-blue-900 dark:text-blue-200 text-[10px]"
                   title="Cobranza Pendiente"
                 >
                   P
                 </Th>
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-blue-50 text-[10px] border-r border-blue-200"
+                  className="min-w-[30px] font-bold text-center bg-blue-50 dark:bg-blue-900 dark:text-blue-200 text-[10px] border-r border-blue-200"
                   title="Cobranza Negada"
                 >
                   N
                 </Th>
                 <Th
                   colSpan={1}
-                  className="p-0 border-r border-green-300 bg-slate-300 h-1"
+                  className="p-0 border-r border-green-300 dark:border-green-600 bg-slate-300 dark:bg-slate-900 h-1"
                 >
                   CP
                 </Th>
 
                 {/* Llamadas (Venta / Cobranza) */}
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-teal-50 text-[10px] border-l border-teal-200"
+                  className="min-w-[30px] font-bold text-center bg-teal-50 dark:bg-teal-900 dark:text-teal-200 text-[10px] border-l border-teal-200"
                   title="Llamada Venta E"
                 >
                   E
                 </Th>
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-teal-50 text-[10px]"
+                  className="min-w-[30px] font-bold text-center bg-teal-50 dark:bg-teal-900 dark:text-teal-200 text-[10px]"
                   title="Llamada Venta P"
                 >
                   P
                 </Th>
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-teal-50 text-[10px] border-r border-teal-200"
+                  className="min-w-[30px] font-bold text-center bg-teal-50 dark:bg-teal-900 dark:text-teal-200 text-[10px] border-r border-teal-200"
                   title="Llamada Venta N"
                 >
                   N
                 </Th>
 
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-teal-50 text-[10px]"
+                  className="min-w-[30px] font-bold text-center bg-teal-50 dark:bg-teal-900 dark:text-teal-200 text-[10px]"
                   title="Llamada Cobranza E"
                 >
                   E
                 </Th>
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-teal-50 text-[10px]"
+                  className="min-w-[30px] font-bold text-center bg-teal-50 dark:bg-teal-900 dark:text-teal-200 text-[10px]"
                   title="Llamada Cobranza P"
                 >
                   P
                 </Th>
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-teal-50 text-[10px]"
+                  className="min-w-[30px] font-bold text-center bg-teal-50 dark:bg-teal-900 dark:text-teal-200 text-[10px]"
                   title="Llamada Cobranza N"
                 >
                   N
                 </Th>
 
-                <Th className="text-center text-[10px] uppercase bg-yellow-50 border-r border-yellow-200 text-yellow-700">
+                <Th className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-yellow-900 dark:text-yellow-200 border-r border-yellow-200 text-yellow-700">
                   Planificación
                 </Th>
-                <Th className="text-center text-[10px] uppercase bg-yellow-50 border-r border-yellow-200 text-yellow-700">
+                <Th className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-yellow-900 dark:text-yellow-200 border-r border-yellow-200 text-yellow-700">
                   Acción
                 </Th>
-                <Th className="text-center text-[10px] uppercase bg-yellow-50 border-r border-yellow-200 text-yellow-700">
+                <Th className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-yellow-900 dark:text-yellow-200 border-r border-yellow-200 text-yellow-700">
                   Diferencia de Coordenadas
                 </Th>
-                <Th className="text-center text-[10px] uppercase bg-yellow-50 border-r border-yellow-200 text-yellow-700">
+                <Th className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-yellow-900 dark:text-yellow-200 border-r border-yellow-200 text-yellow-700">
                   Observación del vendedor
                 </Th>
 
-                <Th className="text-center text-[10px] uppercase bg-gray-200 border-r border-gray-200 text-gray-700">
+                <Th className="text-center text-[10px] uppercase bg-gray-200 dark:bg-gray-900 dark:text-gray-200 border-r border-gray-200 text-gray-700">
                   Fecha de Registro
                 </Th>
-                <Th className="text-center text-[10px] uppercase bg-gray-200 border-r border-gray-200 text-gray-700">
+                <Th className="text-center text-[10px] uppercase bg-gray-200 dark:bg-gray-900 dark:text-gray-200 border-r border-gray-200 text-gray-700">
                   Tipo de gestión de ventas
                 </Th>
-                <Th className="text-center text-[10px] uppercase bg-gray-200 border-r border-gray-200 text-gray-700">
+                <Th className="text-center text-[10px] uppercase bg-gray-200 dark:bg-gray-900 dark:text-gray-200 border-r border-gray-200 text-gray-700">
                   Tipo de gestión de cobranza
                 </Th>
-                <Th className="text-center text-[10px] uppercase bg-gray-200 border-r border-gray-200 text-gray-700">
+                <Th className="text-center text-[10px] uppercase bg-gray-200 dark:bg-gray-900 dark:text-gray-200 border-r border-gray-200 text-gray-700">
                   Descripción de ambos conceptos
                 </Th>
-                <Th className="text-center text-[10px] uppercase bg-pink-200 border-r border-pink-200 text-pink-700">
+                <Th className="text-center text-[10px] uppercase bg-pink-200 dark:bg-pink-900 dark:text-pink-200 border-r border-pink-200 text-pink-700">
                   Observaciones
                 </Th>
               </Tr>
