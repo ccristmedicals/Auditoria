@@ -22,21 +22,11 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Filter,
-  Search, // <--- NUEVO IMPORT
-  X, // <--- NUEVO IMPORT
+  Search,
+  X,
 } from "lucide-react";
 import { apiService } from "../services/apiService";
 
-// --- CONSTANTES ---
-const OPCIONES_EJECUCION = [
-  { value: "", label: "-" },
-  { value: "LOGRADO", label: "Logrado" },
-  { value: "NO_LOGRADO", label: "No Logrado" },
-  { value: "PENDIENTE", label: "Pendiente" },
-  { value: "REPROGRAMADO", label: "Reprogramado" },
-];
-
-// --- COMPONENTES AUXILIARES ---
 const ErrorAwareCell = ({ value, isError, icon = false }) => {
   if (isError) {
     return (
@@ -69,38 +59,6 @@ const EditableCell = ({ value, onChange, placeholder = "..." }) => (
     />
   </div>
 );
-
-const SelectCell = ({ value, onChange, options }) => {
-  let textColor = "text-gray-700 dark:text-gray-300";
-  if (value === "LOGRADO") textColor = "text-green-600 font-bold";
-  if (value === "NO_LOGRADO") textColor = "text-red-600 font-bold";
-  if (value === "PENDIENTE") textColor = "text-orange-500";
-
-  return (
-    <div className="relative w-full">
-      <select
-        value={value || ""}
-        onChange={(e) => onChange(e.target.value)}
-        className={`w-full bg-white dark:bg-[#262626] border border-gray-300 dark:border-gray-600 rounded px-2 py-1.5 text-xs outline-none cursor-pointer appearance-none transition-all focus:ring-2 focus:ring-[#1a9888] focus:border-transparent ${textColor}`}
-        style={{ paddingRight: "1.5rem" }}
-      >
-        {options.map((opt) => (
-          <option
-            key={opt.value}
-            value={opt.value}
-            className="text-gray-800 bg-white dark:bg-[#333] dark:text-gray-200"
-          >
-            {opt.label}
-          </option>
-        ))}
-      </select>
-      <ChevronDown
-        size={14}
-        className="absolute right-2 top-2 text-gray-400 pointer-events-none"
-      />
-    </div>
-  );
-};
 
 const ClassificationBadge = ({ value }) => {
   const letter = (value || "").toString().toUpperCase().charAt(0);

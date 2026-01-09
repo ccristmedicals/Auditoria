@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useAuditoria } from "../hooks/useAuditoria";
 import {
   Save,
+  Edit3,
   Search,
   XCircle,
   RefreshCw,
@@ -21,13 +22,21 @@ import {
   Td,
 } from "../components/ui/Tabla";
 
-// Helpers de formato
+const StatBadge = ({ label, value, colorClass }) => (
+  <div className="flex flex-col items-center px-4 border-r last:border-r-0 border-gray-200 dark:border-gray-700 min-w-[100px]">
+    <span className="text-[10px] uppercase font-bold text-gray-400 leading-none mb-1 text-center">
+      {label}
+    </span>
+    <span className={`text-sm font-black ${colorClass} leading-none`}>
+      {value}
+    </span>
+  </div>
+);
+
 const formatCurrency = (val) =>
   new Intl.NumberFormat("es-ES", { style: "currency", currency: "USD" }).format(
     val
   );
-
-// --- COMPONENTES DE UI (Estandarizados) ---
 
 const TableCheckbox = ({ checked, onChange, colorClass }) => (
   <div className="flex justify-center">
@@ -55,46 +64,65 @@ const Matriz = () => {
   const { data, loading, error, handleAuditoriaChange } = useAuditoria();
   const [selectedDay, setSelectedDay] = useState("lunes");
   const [searchTerm, setSearchTerm] = useState("");
-
-  // --- PAGINACIÓN CLIENT-SIDE ---
   const [page, setPage] = useState(1);
   const ITEMS_PER_PAGE = 25;
 
-  // --- HELPER PARA COLORES DINÁMICOS (SEMÁFORO) ---
   const getDynamicBackground = (categoryData, defaultColor) => {
-    // Si E está marcado -> Verde
     if (categoryData?.e)
       return "bg-green-200 dark:bg-green-900/60 transition-colors duration-300";
-    // Si P está marcado -> Naranja
     if (categoryData?.p)
       return "bg-orange-200 dark:bg-orange-900/60 transition-colors duration-300";
-    // Si N está marcado -> Rojo
     if (categoryData?.n)
       return "bg-red-200 dark:bg-red-900/60 transition-colors duration-300";
-
-    // Si nada está marcado, devuelve el color base
     return defaultColor;
   };
-
-  // --- LÓGICA DE EXCLUSIVIDAD ---
-  const handleExclusiveChange = (rowId, category, field, newValue) => {
-    // 1. Ejecutar el cambio principal
+  const handleExclusiveChange = (
+    rowId,
+    category,
+    field,
+    newValue,
+    customGroup = null
+  ) => {
     handleAuditoriaChange(rowId, selectedDay, category, field, newValue);
-
-    // 2. Si se marca (true), desmarcar hermanos (e, p, n)
     if (newValue === true) {
-      const currentRow = data.find((r) => r.id === rowId);
-      const categoryData = currentRow?.auditoria?.[selectedDay]?.[category];
-
-      if (categoryData) {
-        const siblings = ["e", "p", "n"];
-        siblings.forEach((sibling) => {
-          if (sibling !== field && categoryData[sibling] === true) {
-            handleAuditoriaChange(rowId, selectedDay, category, sibling, false);
-          }
-        });
-      }
+      const siblings = customGroup || ["e", "p", "n"];
+      siblings.forEach((sibling) => {
+        if (sibling !== field) {
+          handleAuditoriaChange(rowId, selectedDay, category, sibling, false);
+        }
+      });
     }
+  };
+
+  const EditableCell = ({ value, onChange, placeholder = "..." }) => {
+    const [localValue, setLocalValue] = useState(value || "");
+
+    // Sincroniza si el valor externo cambia (ej. al cambiar de día)
+    useEffect(() => {
+      setLocalValue(value || "");
+    }, [value]);
+
+    return (
+      <div className="relative w-full">
+        <input
+          type="text"
+          value={localValue}
+          onChange={(e) => setLocalValue(e.target.value)}
+          onBlur={() => onChange(localValue)} // Guarda al salir del campo
+          onKeyDown={(e) => e.key === "Enter" && onChange(localValue)} // Guarda al dar Enter
+          placeholder={placeholder}
+          className="w-full min-w-[120px] bg-white dark:bg-[#262626] border border-gray-300 dark:border-gray-600 rounded px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#1a9888] dark:text-gray-200"
+        />
+        <Edit3
+          size={12}
+          className="absolute right-2 top-2.5 text-gray-400 pointer-events-none opacity-50"
+        />
+      </div>
+    );
+  };
+
+  const handleAuditChange = (rowId, category, newValue) => {
+    handleAuditoriaChange(rowId, selectedDay, category, newValue);
   };
 
   useEffect(() => {
@@ -128,6 +156,69 @@ const Matriz = () => {
     }, 0);
   };
 
+  const stats = {
+    efectivas: () => {
+      return filteredData.reduce((acc, row) => {
+        const day = row.auditoria?.[selectedDay];
+        if (!day) return acc;
+
+        const hasE =
+          day.accion_venta?.e ||
+          day.accion_cobranza?.e ||
+          day.llamadas_venta?.e ||
+          day.llamadas_cobranza?.e;
+
+        return hasE ? acc + 1 : acc;
+      }, 0);
+    },
+
+    ventaProceso: () => {
+      return filteredData.reduce((acc, row) => {
+        const day = row.auditoria?.[selectedDay];
+        if (!day) return acc;
+        const isPending = day.accion_venta?.p || day.llamadas_venta?.p;
+        return isPending ? acc + 1 : acc;
+      }, 0);
+    },
+
+    cobranzaProceso: () => {
+      return filteredData.reduce((acc, row) => {
+        const day = row.auditoria?.[selectedDay];
+        if (!day) return acc;
+        const isPending = day.accion_cobranza?.p || day.llamadas_cobranza?.p;
+        return isPending ? acc + 1 : acc;
+      }, 0);
+    },
+    sinGestion: () => {
+      return filteredData.reduce((acc, row) => {
+        const day = row.auditoria?.[selectedDay];
+
+        if (!day) return acc + 1;
+
+        const hasCheckboxes =
+          !!day.accion_venta?.e ||
+          !!day.accion_venta?.p ||
+          !!day.accion_venta?.n ||
+          !!day.accion_cobranza?.e ||
+          !!day.accion_cobranza?.p ||
+          !!day.accion_cobranza?.n ||
+          !!day.llamadas_venta?.e ||
+          !!day.llamadas_venta?.p ||
+          !!day.llamadas_venta?.n ||
+          !!day.llamadas_cobranza?.e ||
+          !!day.llamadas_cobranza?.p ||
+          !!day.llamadas_cobranza?.n;
+
+        const hasObservation =
+          day.observacion && day.observacion.toString().trim().length > 0;
+
+        const isUntouched = !hasCheckboxes && !hasObservation;
+
+        return isUntouched ? acc + 1 : acc;
+      }, 0);
+    },
+  };
+
   if (error)
     return (
       <div className="p-8 text-center text-red-500">Error: {error.message}</div>
@@ -152,23 +243,54 @@ const Matriz = () => {
         </div>
 
         <div className="flex flex-col sm:flex-row items-end sm:items-center gap-4">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Buscar por Nombre o Código..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 pr-4 py-1.5 w-64 text-sm bg-gray-50 dark:bg-[#202020] border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1a9888] dark:text-white transition-all"
-            />
-            <Search className="absolute left-3 top-2 text-gray-400" size={16} />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm("")}
-                className="absolute right-3 top-2 text-gray-400 hover:text-red-500"
-              >
-                <XCircle size={16} />
-              </button>
-            )}
+          {/* CONTENEDOR GRUPO: BUSCADOR + STATS */}
+          <div className="flex items-center bg-gray-50 dark:bg-[#202020] border border-gray-300 dark:border-gray-600 rounded-lg p-1 shadow-sm">
+            {/* BUSCADOR */}
+            <div className="relative border-r border-gray-200 dark:border-gray-700 pr-1">
+              <input
+                type="text"
+                placeholder="Buscar cliente..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 pr-4 py-1.5 w-48 text-sm bg-transparent outline-none dark:text-white transition-all"
+              />
+              <Search
+                className="absolute left-3 top-2 text-gray-400"
+                size={16}
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm("")}
+                  className="absolute right-3 top-2 text-gray-400 hover:text-red-500"
+                >
+                  <XCircle size={16} />
+                </button>
+              )}
+            </div>
+
+            {/* ESTADÍSTICAS DINÁMICAS */}
+            <div className="flex items-center h-full py-1">
+              <StatBadge
+                label="Efectivas"
+                value={stats.efectivas()}
+                colorClass="text-green-600"
+              />
+              <StatBadge
+                label="Venta (P)"
+                value={stats.ventaProceso()}
+                colorClass="text-orange-500"
+              />
+              <StatBadge
+                label="Cobro (P)"
+                value={stats.cobranzaProceso()}
+                colorClass="text-blue-600"
+              />
+              <StatBadge
+                label="Sin Gestión"
+                value={stats.sinGestion()}
+                colorClass="text-red-500"
+              />
+            </div>
           </div>
 
           <div className="flex items-center gap-4">
@@ -215,11 +337,11 @@ const Matriz = () => {
                   className="p-0 border-r border-blue-200 bg-blue-100 h-1"
                 ></Th>
                 <Th
-                  colSpan={18}
+                  colSpan={19}
                   stickyTop
                   className="bg-purple-100 text-purple-800 text-center border-r border-purple-200 z-20"
                 >
-                  GESTIÓN DIARIA:{" "}
+                  GESTIÓN DIARIA:
                   <span className="uppercase font-bold">{selectedDay}</span>
                 </Th>
                 <Th
@@ -255,6 +377,10 @@ const Matriz = () => {
                 >
                   Acción Realizada
                 </Th>
+                <Th
+                  colSpan={1}
+                  className="p-0 border-r border-green-300 bg-slate-300 h-1"
+                ></Th>
                 <Th
                   colSpan={6}
                   className="text-center text-[10px] uppercase bg-yellow-50 border-r border-yellow-200 text-gray-500"
@@ -295,6 +421,10 @@ const Matriz = () => {
                 <Th
                   colSpan={6}
                   className="p-0 border-r border-yellow-200 bg-yellow-50 h-1"
+                ></Th>
+                <Th
+                  colSpan={1}
+                  className="p-0 border-r border-green-300 bg-slate-300 h-1"
                 ></Th>
                 <Th
                   colSpan={6}
@@ -396,6 +526,10 @@ const Matriz = () => {
                     value={calculateTotal("accion_cobranza", "n")}
                   />
                 </Th>
+                <Th
+                  colSpan={1}
+                  className="p-0 border-r border-green-300 bg-slate-300 h-1"
+                ></Th>
 
                 {/* Llamadas Venta */}
                 <Th className="min-w-[30px] bg-white p-0 border-l border-white">
@@ -483,11 +617,16 @@ const Matriz = () => {
                   Acción Realizada
                 </Th>
                 <Th
+                  colSpan={1}
+                  className="p-0 border-r border-green-300 bg-slate-300 h-1"
+                ></Th>
+                <Th
                   colSpan={6}
                   className="text-center text-[10px] uppercase bg-teal-50 border-r border-teal-200 text-teal-700"
                 >
                   Llamadas
                 </Th>
+
                 <Th
                   colSpan={4}
                   className="text-center text-[10px] uppercase bg-yellow-50 border-r border-yellow-200 text-yellow-700"
@@ -532,6 +671,10 @@ const Matriz = () => {
                 >
                   Cobranza
                 </Th>
+                <Th
+                  colSpan={1}
+                  className="p-0 border-r border-green-300 bg-slate-300 h-1"
+                ></Th>
                 <Th
                   colSpan={3}
                   className="text-center text-[10px] uppercase bg-teal-50 border-r border-teal-200 text-teal-700"
@@ -621,13 +764,13 @@ const Matriz = () => {
                   className="min-w-[30px] font-bold text-center bg-green-50 text-[10px] border-l border-green-200"
                   title="Enviado"
                 >
-                  E
+                  EJECUTIVA
                 </Th>
                 <Th
                   className="min-w-[30px] font-bold text-center bg-green-50 text-[10px] border-r border-green-200"
                   title="Contestado"
                 >
-                  C
+                  CLIENTE
                 </Th>
 
                 {/* Acción Realizada (Venta / Cobranza) */}
@@ -667,6 +810,12 @@ const Matriz = () => {
                   title="Cobranza Negada"
                 >
                   N
+                </Th>
+                <Th
+                  colSpan={1}
+                  className="p-0 border-r border-green-300 bg-slate-300 h-1"
+                >
+                  CP
                 </Th>
 
                 {/* Llamadas (Venta / Cobranza) */}
@@ -743,7 +892,7 @@ const Matriz = () => {
               {paginatedData.length > 0 ? (
                 paginatedData.map((row) => {
                   // --- CÁLCULO DE COLORES DINÁMICOS POR FILA ---
-                  const auditData = row.auditoria[selectedDay];
+                  const auditData = row.auditoria?.[selectedDay];
 
                   // Acciones (Base Azul)
                   const bgAccionVenta = getDynamicBackground(
@@ -820,7 +969,6 @@ const Matriz = () => {
                       >
                         {row.diasVisita}
                       </Td>
-
                       {/* PROFIT */}
                       <Td className="text-right text-xs text-blue-700">
                         {formatCurrency(row.limite_credito)}
@@ -858,44 +1006,41 @@ const Matriz = () => {
                       </Td>
 
                       {/* --- GESTIÓN DIARIA CHECKBOXES --- */}
-
-                      {/* Inicio WhatsApp: E, C (NO EXCLUSIVO, se usa handleAuditoriaChange directo) */}
                       <Td className="bg-green-50/20 border-l border-green-100 p-0 text-center">
                         <TableCheckbox
                           checked={
                             row.auditoria[selectedDay]?.inicio_whatsapp?.e
                           }
                           onChange={(val) =>
-                            handleAuditoriaChange(
+                            handleExclusiveChange(
                               row.id,
-                              selectedDay,
                               "inicio_whatsapp",
                               "e",
-                              val
-                            )
-                          }
-                          colorClass="text-green-600 focus:ring-green-500"
-                        />
-                      </Td>
-                      <Td className="bg-green-50/20 border-r border-green-100 p-0 text-center">
-                        <TableCheckbox
-                          checked={
-                            row.auditoria[selectedDay]?.inicio_whatsapp?.c
-                          }
-                          onChange={(val) =>
-                            handleAuditoriaChange(
-                              row.id,
-                              selectedDay,
-                              "inicio_whatsapp",
-                              "c",
-                              val
+                              val,
+                              ["e", "c"]
                             )
                           }
                           colorClass="text-green-600 focus:ring-green-500"
                         />
                       </Td>
 
-                      {/* Acción Venta: E, P, N (EXCLUSIVO, se usa handleExclusiveChange y color dinámico) */}
+                      <Td className="bg-green-50/20 border-r border-green-100 p-0 text-center">
+                        <TableCheckbox
+                          checked={
+                            row.auditoria[selectedDay]?.inicio_whatsapp?.c
+                          }
+                          onChange={(val) =>
+                            handleExclusiveChange(
+                              row.id,
+                              "inicio_whatsapp",
+                              "c",
+                              val,
+                              ["e", "c"]
+                            )
+                          }
+                          colorClass="text-green-600 focus:ring-green-500"
+                        />
+                      </Td>
                       <Td
                         className={`${bgAccionVenta} border-l border-blue-100 p-0 text-center`}
                       >
@@ -942,7 +1087,6 @@ const Matriz = () => {
                           colorClass="text-red-600 focus:ring-red-500"
                         />
                       </Td>
-
                       {/* Acción Cobranza: E, P, N (EXCLUSIVO) */}
                       <Td className={`${bgAccionCobranza} p-0 text-center`}>
                         <TableCheckbox
@@ -986,6 +1130,17 @@ const Matriz = () => {
                             )
                           }
                           colorClass="text-red-600 focus:ring-red-500"
+                        />
+                      </Td>
+
+                      {/* CP */}
+                      <Td className="bg-slate-300 dark:bg-slate-800 border-r border-gray-300 p-0 text-center">
+                        <TableCheckbox
+                          checked={auditData?.cp || false}
+                          onChange={(val) =>
+                            handleAuditChange(row.id, "cp", val)
+                          }
+                          colorClass="text-purple-600 focus:ring-purple-500"
                         />
                       </Td>
 
@@ -1036,7 +1191,6 @@ const Matriz = () => {
                           colorClass="text-red-600 focus:ring-red-500"
                         />
                       </Td>
-
                       {/* Llamadas Cobranza: E, P, N (EXCLUSIVO + Base Naranja) */}
                       <Td className={`${bgLlamadaCobranza} p-0 text-center`}>
                         <TableCheckbox
@@ -1082,7 +1236,6 @@ const Matriz = () => {
                           colorClass="text-red-600 focus:ring-red-500"
                         />
                       </Td>
-
                       {/* --- VISITAS ASESOR --- */}
                       <Td className="text-center text-xs whitespace-nowrap">
                         ✅
@@ -1115,6 +1268,51 @@ const Matriz = () => {
                             )}
                           </div>
                         )}
+                      </Td>
+
+                      {/* --- VENDEDORES --- */}
+                      <Td className="text-center text-xs whitespace-nowrap">
+                        {logDelDia?.fecha_registro}
+                      </Td>
+                      <Td className="text-xs text-center">
+                        {logDelDia?.venta_tipoGestion}
+                      </Td>
+                      <Td className="text-right text-xs whitespace-nowrap">
+                        {logDelDia?.cobranza_tipoGestion}
+                      </Td>
+                      <Td className="text-center text-xs">
+                        {!logDelDia?.venta_descripcion &&
+                        !logDelDia?.cobranza_descripcion ? (
+                          "-"
+                        ) : (
+                          <div className="flex flex-col gap-1">
+                            {logDelDia?.venta_descripcion && (
+                              <span
+                                className="text-blue-600 block truncate max-w-[180px]"
+                                title={logDelDia.venta_descripcion}
+                              >
+                                V: {logDelDia.venta_descripcion}
+                              </span>
+                            )}
+                            {logDelDia?.cobranza_descripcion && (
+                              <span
+                                className="text-teal-600 block truncate max-w-[180px]"
+                                title={logDelDia.cobranza_descripcion}
+                              >
+                                C: {logDelDia.cobranza_descripcion}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </Td>
+                      <Td className="min-w-[200px]">
+                        <EditableCell
+                          value={auditData?.observacion || ""}
+                          onChange={(val) =>
+                            handleAuditChange(row.id, "observacion", val)
+                          }
+                          placeholder="Escribe la observación del día..."
+                        />
                       </Td>
                     </Tr>
                   );
