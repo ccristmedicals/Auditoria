@@ -21,31 +21,78 @@ export const useBaseDatosBitrix = () => {
     setLoading(true);
     setError(null);
 
-    // Calculamos el start (offset) para la API
     const startOffset = (page - 1) * ITEMS_PER_PAGE;
 
     try {
+      // Llamada al backend
       const response = await apiService.getBitrixCompanies(startOffset);
 
-      // 1. OBTENEMOS EL TOTAL REAL DEL BACKEND
-      // Usamos response.total (5554 según tu ejemplo)
       const realTotal = response.total || 0;
       setTotalRecords(realTotal);
       setTotalPages(Math.ceil(realTotal / ITEMS_PER_PAGE));
 
-      // 2. OBTENEMOS EL ARRAY DE DATOS (Limitamos a 25 si la API devuelve más)
       const rawList = (response.data || []).slice(0, ITEMS_PER_PAGE);
 
       const formattedData = rawList.map((item, index) => {
         const b = item.bitrix || {};
         const p = item.profit || {};
-        const g = item.gestion || {};
+
+        // 1. HISTORIAL (Solo lectura): Viene en el array 'gestion'
+        const gList = Array.isArray(item.gestion) ? item.gestion : [];
+
+        // 2. TAREAS (Editable): Viene en el objeto 'semana' desde tu backend actualizado
+        const semanaData = item.semana || {};
+
+        // --- HELPER: Extraer info histórica del Array ---
+        const extractHistoryData = (dayName) => {
+          const target = dayName
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "");
+
+          const log = gList.find((g) => {
+            if (!g.dia_semana) return false;
+            return (
+              g.dia_semana
+                .toLowerCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "") === target
+            );
+          });
+
+          if (log) {
+            // Unir Tipo de Gestión
+            let accionParts = [];
+            if (log.venta_tipoGestion)
+              accionParts.push(`V: ${log.venta_tipoGestion}`);
+            if (log.cobranza_tipoGestion)
+              accionParts.push(`C: ${log.cobranza_tipoGestion}`);
+
+            // Unir Descripciones
+            let obsParts = [];
+            if (log.venta_descripcion)
+              obsParts.push(`V: ${log.venta_descripcion}`);
+            if (log.cobranza_descripcion)
+              obsParts.push(`C: ${log.cobranza_descripcion}`);
+
+            return {
+              accion: accionParts.join(" / ") || "",
+              observacion: obsParts.join(" / ") || "",
+            };
+          }
+          return { accion: "", observacion: "" };
+        };
+
+        const lunesHist = extractHistoryData("lunes");
+        const martesHist = extractHistoryData("martes");
+        const miercolesHist = extractHistoryData("miercoles");
+        const juevesHist = extractHistoryData("jueves");
+        const viernesHist = extractHistoryData("viernes");
 
         return {
-          // ID único para React (Página + Índice)
           id_interno: `${page}-${index}`,
 
-          // DATOS BITRIX
+          // --- DATOS BITRIX ---
           id: b.ID || "",
           nombre: b.TITLE || "Sin Nombre",
           codigo_profit: b.UF_CRM_1634787828 || "",
@@ -56,7 +103,7 @@ export const useBaseDatosBitrix = () => {
             ? b.UF_CRM_1686015739936.join(", ")
             : b.UF_CRM_1686015739936 || "",
 
-          // DATOS PROFIT
+          // --- DATOS PROFIT ---
           limite_credito: p.login || 0,
           saldo_transito: parseFloat(p.saldo_trancito) || 0,
           saldo_vencido: parseFloat(p.saldo_vencido) || 0,
@@ -69,17 +116,37 @@ export const useBaseDatosBitrix = () => {
           ventas_anterior: parseFloat(p.ventas_mes_pasado) || 0,
           convenio: "N/A",
 
-          // DATOS GESTION
-          gestion: g,
+          // --- DATOS GESTION (Para referencia) ---
+          gestion: gList,
 
-          // CAMPOS MANUALES (Inicializados vacíos)
-          bitacora: "",
-          obs_ejecutiva: "",
-          // lunes_accion: "", lunes_ejecucion: "",
-          // martes_accion: "", martes_ejecucion: "",
-          // miercoles_accion: "", miercoles_ejecucion: "",
-          // jueves_accion: "", jueves_ejecucion: "",
-          // viernes_accion: "", viernes_ejecucion: ""
+          // --- CAMPOS MANUALES (EDITABLES) ---
+          // Ahora leemos directo de la raíz del item, porque tu backend actualizado los pone ahí
+          bitacora: item.bitacora || "",
+          obs_ejecutiva: item.obs_ejecutiva || "",
+
+          // --- AGENDA SEMANAL ---
+          // Accion/Obs: Vienen del historial (gList) -> ReadOnly
+          // Tarea: Viene de item.semana -> Editable
+
+          lunes_accion: lunesHist.accion,
+          lunes_observacion: lunesHist.observacion,
+          lunes_tarea: semanaData.lunes?.tarea || "",
+
+          martes_accion: martesHist.accion,
+          martes_observacion: martesHist.observacion,
+          martes_tarea: semanaData.martes?.tarea || "",
+
+          miercoles_accion: miercolesHist.accion,
+          miercoles_observacion: miercolesHist.observacion,
+          miercoles_tarea: semanaData.miercoles?.tarea || "",
+
+          jueves_accion: juevesHist.accion,
+          jueves_observacion: juevesHist.observacion,
+          jueves_tarea: semanaData.jueves?.tarea || "",
+
+          viernes_accion: viernesHist.accion,
+          viernes_observacion: viernesHist.observacion,
+          viernes_tarea: semanaData.viernes?.tarea || "",
         };
       });
 
@@ -87,10 +154,8 @@ export const useBaseDatosBitrix = () => {
     } catch (err) {
       console.error("Error fetching companies:", err);
       setError("Error al cargar datos.");
-
-      // MOCK DE RESPALDO (Por si el backend falla mientras pruebas)
-      setTotalRecords(100);
-      setTotalPages(2);
+      setTotalRecords(0);
+      setTotalPages(0);
       setCompanies([]);
     } finally {
       setLoading(false);
@@ -106,8 +171,8 @@ export const useBaseDatosBitrix = () => {
   const handleCompanyChange = useCallback((id_interno, field, value) => {
     setCompanies((prev) =>
       prev.map((c) =>
-        c.id_interno === id_interno ? { ...c, [field]: value } : c
-      )
+        c.id_interno === id_interno ? { ...c, [field]: value } : c,
+      ),
     );
   }, []);
 

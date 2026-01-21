@@ -1,4 +1,5 @@
-import { useState } from "react";
+/* eslint-disable react-hooks/exhaustive-deps */
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useBaseDatosBitrix } from "../hooks/useBaseDatosBitrix";
 import {
   TableContainer,
@@ -15,11 +16,10 @@ import {
   MapPin,
   AlertTriangle,
   Edit3,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   Save,
   ChevronsLeft,
+  ChevronLeft,
+  ChevronRight,
   ChevronsRight,
   Filter,
   Search,
@@ -27,7 +27,9 @@ import {
 } from "lucide-react";
 import { apiService } from "../services/apiService";
 
-const ErrorAwareCell = ({ value, isError, icon = false }) => {
+// --- COMPONENTES AUXILIARES MEMORIZADOS ---
+
+const ErrorAwareCell = React.memo(({ value, isError, icon = false }) => {
   if (isError) {
     return (
       <div className="flex items-center gap-1.5 text-red-600 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-2 py-1 rounded-md w-fit">
@@ -42,25 +44,41 @@ const ErrorAwareCell = ({ value, isError, icon = false }) => {
       <span className="text-sm text-gray-700 dark:text-gray-300">{value}</span>
     </div>
   );
-};
+});
 
-const EditableCell = ({ value, onChange, placeholder = "..." }) => (
-  <div className="relative w-full">
-    <input
-      type="text"
-      value={value !== undefined && value !== null ? value : ""}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      className="w-full min-w-[100px] bg-white dark:bg-[#262626] border border-gray-300 dark:border-gray-600 rounded px-2 py-1.5 text-sm outline-none transition-all placeholder-gray-400 focus:ring-2 focus:ring-[#1a9888] focus:border-transparent dark:text-gray-200"
-    />
-    <Edit3
-      size={12}
-      className="absolute right-2 top-2.5 text-gray-400 pointer-events-none opacity-50"
-    />
-  </div>
-);
+const EditableCell = React.memo(({ value, onChange, placeholder = "..." }) => {
+  const [localValue, setLocalValue] = useState(value || "");
 
-const ClassificationBadge = ({ value }) => {
+  useEffect(() => {
+    setLocalValue(value || "");
+  }, [value]);
+
+  const onBlur = () => {
+    if (localValue !== value) {
+      onChange(localValue);
+    }
+  };
+
+  return (
+    <div className="relative w-full">
+      <input
+        type="text"
+        value={localValue}
+        onChange={(e) => setLocalValue(e.target.value)}
+        onBlur={onBlur}
+        onKeyDown={(e) => e.key === "Enter" && onBlur()}
+        placeholder={placeholder}
+        className="w-full bg-white dark:bg-[#262626] border border-gray-300 dark:border-gray-600 rounded px-2 py-1.5 text-sm outline-none transition-all placeholder-gray-400 focus:ring-2 focus:ring-[#1a9888] focus:border-transparent dark:text-gray-200"
+      />
+      <Edit3
+        size={12}
+        className="absolute right-2 top-2.5 text-gray-400 pointer-events-none opacity-50"
+      />
+    </div>
+  );
+});
+
+const ClassificationBadge = React.memo(({ value }) => {
   const letter = (value || "").toString().toUpperCase().charAt(0);
 
   const colorMap = {
@@ -85,7 +103,223 @@ const ClassificationBadge = ({ value }) => {
       </span>
     </div>
   );
-};
+});
+
+// --- COMPONENTE FILA ---
+const CompanyRow = React.memo(
+  ({
+    row,
+    isSelected,
+    toggleSelect,
+    handleCompanyChange,
+    handleSave,
+    formatCurrency,
+  }) => {
+    // --- HELPER PARA RENDERIZAR TEXTO CON COLORES ---
+    const renderStyledContent = (textString) => {
+      if (!textString) return "-";
+
+      // Separamos por " / " que es como lo unimos en el hook
+      const parts = textString.split(" / ");
+
+      return (
+        <div className="flex flex-col gap-1">
+          {parts.map((part, index) => {
+            let colorClass = "text-gray-600 dark:text-gray-400"; // Por defecto
+
+            // Lógica de colores pedida: Venta=Verde, Cobranza=Azul
+            if (part.startsWith("V:")) {
+              colorClass = "text-green-700 dark:text-green-400 font-medium";
+            } else if (part.startsWith("C:")) {
+              colorClass = "text-blue-700 dark:text-blue-400 font-medium";
+            }
+
+            return (
+              <span
+                key={index}
+                className={`${colorClass} break-words whitespace-normal leading-tight text-xs`}
+              >
+                {part}
+              </span>
+            );
+          })}
+        </div>
+      );
+    };
+
+    // Helper para generar celdas de días
+    const renderDayCells = (dayPrefix, bgColorClass, borderClass = "") => {
+      return (
+        <>
+          {/* ACCIÓN (Solo Lectura con Colores) */}
+          <Td className={`${bgColorClass} min-w-[150px] align-top`}>
+            <div className="px-2 py-1.5">
+              {renderStyledContent(row[`${dayPrefix}_accion`])}
+            </div>
+          </Td>
+
+          {/* OBSERVACIÓN (Solo Lectura con Colores) */}
+          <Td className={`${bgColorClass} min-w-[150px] align-top`}>
+            <div className="px-2 py-1.5 italic">
+              {renderStyledContent(row[`${dayPrefix}_observacion`])}
+            </div>
+          </Td>
+
+          {/* TAREA (Editable) */}
+          <Td
+            className={`${bgColorClass} ${borderClass} min-w-[150px] align-top`}
+          >
+            <EditableCell
+              value={row[`${dayPrefix}_tarea`]}
+              onChange={(val) =>
+                handleCompanyChange(row.id_interno, `${dayPrefix}_tarea`, val)
+              }
+              placeholder="Tarea..."
+            />
+          </Td>
+        </>
+      );
+    };
+
+    return (
+      <Tr className={isSelected ? "bg-teal-50/30 dark:bg-teal-900/10" : ""}>
+        {/* Checkbox */}
+        <Td className="bg-white dark:bg-[#191919] border-r dark:border-[#333] text-center">
+          <input
+            type="checkbox"
+            className="w-4 h-4 accent-[#1a9888] cursor-pointer"
+            checked={isSelected}
+            onChange={() => toggleSelect(row.id_interno)}
+          />
+        </Td>
+
+        {/* Datos Básicos */}
+        <Td className="bg-gray-50 dark:bg-[#202020] text-xs font-mono">
+          {row.id}
+        </Td>
+        <Td className="text-left font-semibold bg-white dark:bg-[#191919] border-r shadow-md">
+          <div
+            className="flex items-center gap-2 truncate max-w-[280px]"
+            title={row.nombre}
+          >
+            {row.nombre}
+          </div>
+        </Td>
+
+        {/* Celdas Informativas (Bitrix/Profit) */}
+        <Td>
+          <ErrorAwareCell
+            value={row.codigo_profit}
+            isError={!row.codigo_profit || row.codigo_profit === "0"}
+          />
+        </Td>
+        <Td>{row.ciudad}</Td>
+        <Td>
+          <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full dark:bg-blue-900/30 dark:text-blue-200">
+            {row.segmento}
+          </span>
+        </Td>
+        <Td>
+          <ErrorAwareCell
+            value={row.coordenadas}
+            isError={!row.coordenadas || row.coordenadas === "0"}
+            icon={<MapPin size={12} />}
+          />
+        </Td>
+        <Td className="text-xs truncate max-w-[140px]" title={row.dias_visita}>
+          {row.dias_visita || "-"}
+        </Td>
+        <Td>{row.convenio}</Td>
+        <Td align="right" className="font-mono text-xs">
+          {row.limite_credito}
+        </Td>
+        <Td align="right" className="font-mono text-xs">
+          {formatCurrency(row.saldo_transito)}
+        </Td>
+        <Td
+          align="right"
+          className={`font-mono text-xs font-bold ${
+            row.saldo_vencido > 0 ? "text-red-600" : "text-green-600"
+          }`}
+        >
+          {formatCurrency(row.saldo_vencido)}
+        </Td>
+        <Td className="text-xs">{row.fecha_compra}</Td>
+        <Td
+          className="text-xs text-red-500 truncate max-w-[120px]"
+          title={row.factura_morosidad}
+        >
+          {row.factura_morosidad}
+        </Td>
+        <Td align="right" className="font-mono text-xs">
+          {formatCurrency(row.ultimo_cobro)}
+        </Td>
+        <Td>{row.sku_mes}</Td>
+        <Td>
+          <ClassificationBadge value={row.clasificacion} />
+        </Td>
+        <Td
+          align="right"
+          className="font-mono text-xs text-blue-600 bg-gray-50 dark:bg-[#202020]"
+        >
+          {formatCurrency(row.ventas_actual)}
+        </Td>
+        <Td
+          align="right"
+          className="font-mono text-xs text-gray-500 bg-gray-50 dark:bg-[#202020]"
+        >
+          {formatCurrency(row.ventas_anterior)}
+        </Td>
+
+        {/* --- SECCIÓN GESTIÓN (Inputs Grandes Editables) --- */}
+        <Td className="bg-gray-50 dark:bg-gray-800 border-l border-gray-200 dark:border-[#333] min-w-[300px]">
+          <EditableCell
+            value={row.bitacora}
+            onChange={(val) =>
+              handleCompanyChange(row.id_interno, "bitacora", val)
+            }
+            placeholder="Bitácora..."
+          />
+        </Td>
+        <Td className="bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-[#333] min-w-[300px]">
+          <EditableCell
+            value={row.obs_ejecutiva}
+            onChange={(val) =>
+              handleCompanyChange(row.id_interno, "obs_ejecutiva", val)
+            }
+            placeholder="Observación Ejecutiva..."
+          />
+        </Td>
+
+        {/* --- AGENDA SEMANAL --- */}
+        {renderDayCells("lunes", "bg-indigo-50 dark:bg-indigo-900/20")}
+        {renderDayCells("martes", "bg-white dark:bg-[#1e1e1e]")}
+        {renderDayCells("miercoles", "bg-indigo-50 dark:bg-indigo-900/20")}
+        {renderDayCells("jueves", "bg-white dark:bg-[#1e1e1e]")}
+        {renderDayCells(
+          "viernes",
+          "bg-indigo-50 dark:bg-indigo-900/20",
+          "border-r border-gray-200 dark:border-[#333]",
+        )}
+
+        {/* Guardar */}
+        <Td
+          stickyRight
+          className="bg-white dark:bg-[#191919] border-l shadow-[-4px_0_5px_-2px_rgba(0,0,0,0.1)]"
+        >
+          <div className="flex justify-center">
+            <button
+              onClick={() => handleSave(row)}
+              className="p-2 text-white bg-[#1a9888] hover:bg-[#137a6d] rounded-lg transition shadow-sm"
+            >
+              <Save size={16} />
+            </button>
+          </div>
+        </Td>
+      </Tr>
+    );
+  },
+);
 
 // --- COMPONENTE PRINCIPAL ---
 const BaseDatosBitrix = () => {
@@ -99,60 +333,57 @@ const BaseDatosBitrix = () => {
     goToPage,
   } = useBaseDatosBitrix();
 
-  // --- ESTADOS ---
   const [jumpPage, setJumpPage] = useState("");
   const [selectedIds, setSelectedIds] = useState([]);
   const [showOnlySelected, setShowOnlySelected] = useState(false);
-  const [searchTerm, setSearchTerm] = useState(""); // <--- NUEVO ESTADO PARA BÚSQUEDA
+  const [searchTerm, setSearchTerm] = useState("");
 
-  // --- LÓGICA DE SELECCIÓN ---
-  const toggleSelect = (id_interno) => {
+  const toggleSelect = useCallback((id_interno) => {
     setSelectedIds((prev) =>
       prev.includes(id_interno)
         ? prev.filter((id) => id !== id_interno)
-        : [...prev, id_interno]
+        : [...prev, id_interno],
     );
-  };
+  }, []);
 
-  const toggleSelectAll = (checked) => {
-    if (checked) {
-      const allIds = companies.map((c) => c.id_interno);
-      setSelectedIds(allIds);
-    } else {
-      setSelectedIds([]);
+  const toggleSelectAll = useCallback(
+    (checked) => {
+      if (checked) {
+        const allIds = companies.map((c) => c.id_interno);
+        setSelectedIds(allIds);
+      } else {
+        setSelectedIds([]);
+      }
+    },
+    [companies],
+  );
+
+  const displayedCompanies = useMemo(() => {
+    let result = companies;
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(
+        (company) =>
+          company.nombre?.toLowerCase().includes(term) ||
+          company.id?.toString().includes(term) ||
+          company.codigo_profit?.toLowerCase().includes(term) ||
+          company.ciudad?.toLowerCase().includes(term),
+      );
     }
-  };
+    if (showOnlySelected) {
+      result = result.filter((c) => selectedIds.includes(c.id_interno));
+    }
+    return result;
+  }, [companies, searchTerm, showOnlySelected, selectedIds]);
 
-  // --- LÓGICA DE FILTRADO (Buscador + Switch Seleccionados) ---
-  // 1. Primero filtramos por búsqueda
-  const companiesFilteredBySearch = companies.filter((company) => {
-    if (!searchTerm) return true;
-    const term = searchTerm.toLowerCase();
-
-    // Puedes añadir más campos aquí si lo necesitas
-    return (
-      company.nombre?.toLowerCase().includes(term) ||
-      company.id?.toString().includes(term) ||
-      company.codigo_profit?.toLowerCase().includes(term) ||
-      company.ciudad?.toLowerCase().includes(term)
-    );
-  });
-
-  // 2. Luego filtramos por "Mostrar solo seleccionados"
-  const displayedCompanies = showOnlySelected
-    ? companiesFilteredBySearch.filter((c) =>
-        selectedIds.includes(c.id_interno)
-      )
-    : companiesFilteredBySearch;
-
-  const formatCurrency = (amount) => {
+  const formatCurrency = useCallback((amount) => {
     return new Intl.NumberFormat("es-VE", {
       style: "currency",
       currency: "USD",
     }).format(amount || 0);
-  };
+  }, []);
 
-  const handleSave = async (companyData) => {
+  const handleSave = useCallback(async (companyData) => {
     const payload = {
       id_bitrix: companyData.id,
       codigo_profit: companyData.codigo_profit,
@@ -162,29 +393,37 @@ const BaseDatosBitrix = () => {
         semana: {
           lunes: {
             accion: companyData.lunes_accion,
-            ejecucion: companyData.lunes_ejecucion,
+            observacion: companyData.lunes_observacion,
+            tarea: companyData.lunes_tarea,
           },
           martes: {
             accion: companyData.martes_accion,
-            ejecucion: companyData.martes_ejecucion,
+            observacion: companyData.martes_observacion,
+            tarea: companyData.martes_tarea,
           },
           miercoles: {
             accion: companyData.miercoles_accion,
-            ejecucion: companyData.miercoles_ejecucion,
+            observacion: companyData.miercoles_observacion,
+            tarea: companyData.miercoles_tarea,
           },
           jueves: {
             accion: companyData.jueves_accion,
-            ejecucion: companyData.jueves_ejecucion,
+            observacion: companyData.jueves_observacion,
+            tarea: companyData.jueves_tarea,
           },
           viernes: {
             accion: companyData.viernes_accion,
-            ejecucion: companyData.viernes_ejecucion,
+            observacion: companyData.viernes_observacion,
+            tarea: companyData.viernes_tarea,
           },
         },
       },
       full_data: companyData,
     };
-
+    console.log(
+      "📦 PAYLOAD QUE SE ENVÍA AL BACKEND:",
+      JSON.stringify(payload, null, 2),
+    );
     try {
       const response = await apiService.saveConfig(payload);
       if (response) {
@@ -194,7 +433,7 @@ const BaseDatosBitrix = () => {
       console.error("❌ Error al guardar:", error);
       alert(`⚠️ Error al guardar datos de ${companyData.nombre}.`);
     }
-  };
+  }, []);
 
   const handleJumpSubmit = (e) => {
     e.preventDefault();
@@ -269,7 +508,7 @@ const BaseDatosBitrix = () => {
               <strong>
                 {
                   companies.filter(
-                    (c) => !c.codigo_profit || c.codigo_profit === "0"
+                    (c) => !c.codigo_profit || c.codigo_profit === "0",
                   ).length
                 }
               </strong>
@@ -287,8 +526,8 @@ const BaseDatosBitrix = () => {
         ) : (
           <Table>
             <Thead>
+              {/* Nivel 1 Header */}
               <Tr className="bg-gray-50 dark:bg-[#1e1e1e] border-b-0">
-                {/* Checkbox Global */}
                 <Th className="bg-white dark:bg-[#191919] w-12 text-center border-r dark:border-[#333]">
                   <input
                     type="checkbox"
@@ -313,90 +552,147 @@ const BaseDatosBitrix = () => {
                   Datos Bitrix
                 </Th>
                 <Th
-                  colSpan={8}
+                  colSpan={5}
                   className="border-b border-r border-gray-200 dark:border-[#333] bg-green-50 dark:bg-green-900 text-green-600 text-center"
                 >
                   Datos Profit
                 </Th>
                 <Th
-                  colSpan={2}
-                  className="border-b border-r border-gray-200 dark:border-[#333] text-purple-600 text-center bg-white dark:bg-[#1e1e1e]"
+                  colSpan={5}
+                  className="border-b border-r border-gray-200 dark:border-[#333] text-purple-600 text-center bg-indigo-200 dark:bg-indigo-800"
                 >
                   Ventas
                 </Th>
                 <Th
                   colSpan={2}
-                  className="border-b border-r border-gray-200 dark:border-[#333] text-gray-600 font-bold bg-gray-100 dark:bg-gray-800 text-center"
+                  className="border-b border-r border-orange-300 dark:border-[#333] text-orange-600 font-bold bg-orange-200 dark:bg-orange-800 text-center"
                 >
                   Gestión
                 </Th>
                 <Th
-                  colSpan={10}
+                  colSpan={15}
                   className="border-b border-r border-gray-200 dark:border-[#333] text-indigo-600 bg-indigo-50 dark:bg-indigo-900 text-center"
                 >
-                  Agenda Semanal
+                  Agenda Semanal (Acción / Obs / Tarea)
                 </Th>
                 <Th className="bg-white dark:bg-[#191919] border-l border-gray-200 dark:border-[#333]"></Th>
               </Tr>
+
+              {/* Nivel 2 Header */}
               <Tr>
                 <Th className="bg-white dark:bg-[#191919] border-r dark:border-[#333]"></Th>
                 <Th className="min-w-[60px] bg-white dark:bg-[#191919]">ID</Th>
                 <Th className="min-w-[200px] text-left bg-white dark:bg-[#191919] shadow-md">
                   Nombre
                 </Th>
-                <Th className="min-w-[120px]">Cód. Profit</Th>
-                <Th className="min-w-[140px]">Ciudad</Th>
-                <Th className="min-w-[140px]">Segmento</Th>
-                <Th className="min-w-[160px]">Coordenadas</Th>
-                <Th className="min-w-[200px]">Días Visita</Th>
-                <Th className="min-w-[100px]">Convenio</Th>
-                <Th className="min-w-[110px]">Límite</Th>
-                <Th className="min-w-[110px]">Tránsito</Th>
-                <Th className="min-w-[110px]">Vencido</Th>
-                <Th className="min-w-[100px]">F. Compra</Th>
-                <Th className="min-w-[200px]">F. Morosidad</Th>
-                <Th className="min-w-[110px]">Últ. Cobro</Th>
-                <Th className="min-w-[70px]">SKU</Th>
-                <Th className="min-w-[70px]">Clasif.</Th>
-                <Th className="min-w-[110px]">Actual</Th>
-                <Th className="min-w-[110px]">Anterior</Th>
-                <Th className="min-w-[160px] bg-gray-100 dark:bg-gray-800">
+                <Th className="min-w-[120px] bg-blue-50 dark:bg-blue-800 font-bold">
+                  Cód. Profit
+                </Th>
+                <Th className="min-w-[140px] bg-blue-50 dark:bg-blue-800 font-bold">
+                  Ciudad
+                </Th>
+                <Th className="min-w-[140px] bg-blue-50 dark:bg-blue-800 font-bold">
+                  Segmento
+                </Th>
+                <Th className="min-w-[160px] bg-blue-50 dark:bg-blue-800 font-bold">
+                  Coordenadas
+                </Th>
+                <Th className="min-w-[200px] bg-blue-50 dark:bg-blue-800 font-bold">
+                  Días Visita
+                </Th>
+                <Th className="min-w-[100px] bg-blue-50 dark:bg-blue-800 font-bold">
+                  Convenio
+                </Th>
+                <Th className="min-w-[110px] bg-green-50 dark:bg-green-800 font-bold">
+                  Límite
+                </Th>
+                <Th className="min-w-[110px] bg-green-50 dark:bg-green-800 font-bold">
+                  Tránsito
+                </Th>
+                <Th className="min-w-[110px] bg-green-50 dark:bg-green-800 font-bold">
+                  Vencido
+                </Th>
+                <Th className="min-w-[100px] bg-green-50 dark:bg-green-800 font-bold">
+                  F. Compra
+                </Th>
+                <Th className="min-w-[200px] bg-green-50 dark:bg-green-800 font-bold">
+                  F. Morosidad
+                </Th>
+                <Th className="min-w-[110px] bg-indigo-200 dark:bg-indigo-800 font-bold">
+                  Últ. Cobro
+                </Th>
+                <Th className="min-w-[70px] bg-indigo-200 dark:bg-indigo-800 font-bold">
+                  SKU
+                </Th>
+                <Th className="min-w-[70px] bg-indigo-200 dark:bg-indigo-800 font-bold">
+                  Clasif.
+                </Th>
+                <Th className="min-w-[110px] bg-indigo-200 dark:bg-indigo-800 font-bold">
+                  Actual
+                </Th>
+                <Th className="min-w-[110px] bg-indigo-200 dark:bg-indigo-800 font-bold">
+                  Anterior
+                </Th>
+
+                {/* GESTIÓN */}
+                <Th className="min-w-[300px] text-orange-600 font-bold bg-orange-200 dark:bg-orange-800">
                   Bitácora
                 </Th>
-                <Th className="min-w-[160px] bg-gray-100 dark:bg-gray-800">
+                <Th className="min-w-[300px] text-orange-600 font-bold bg-orange-200 dark:bg-orange-800">
                   Obs. Ejec.
                 </Th>
-                {/* Días de la semana ... */}
-                <Th className="min-w-[140px] bg-indigo-50 dark:bg-indigo-900">
+
+                {/* AGENDA SEMANAL */}
+                <Th className="min-w-[150px] bg-indigo-50 dark:bg-indigo-900">
                   Lun-Acc
                 </Th>
-                <Th className="min-w-[140px] bg-indigo-50 dark:bg-indigo-900">
-                  Lun-Eje
+                <Th className="min-w-[150px] bg-indigo-50 dark:bg-indigo-900">
+                  Lun-Obs
                 </Th>
-                <Th className="min-w-[140px] bg-white dark:bg-[#1e1e1e]">
+                <Th className="min-w-[150px] bg-indigo-50 dark:bg-indigo-900">
+                  Lun-Tar
+                </Th>
+
+                <Th className="min-w-[150px] bg-white dark:bg-[#1e1e1e]">
                   Mar-Acc
                 </Th>
-                <Th className="min-w-[140px] bg-white dark:bg-[#1e1e1e]">
-                  Mar-Eje
+                <Th className="min-w-[150px] bg-white dark:bg-[#1e1e1e]">
+                  Mar-Obs
                 </Th>
-                <Th className="min-w-[140px] bg-indigo-50 dark:bg-indigo-900">
+                <Th className="min-w-[150px] bg-white dark:bg-[#1e1e1e]">
+                  Mar-Tar
+                </Th>
+
+                <Th className="min-w-[150px] bg-indigo-50 dark:bg-indigo-900">
                   Mie-Acc
                 </Th>
-                <Th className="min-w-[140px] bg-indigo-50 dark:bg-indigo-900">
-                  Mie-Eje
+                <Th className="min-w-[150px] bg-indigo-50 dark:bg-indigo-900">
+                  Mie-Obs
                 </Th>
-                <Th className="min-w-[140px] bg-white dark:bg-[#1e1e1e]">
+                <Th className="min-w-[150px] bg-indigo-50 dark:bg-indigo-900">
+                  Mie-Tar
+                </Th>
+
+                <Th className="min-w-[150px] bg-white dark:bg-[#1e1e1e]">
                   Jue-Acc
                 </Th>
-                <Th className="min-w-[140px] bg-white dark:bg-[#1e1e1e]">
-                  Jue-Eje
+                <Th className="min-w-[150px] bg-white dark:bg-[#1e1e1e]">
+                  Jue-Obs
                 </Th>
-                <Th className="min-w-[140px] bg-indigo-50 dark:bg-indigo-900">
+                <Th className="min-w-[150px] bg-white dark:bg-[#1e1e1e]">
+                  Jue-Tar
+                </Th>
+
+                <Th className="min-w-[150px] bg-indigo-50 dark:bg-indigo-900">
                   Vie-Acc
                 </Th>
-                <Th className="min-w-[140px] bg-indigo-50 dark:bg-indigo-900">
-                  Vie-Eje
+                <Th className="min-w-[150px] bg-indigo-50 dark:bg-indigo-900">
+                  Vie-Obs
                 </Th>
+                <Th className="min-w-[150px] bg-indigo-50 dark:bg-indigo-900">
+                  Vie-Tar
+                </Th>
+
                 <Th className="min-w-[80px] bg-white dark:bg-[#191919] border-l shadow-[-4px_0_5px_-2px_rgba(0,0,0,0.1)] text-center">
                   Guardar
                 </Th>
@@ -406,356 +702,19 @@ const BaseDatosBitrix = () => {
             <Tbody>
               {displayedCompanies.length > 0 ? (
                 displayedCompanies.map((row) => (
-                  <Tr
+                  <CompanyRow
                     key={row.id_interno}
-                    className={
-                      selectedIds.includes(row.id_interno)
-                        ? "bg-teal-50/30 dark:bg-teal-900/10"
-                        : ""
-                    }
-                  >
-                    {/* Celda de Checkbox */}
-                    <Td className="bg-white dark:bg-[#191919] border-r dark:border-[#333] text-center">
-                      <input
-                        type="checkbox"
-                        className="w-4 h-4 accent-[#1a9888] cursor-pointer"
-                        checked={selectedIds.includes(row.id_interno)}
-                        onChange={() => toggleSelect(row.id_interno)}
-                      />
-                    </Td>
-
-                    <Td className="bg-gray-50 dark:bg-[#202020] text-xs font-mono">
-                      {row.id}
-                    </Td>
-                    <Td className="text-left font-semibold bg-white dark:bg-[#191919] border-r shadow-md">
-                      <div
-                        className="flex items-center gap-2 truncate max-w-[280px]"
-                        title={row.nombre}
-                      >
-                        {row.nombre}
-                      </div>
-                    </Td>
-
-                    {/* Celdas de Datos (Igual al original) */}
-                    <Td>
-                      <ErrorAwareCell
-                        value={row.codigo_profit}
-                        isError={
-                          !row.codigo_profit || row.codigo_profit === "0"
-                        }
-                      />
-                    </Td>
-                    <Td>{row.ciudad}</Td>
-                    <Td>
-                      <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full dark:bg-blue-900/30 dark:text-blue-200">
-                        {row.segmento}
-                      </span>
-                    </Td>
-                    <Td>
-                      <ErrorAwareCell
-                        value={row.coordenadas}
-                        isError={!row.coordenadas || row.coordenadas === "0"}
-                        icon={<MapPin size={12} />}
-                      />
-                    </Td>
-                    <Td
-                      className="text-xs truncate max-w-[140px]"
-                      title={row.dias_visita}
-                    >
-                      {row.dias_visita || "-"}
-                    </Td>
-                    <Td>{row.convenio}</Td>
-                    <Td align="right" className="font-mono text-xs">
-                      {row.limite_credito}
-                    </Td>
-                    <Td align="right" className="font-mono text-xs">
-                      {formatCurrency(row.saldo_transito)}
-                    </Td>
-                    <Td
-                      align="right"
-                      className={`font-mono text-xs font-bold ${
-                        row.saldo_vencido > 0
-                          ? "text-red-600"
-                          : "text-green-600"
-                      }`}
-                    >
-                      {formatCurrency(row.saldo_vencido)}
-                    </Td>
-                    <Td className="text-xs">{row.fecha_compra}</Td>
-                    <Td
-                      className="text-xs text-red-500 truncate max-w-[120px]"
-                      title={row.factura_morosidad}
-                    >
-                      {row.factura_morosidad}
-                    </Td>
-                    <Td align="right" className="font-mono text-xs">
-                      {formatCurrency(row.ultimo_cobro)}
-                    </Td>
-                    <Td>{row.sku_mes}</Td>
-                    <Td>
-                      <ClassificationBadge value={row.clasificacion} />
-                    </Td>
-                    <Td
-                      align="right"
-                      className="font-mono text-xs text-blue-600 bg-gray-50 dark:bg-[#202020]"
-                    >
-                      {formatCurrency(row.ventas_actual)}
-                    </Td>
-                    <Td
-                      align="right"
-                      className="font-mono text-xs text-gray-500 bg-gray-50 dark:bg-[#202020]"
-                    >
-                      {formatCurrency(row.ventas_anterior)}
-                    </Td>
-
-                    {/* Celdas Editables */}
-                    <Td className="bg-gray-50 dark:bg-gray-800 border-l border-gray-200 dark:border-[#333]">
-                      <EditableCell
-                        value={row.bitacora}
-                        onChange={(val) =>
-                          handleCompanyChange(row.id_interno, "bitacora", val)
-                        }
-                      />
-                    </Td>
-                    <Td className="bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-[#333]">
-                      <EditableCell
-                        value={row.obs_ejecutiva}
-                        onChange={(val) =>
-                          handleCompanyChange(
-                            row.id_interno,
-                            "obs_ejecutiva",
-                            val
-                          )
-                        }
-                      />
-                    </Td>
-
-                    {/* Lunes */}
-                    <Td className="bg-indigo-50 dark:bg-indigo-900/20">
-                      <EditableCell
-                        value={row.lunes_accion}
-                        onChange={(val) =>
-                          handleCompanyChange(
-                            row.id_interno,
-                            "lunes_accion",
-                            val
-                          )
-                        }
-                      />
-                    </Td>
-                    <Td className="bg-indigo-50 dark:bg-indigo-900/20 border-r border-gray-200 dark:border-[#333]">
-                      {/* Si no hay nada, muestra guion */}
-                      {!row.gestion?.venta_descripcion &&
-                      !row.gestion?.cobranza_descripcion ? (
-                        "-"
-                      ) : (
-                        <div className="flex flex-col gap-1">
-                          {/* Venta */}
-                          {row.gestion?.venta_descripcion && (
-                            <span
-                              className="text-blue-600 block truncate max-w-[180px]"
-                              title={row.gestion.venta_descripcion}
-                            >
-                              V: {row.gestion.venta_descripcion}
-                            </span>
-                          )}
-                          {/* Cobranza */}
-                          {row.gestion?.cobranza_descripcion && (
-                            <span
-                              className="text-teal-600 block truncate max-w-[180px]"
-                              title={row.gestion.cobranza_descripcion}
-                            >
-                              C: {row.gestion.cobranza_descripcion}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </Td>
-                    {/* <Td className="bg-indigo-50 dark:bg-indigo-900/20 border-r border-gray-200 dark:border-[#333]"><SelectCell value={row.lunes_ejecucion} onChange={(val) => handleCompanyChange(row.id_interno, 'lunes_ejecucion', val)} options={OPCIONES_EJECUCION} /></Td> */}
-                    {/* Martes */}
-                    <Td>
-                      <EditableCell
-                        value={row.martes_accion}
-                        onChange={(val) =>
-                          handleCompanyChange(
-                            row.id_interno,
-                            "martes_accion",
-                            val
-                          )
-                        }
-                      />
-                    </Td>
-                    <Td className=" dark:border-[#333]">
-                      {/* Si no hay nada, muestra guion */}
-                      {!row.gestion?.venta_descripcion &&
-                      !row.gestion?.cobranza_descripcion ? (
-                        "-"
-                      ) : (
-                        <div className="flex flex-col gap-1">
-                          {/* Venta */}
-                          {row.gestion?.venta_descripcion && (
-                            <span
-                              className="text-blue-600 block truncate max-w-[180px]"
-                              title={row.gestion.venta_descripcion}
-                            >
-                              V: {row.gestion.venta_descripcion}
-                            </span>
-                          )}
-                          {/* Cobranza */}
-                          {row.gestion?.cobranza_descripcion && (
-                            <span
-                              className="text-teal-600 block truncate max-w-[180px]"
-                              title={row.gestion.cobranza_descripcion}
-                            >
-                              C: {row.gestion.cobranza_descripcion}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </Td>
-                    {/* Miércoles */}
-                    <Td className="bg-indigo-50 dark:bg-indigo-900/20">
-                      <EditableCell
-                        value={row.miercoles_accion}
-                        onChange={(val) =>
-                          handleCompanyChange(
-                            row.id_interno,
-                            "miercoles_accion",
-                            val
-                          )
-                        }
-                      />
-                    </Td>
-                    <Td className="bg-indigo-50 dark:bg-indigo-900/20 border-r border-gray-200 dark:border-[#333]">
-                      {/* Si no hay nada, muestra guion */}
-                      {!row.gestion?.venta_descripcion &&
-                      !row.gestion?.cobranza_descripcion ? (
-                        "-"
-                      ) : (
-                        <div className="flex flex-col gap-1">
-                          {/* Venta */}
-                          {row.gestion?.venta_descripcion && (
-                            <span
-                              className="text-blue-600 block truncate max-w-[180px]"
-                              title={row.gestion.venta_descripcion}
-                            >
-                              V: {row.gestion.venta_descripcion}
-                            </span>
-                          )}
-                          {/* Cobranza */}
-                          {row.gestion?.cobranza_descripcion && (
-                            <span
-                              className="text-teal-600 block truncate max-w-[180px]"
-                              title={row.gestion.cobranza_descripcion}
-                            >
-                              C: {row.gestion.cobranza_descripcion}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </Td>
-                    {/* Jueves */}
-                    <Td>
-                      <EditableCell
-                        value={row.jueves_accion}
-                        onChange={(val) =>
-                          handleCompanyChange(
-                            row.id_interno,
-                            "jueves_accion",
-                            val
-                          )
-                        }
-                      />
-                    </Td>
-                    <Td className="dark:border-[#333]">
-                      {/* Si no hay nada, muestra guion */}
-                      {!row.gestion?.venta_descripcion &&
-                      !row.gestion?.cobranza_descripcion ? (
-                        "-"
-                      ) : (
-                        <div className="flex flex-col gap-1">
-                          {/* Venta */}
-                          {row.gestion?.venta_descripcion && (
-                            <span
-                              className="text-blue-600 block truncate max-w-[180px]"
-                              title={row.gestion.venta_descripcion}
-                            >
-                              V: {row.gestion.venta_descripcion}
-                            </span>
-                          )}
-                          {/* Cobranza */}
-                          {row.gestion?.cobranza_descripcion && (
-                            <span
-                              className="text-teal-600 block truncate max-w-[180px]"
-                              title={row.gestion.cobranza_descripcion}
-                            >
-                              C: {row.gestion.cobranza_descripcion}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </Td>
-                    {/* Viernes */}
-                    <Td className="bg-indigo-50 dark:bg-indigo-900/20">
-                      <EditableCell
-                        value={row.viernes_accion}
-                        onChange={(val) =>
-                          handleCompanyChange(
-                            row.id_interno,
-                            "viernes_accion",
-                            val
-                          )
-                        }
-                      />
-                    </Td>
-                    <Td className="bg-indigo-50 dark:bg-indigo-900/20 border-r border-gray-200 dark:border-[#333]">
-                      {/* Si no hay nada, muestra guion */}
-                      {!row.gestion?.venta_descripcion &&
-                      !row.gestion?.cobranza_descripcion ? (
-                        "-"
-                      ) : (
-                        <div className="flex flex-col gap-1">
-                          {/* Venta */}
-                          {row.gestion?.venta_descripcion && (
-                            <span
-                              className="text-blue-600 block truncate max-w-[180px]"
-                              title={row.gestion.venta_descripcion}
-                            >
-                              V: {row.gestion.venta_descripcion}
-                            </span>
-                          )}
-                          {/* Cobranza */}
-                          {row.gestion?.cobranza_descripcion && (
-                            <span
-                              className="text-teal-600 block truncate max-w-[180px]"
-                              title={row.gestion.cobranza_descripcion}
-                            >
-                              C: {row.gestion.cobranza_descripcion}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </Td>
-
-                    {/* Guardar */}
-                    <Td
-                      stickyRight
-                      className="bg-white dark:bg-[#191919] border-l shadow-[-4px_0_5px_-2px_rgba(0,0,0,0.1)]"
-                    >
-                      <div className="flex justify-center">
-                        <button
-                          onClick={() => handleSave(row)}
-                          className="p-2 text-white bg-[#1a9888] hover:bg-[#137a6d] rounded-lg transition shadow-sm"
-                        >
-                          <Save size={16} />
-                        </button>
-                      </div>
-                    </Td>
-                  </Tr>
+                    row={row}
+                    isSelected={selectedIds.includes(row.id_interno)}
+                    toggleSelect={toggleSelect}
+                    handleCompanyChange={handleCompanyChange}
+                    handleSave={handleSave}
+                    formatCurrency={formatCurrency}
+                  />
                 ))
               ) : (
                 <Tr>
-                  <Td colSpan={30} className="text-center py-8 text-gray-500">
+                  <Td colSpan={40} className="text-center py-8 text-gray-500">
                     No se encontraron resultados para tu búsqueda.
                   </Td>
                 </Tr>

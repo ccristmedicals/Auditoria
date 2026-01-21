@@ -1,16 +1,50 @@
+/* eslint-disable no-unused-vars */
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect, useCallback } from "react";
 import { apiService } from "../services/apiService";
 
-// Nueva estructura basada en el Excel
+// --- CREAR AUDITORIA DIARIA ---
 const createDailyAudit = () => ({
-  inicio_whatsapp: { e: false, c: false }, // E, C
-  accion_venta: { e: false, p: false, n: false }, // E, P, N
-  accion_cobranza: { e: false, p: false, n: false }, // E, P, N
-  llamadas_venta: { e: false, p: false, n: false }, // E, P, N
-  llamadas_cobranza: { e: false, p: false, n: false }, // E, P, N
-  visitas_asesor: { pla: "", accion: "", dif_coordenada: "", obs_vendedor: "" }, // Nueva seccion
+  inicio_whatsapp: { e: false, c: false },
+  accion_venta: { e: false, p: false, n: false },
+  accion_cobranza: { e: false, p: false, n: false },
+  llamadas_venta: { e: false, p: false, n: false },
+  llamadas_cobranza: { e: false, p: false, n: false },
+  // visitas_asesor ahora se calculará dinámicamente en AuditRow, pero mantenemos estructura
   observacion: "",
 });
+
+// --- FUNCIÓN DE CÁLCULO DE DISTANCIA (Haversine Formula) ---
+// Retorna distancia en METROS
+const calculateDistance = (coord1, coord2) => {
+  if (!coord1 || !coord2) return null;
+
+  try {
+    const [lat1, lon1] = coord1.split(",").map((s) => parseFloat(s.trim()));
+    const [lat2, lon2] = coord2.split(",").map((s) => parseFloat(s.trim()));
+
+    if (isNaN(lat1) || isNaN(lon1) || isNaN(lat2) || isNaN(lon2)) return null;
+
+    const R = 6371e3; // Radio de la tierra en metros
+    const phi1 = (lat1 * Math.PI) / 180;
+    const phi2 = (lat2 * Math.PI) / 180;
+    const deltaPhi = ((lat2 - lat1) * Math.PI) / 180;
+    const deltaLambda = ((lon2 - lon1) * Math.PI) / 180;
+
+    const a =
+      Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
+      Math.cos(phi1) *
+        Math.cos(phi2) *
+        Math.sin(deltaLambda / 2) *
+        Math.sin(deltaLambda / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    const distance = R * c; // en metros
+    return Math.round(distance); // Retornamos entero
+  } catch (e) {
+    return null;
+  }
+};
 
 export const useAuditoria = () => {
   const [data, setData] = useState([]);
@@ -40,7 +74,9 @@ export const useAuditoria = () => {
 
             const b = item.bitrix || {};
             const p = item.profit || {};
-            const g = item.gestion || {};
+
+            // 1. GESTION (Historial): Ahora es siempre un Array
+            const g = Array.isArray(item.gestion) ? item.gestion : [];
 
             return {
               id: b.ID || Math.random(),
@@ -52,12 +88,15 @@ export const useAuditoria = () => {
               codigo: b.UF_CRM_1634787828 || "—",
               zona: b.UF_CRM_1635903069 || "—",
               segmento: b.UF_CRM_1638457710 || "—",
+
+              // Coordenada Planificada (Base)
               coordenadas: b.UF_CRM_1651251237102 || null,
+
               diasVisita: Array.isArray(b.UF_CRM_1686015739936)
                 ? b.UF_CRM_1686015739936.join(", ")
                 : b.UF_CRM_1686015739936
-                ? "Sí"
-                : "No",
+                  ? "Sí"
+                  : "No",
 
               // --- DATOS FINANCIEROS (PROFIT) ---
               limite_credito: parseFloat(p.login) || 0,
@@ -76,10 +115,15 @@ export const useAuditoria = () => {
               fecha_ultimo_cobro: p.ultimo_cobro || "—",
               clasificacion: p.horar_caja || "—",
 
-              // --- GESTIÓN (LEGACY) ---
+              // --- GESTIÓN (Historial Array con Ubicaciones) ---
               gestion: g,
 
-              // --- AUDITORIA DIARIA (NUEVA ESTRUCTURA) ---
+              // --- PLANIFICACIÓN (NUEVOS CAMPOS) ---
+              bitacora: item.bitacora || "",
+              obs_ejecutiva: item.obs_ejecutiva || "",
+              semana: item.semana || {},
+
+              // --- AUDITORIA DIARIA ---
               auditoria: {
                 lunes: createDailyAudit(),
                 martes: createDailyAudit(),
@@ -88,6 +132,9 @@ export const useAuditoria = () => {
                 viernes: createDailyAudit(),
                 sabado: createDailyAudit(),
               },
+
+              // Helper function disponible en el objeto row para calcular distancia on-the-fly
+              calculateDistance: calculateDistance,
             };
           })
           .filter(Boolean);
@@ -123,10 +170,10 @@ export const useAuditoria = () => {
 
           newAuditoria[day] = dayData;
           return { ...row, auditoria: newAuditoria };
-        })
+        }),
       );
     },
-    []
+    [],
   );
 
   return { data, loading, error, handleAuditoriaChange };

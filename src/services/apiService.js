@@ -1,5 +1,6 @@
-const BASE_URL = "http://192.168.4.69:8001/api";
-const BASE_AUTH_URL = "http://192.168.4.69:8001/api/usuarios";
+/* eslint-disable no-undef */
+const BASE_URL = "http://localhost:8001/api";
+const BASE_AUTH_URL = "http://localhost:8001/api/usuarios";
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem("authToken");
@@ -17,7 +18,7 @@ async function fetchJson(url, options = {}) {
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(
-      `Error ${response.status}: ${errorData.message || response.statusText}`
+      `Error ${response.status}: ${errorData.message || response.statusText}`,
     );
   }
 
@@ -85,8 +86,9 @@ export const apiService = {
   // --- BITRIX & CLIENTES ---
 
   getBitrixCompanies: (start = 0) => {
-    return fetchJson(`${BASE_URL}/clientes/companies?start=${start}`, {
-      method: "GET",
+    return fetchJson(`${BASE_URL}/clientes/companies`, {
+      method: "POST",
+      body: JSON.stringify({ start }),
     });
   },
 
@@ -104,12 +106,15 @@ export const apiService = {
   },
 
   getAllCompanies: () => {
-    return fetchJson(`${BASE_URL}/clientes/companies`);
+    return fetchJson(`${BASE_URL}/clientes/companies`, {
+      method: "POST",
+      body: JSON.stringify({ start: 0 }),
+    });
   },
   saveAuditoria: (payload) => {
     console.log("Guardando auditoría:", payload);
     return new Promise((resolve) =>
-      setTimeout(() => resolve({ success: true }), 1000)
+      setTimeout(() => resolve({ success: true }), 1000),
     );
   },
 };

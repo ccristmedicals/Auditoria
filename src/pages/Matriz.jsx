@@ -1,5 +1,6 @@
-/* eslint-disable react-hooks/set-state-in-effect */
-import React, { useState, useEffect } from "react";
+/* eslint-disable react-hooks/exhaustive-deps */
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { apiService } from "../services/apiService";
 import { useAuditoria } from "../hooks/useAuditoria";
 import {
   Save,
@@ -11,6 +12,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronsRight,
+  CheckCircle,
+  Loader,
 } from "lucide-react";
 import {
   TableContainer,
@@ -22,7 +25,8 @@ import {
   Td,
 } from "../components/ui/Tabla";
 
-const StatBadge = ({ label, value, colorClass }) => (
+// --- COMPONENTES AUXILIARES ---
+const StatBadge = React.memo(({ label, value, colorClass }) => (
   <div className="flex flex-col items-center px-4 border-r last:border-r-0 border-gray-200 dark:border-gray-700 min-w-[100px]">
     <span className="text-[10px] uppercase font-bold text-gray-400 leading-none mb-1 text-center">
       {label}
@@ -31,14 +35,41 @@ const StatBadge = ({ label, value, colorClass }) => (
       {value}
     </span>
   </div>
-);
+));
+
+const ClassificationBadge = React.memo(({ value }) => {
+  const letter = (value || "").toString().toUpperCase().charAt(0);
+
+  const colorMap = {
+    A: "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300",
+    B: "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300",
+    C: "bg-cyan-100 text-cyan-700 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300",
+    D: "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300",
+    E: "bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300",
+    Z: "bg-red-200 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300",
+  };
+
+  const colorClass =
+    colorMap[letter] ||
+    "bg-gray-100 text-gray-400 border-gray-200 dark:bg-gray-800";
+
+  return (
+    <div className="flex justify-center">
+      <span
+        className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border ${colorClass} transition-colors`}
+      >
+        {letter || "-"}
+      </span>
+    </div>
+  );
+});
 
 const formatCurrency = (val) =>
   new Intl.NumberFormat("es-ES", { style: "currency", currency: "USD" }).format(
-    val
+    val,
   );
 
-const TableCheckbox = ({ checked, onChange, colorClass }) => (
+const TableCheckbox = React.memo(({ checked, onChange, colorClass }) => (
   <div className="flex justify-center">
     <input
       type="checkbox"
@@ -47,9 +78,9 @@ const TableCheckbox = ({ checked, onChange, colorClass }) => (
       className={`w-4 h-4 rounded border-gray-300 focus:ring-2 cursor-pointer ${colorClass}`}
     />
   </div>
-);
+));
 
-const HeaderCountInput = ({ value }) => (
+const HeaderCountInput = React.memo(({ value }) => (
   <div>
     <input
       type="text"
@@ -58,8 +89,444 @@ const HeaderCountInput = ({ value }) => (
       className="w-full text-center text-[12px] font-bold text-gray-700"
     />
   </div>
+));
+
+const EditableCell = React.memo(({ value, onChange, placeholder = "..." }) => {
+  const [localValue, setLocalValue] = useState(value || "");
+
+  useEffect(() => {
+    setLocalValue(value || "");
+  }, [value]);
+
+  const onBlur = () => {
+    if (localValue !== value) {
+      onChange(localValue);
+    }
+  };
+
+  return (
+    <div className="relative w-full">
+      <input
+        type="text"
+        value={localValue}
+        onChange={(e) => setLocalValue(e.target.value)}
+        onBlur={onBlur}
+        onKeyDown={(e) => e.key === "Enter" && onBlur()}
+        placeholder={placeholder}
+        className="w-full min-w-[120px] bg-white dark:bg-[#262626] border border-gray-300 dark:border-gray-600 rounded px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#1a9888] dark:text-gray-200"
+      />
+      <Edit3
+        size={12}
+        className="absolute right-2 top-2.5 text-gray-400 pointer-events-none opacity-50"
+      />
+    </div>
+  );
+});
+
+// --- COMPONENTE FILA ---
+const AuditRow = React.memo(
+  ({
+    row,
+    selectedDay,
+    handleExclusiveChange,
+    handleAuditChange,
+    getDynamicBackground,
+    handleSaveRow,
+  }) => {
+    const auditData = row.auditoria?.[selectedDay];
+    const [isSaving, setIsSaving] = useState(false);
+
+    // Colores dinámicos
+    const bgAccionVenta = getDynamicBackground(
+      auditData?.accion_venta,
+      "bg-blue-50/20",
+    );
+    const bgAccionCobranza = getDynamicBackground(
+      auditData?.accion_cobranza,
+      "bg-blue-50/20",
+    );
+    const bgLlamadaVenta = getDynamicBackground(
+      auditData?.llamadas_venta,
+      "bg-orange-50/20",
+    );
+    const bgLlamadaCobranza = getDynamicBackground(
+      auditData?.llamadas_cobranza,
+      "bg-orange-50/20",
+    );
+
+    // --- 1. DATOS EXTERNOS ---
+    const logDelDia = useMemo(() => {
+      if (Array.isArray(row.gestion)) {
+        return row.gestion.find((g) => {
+          if (!g.dia_semana) return false;
+          const diaApi = g.dia_semana
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "");
+          const diaSelect = selectedDay
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "");
+          return diaApi === diaSelect;
+        });
+      }
+      return null;
+    }, [row.gestion, selectedDay]);
+
+    const assignedTask = useMemo(() => {
+      const s = row.semana || {};
+      const dayKey = selectedDay
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+      return s[dayKey]?.tarea || "";
+    }, [row.semana, selectedDay]);
+
+    // --- CÁLCULO DE DISTANCIA ---
+    const distancia = useMemo(() => {
+      // 1. Obtener coordenada planificada (Bitrix)
+      const planificada = row.coordenadas;
+
+      // 2. Obtener coordenada real (del log del día)
+      const real = logDelDia?.ubicacion;
+
+      // 3. Calcular si existen ambas
+      if (planificada && real && row.calculateDistance) {
+        const mts = row.calculateDistance(planificada, real);
+        if (mts !== null) {
+          // Formato amigable: Si es > 1000m mostrar km, sino m
+          return mts > 1000 ? `${(mts / 1000).toFixed(2)} km` : `${mts} m`;
+        }
+      }
+      return "-";
+    }, [row.coordenadas, logDelDia, row.calculateDistance]);
+
+    // --- 2. CÁLCULOS LÓGICOS DE LA FILA ---
+
+    // A. PLANIFICACIÓN (Puestas): ¿Tiene Bitacora, Obs Ejecutiva o Tarea en la semana?
+    const hasPlanning = useMemo(() => {
+      if (row.bitacora && row.bitacora.trim().length > 0) return true;
+      if (row.obs_ejecutiva && row.obs_ejecutiva.trim().length > 0) return true;
+      const s = row.semana || {};
+      const days = ["lunes", "martes", "miercoles", "jueves", "viernes"];
+      return days.some(
+        (day) => s[day]?.tarea && s[day].tarea.trim().length > 0,
+      );
+    }, [row.bitacora, row.obs_ejecutiva, row.semana]);
+
+    return (
+      <Tr className="hover:bg-gray-50 dark:hover:bg-[#333]">
+        {/* BITRIX */}
+        <Td
+          stickyLeft={false}
+          className="font-bold border-r text-xs max-w-[180px] truncate bg-white dark:bg-[#191919] z-10"
+          title={row.nombre}
+        >
+          {row.nombre}
+        </Td>
+        <Td className="text-xs text-gray-500">{row.id_bitrix}</Td>
+        <Td className="text-xs font-mono">{row.codigo}</Td>
+        <Td className="text-xs truncate max-w-[120px]" title={row.zona}>
+          {row.zona}
+        </Td>
+        <Td className="text-xs truncate max-w-[120px]" title={row.diasVisita}>
+          {row.diasVisita}
+        </Td>
+        {/* PROFIT */}
+        <Td className="text-right text-xs text-blue-700">
+          {formatCurrency(row.limite_credito)}
+        </Td>
+        <Td className="text-right text-xs">
+          {formatCurrency(row.saldo_transito)}
+        </Td>
+        <Td
+          className={`text-right text-xs ${row.saldo_vencido > 0 ? "text-red-500 font-bold" : ""}`}
+        >
+          {formatCurrency(row.saldo_vencido)}
+        </Td>
+        <Td className="text-center text-xs whitespace-nowrap">
+          {row.fecha_ultima_compra}
+        </Td>
+        <Td className="text-xs text-center">{row.factura_morosidad}</Td>
+        <Td className="text-right text-xs whitespace-nowrap">
+          {row.ultimo_cobro}
+        </Td>
+        <Td className="text-center text-xs">
+          <ClassificationBadge value={row.horario_caja} />
+        </Td>
+        <Td className="text-center text-xs">{row.posee_convenio}</Td>
+        <Td className="text-right text-xs font-semibold bg-blue-50/50 dark:bg-blue-900/10">
+          {formatCurrency(row.venta_mes_actual)}
+        </Td>
+        <Td className="text-right text-xs text-gray-500 border-r border-gray-200">
+          {formatCurrency(row.venta_mes_pasado)}
+        </Td>
+
+        {/* --- CHECKBOXES --- */}
+        <Td className="bg-green-50/20 border-l border-green-100 p-0 text-center">
+          <TableCheckbox
+            checked={auditData?.inicio_whatsapp?.e}
+            onChange={(val) =>
+              handleExclusiveChange(row.id, "inicio_whatsapp", "e", val, [
+                "e",
+                "c",
+              ])
+            }
+            colorClass="text-green-600 focus:ring-green-500"
+          />
+        </Td>
+        <Td className="bg-green-50/20 border-r border-green-100 p-0 text-center">
+          <TableCheckbox
+            checked={auditData?.inicio_whatsapp?.c}
+            onChange={(val) =>
+              handleExclusiveChange(row.id, "inicio_whatsapp", "c", val, [
+                "e",
+                "c",
+              ])
+            }
+            colorClass="text-green-600 focus:ring-green-500"
+          />
+        </Td>
+        <Td
+          className={`${bgAccionVenta} border-l border-blue-100 p-0 text-center`}
+        >
+          <TableCheckbox
+            checked={auditData?.accion_venta?.e}
+            onChange={(val) =>
+              handleExclusiveChange(row.id, "accion_venta", "e", val)
+            }
+            colorClass="text-blue-600 focus:ring-blue-500"
+          />
+        </Td>
+        <Td className={`${bgAccionVenta} p-0 text-center`}>
+          <TableCheckbox
+            checked={auditData?.accion_venta?.p}
+            onChange={(val) =>
+              handleExclusiveChange(row.id, "accion_venta", "p", val)
+            }
+            colorClass="text-blue-600 focus:ring-blue-500"
+          />
+        </Td>
+        <Td
+          className={`${bgAccionVenta} border-r border-blue-100 p-0 text-center`}
+        >
+          <TableCheckbox
+            checked={auditData?.accion_venta?.n}
+            onChange={(val) =>
+              handleExclusiveChange(row.id, "accion_venta", "n", val)
+            }
+            colorClass="text-red-600 focus:ring-red-500"
+          />
+        </Td>
+        <Td className={`${bgAccionCobranza} p-0 text-center`}>
+          <TableCheckbox
+            checked={auditData?.accion_cobranza?.e}
+            onChange={(val) =>
+              handleExclusiveChange(row.id, "accion_cobranza", "e", val)
+            }
+            colorClass="text-blue-600 focus:ring-blue-500"
+          />
+        </Td>
+        <Td className={`${bgAccionCobranza} p-0 text-center`}>
+          <TableCheckbox
+            checked={auditData?.accion_cobranza?.p}
+            onChange={(val) =>
+              handleExclusiveChange(row.id, "accion_cobranza", "p", val)
+            }
+            colorClass="text-blue-600 focus:ring-blue-500"
+          />
+        </Td>
+        <Td
+          className={`${bgAccionCobranza} border-r border-blue-100 p-0 text-center`}
+        >
+          <TableCheckbox
+            checked={auditData?.accion_cobranza?.n}
+            onChange={(val) =>
+              handleExclusiveChange(row.id, "accion_cobranza", "n", val)
+            }
+            colorClass="text-red-600 focus:ring-red-500"
+          />
+        </Td>
+        <Td className="bg-slate-300 dark:bg-slate-800 border-r border-gray-300 p-0 text-center">
+          <TableCheckbox
+            checked={auditData?.cp || false}
+            onChange={(val) => handleAuditChange(row.id, "cp", val)}
+            colorClass="text-purple-600 focus:ring-purple-500"
+          />
+        </Td>
+        <Td
+          className={`${bgLlamadaVenta} border-l border-orange-100 p-0 text-center`}
+        >
+          <TableCheckbox
+            checked={auditData?.llamadas_venta?.e}
+            onChange={(val) =>
+              handleExclusiveChange(row.id, "llamadas_venta", "e", val)
+            }
+            colorClass="text-orange-600 focus:ring-orange-500"
+          />
+        </Td>
+        <Td className={`${bgLlamadaVenta} p-0 text-center`}>
+          <TableCheckbox
+            checked={auditData?.llamadas_venta?.p}
+            onChange={(val) =>
+              handleExclusiveChange(row.id, "llamadas_venta", "p", val)
+            }
+            colorClass="text-orange-600 focus:ring-orange-500"
+          />
+        </Td>
+        <Td
+          className={`${bgLlamadaVenta} border-r border-orange-100 p-0 text-center`}
+        >
+          <TableCheckbox
+            checked={auditData?.llamadas_venta?.n}
+            onChange={(val) =>
+              handleExclusiveChange(row.id, "llamadas_venta", "n", val)
+            }
+            colorClass="text-red-600 focus:ring-red-500"
+          />
+        </Td>
+        <Td className={`${bgLlamadaCobranza} p-0 text-center`}>
+          <TableCheckbox
+            checked={auditData?.llamadas_cobranza?.e}
+            onChange={(val) =>
+              handleExclusiveChange(row.id, "llamadas_cobranza", "e", val)
+            }
+            colorClass="text-orange-600 focus:ring-orange-500"
+          />
+        </Td>
+        <Td className={`${bgLlamadaCobranza} p-0 text-center`}>
+          <TableCheckbox
+            checked={auditData?.llamadas_cobranza?.p}
+            onChange={(val) =>
+              handleExclusiveChange(row.id, "llamadas_cobranza", "p", val)
+            }
+            colorClass="text-orange-600 focus:ring-orange-500"
+          />
+        </Td>
+        <Td
+          className={`${bgLlamadaCobranza} border-r border-orange-100 p-0 text-center`}
+        >
+          <TableCheckbox
+            checked={auditData?.llamadas_cobranza?.n}
+            onChange={(val) =>
+              handleExclusiveChange(row.id, "llamadas_cobranza", "n", val)
+            }
+            colorClass="text-red-600 focus:ring-red-500"
+          />
+        </Td>
+
+        {/* --- ICONO PLANIFICACIÓN (Visual) --- */}
+        <Td className="text-center text-xs whitespace-nowrap border-l border-gray-200">
+          {hasPlanning && (
+            <div className="flex justify-center items-center h-full w-full">
+              <CheckCircle
+                size={18}
+                className="text-green-500 drop-shadow-sm"
+              />
+            </div>
+          )}
+        </Td>
+
+        {/* --- ACCIÓN (TAREA) --- */}
+        <Td className="text-xs text-center p-2 border-r border-gray-200">
+          <span className="text-gray-700 dark:text-gray-300 font-medium wrap-break-word leading-tight block max-w-[150px] mx-auto">
+            {assignedTask || "-"}
+          </span>
+        </Td>
+
+        {/* --- DIFERENCIA COORDENADAS --- */}
+        <Td
+          className={`text-center text-xs whitespace-nowrap font-medium ${distancia !== "-" && parseInt(distancia) > 100 ? "text-red-500" : "text-green-600"}`}
+        >
+          {distancia}
+        </Td>
+        <Td className="text-center text-xs">
+          {!logDelDia?.venta_descripcion && !logDelDia?.cobranza_descripcion ? (
+            "-"
+          ) : (
+            <div className="flex flex-col gap-1">
+              {logDelDia?.venta_descripcion && (
+                <span
+                  className="text-green-600 block truncate max-w-[180px]"
+                  title={logDelDia.venta_descripcion}
+                >
+                  V: {logDelDia.venta_descripcion}
+                </span>
+              )}
+              {logDelDia?.cobranza_descripcion && (
+                <span
+                  className="text-blue-600 block truncate max-w-[180px]"
+                  title={logDelDia.cobranza_descripcion}
+                >
+                  C: {logDelDia.cobranza_descripcion}
+                </span>
+              )}
+            </div>
+          )}
+        </Td>
+
+        <Td className="text-center text-xs whitespace-nowrap">
+          {logDelDia?.fecha_registro}
+        </Td>
+        <Td className="text-xs text-center">{logDelDia?.venta_tipoGestion}</Td>
+        <Td className="text-right text-xs whitespace-nowrap">
+          {logDelDia?.cobranza_tipoGestion}
+        </Td>
+        <Td className="text-center text-xs">
+          {!logDelDia?.venta_descripcion && !logDelDia?.cobranza_descripcion ? (
+            "-"
+          ) : (
+            <div className="flex flex-col gap-1">
+              {logDelDia?.venta_descripcion && (
+                <span
+                  className="text-blue-600 block truncate max-w-[180px]"
+                  title={logDelDia.venta_descripcion}
+                >
+                  V: {logDelDia.venta_descripcion}
+                </span>
+              )}
+              {logDelDia?.cobranza_descripcion && (
+                <span
+                  className="text-teal-600 block truncate max-w-[180px]"
+                  title={logDelDia.cobranza_descripcion}
+                >
+                  C: {logDelDia.cobranza_descripcion}
+                </span>
+              )}
+            </div>
+          )}
+        </Td>
+        <Td className="min-w-[350px]">
+          <EditableCell
+            value={auditData?.observacion || ""}
+            onChange={(val) => handleAuditChange(row.id, "observacion", val)}
+            placeholder="Escribe la observación del día..."
+          />
+        </Td>
+        {/* BOTÓN GUARDAR */}
+        <Td className="text-center p-2 border-l border-gray-200 bg-gray-50 dark:bg-gray-800">
+          <button
+            onClick={async () => {
+              setIsSaving(true);
+              await handleSaveRow(row);
+              setIsSaving(false);
+            }}
+            disabled={isSaving}
+            className="p-2 rounded-lg bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50 flex mx-auto"
+          >
+            {isSaving ? (
+              <Loader size={16} className="animate-spin" />
+            ) : (
+              <Save size={16} />
+            )}
+          </button>
+        </Td>
+      </Tr>
+    );
+  },
 );
 
+// --- COMPONENTE PRINCIPAL ---
 const Matriz = () => {
   const { data, loading, error, handleAuditoriaChange } = useAuditoria();
   const [selectedDay, setSelectedDay] = useState("lunes");
@@ -67,7 +534,33 @@ const Matriz = () => {
   const [page, setPage] = useState(1);
   const ITEMS_PER_PAGE = 25;
 
-  const getDynamicBackground = (categoryData, defaultColor) => {
+  // --- FUNCIÓN PARA GUARDAR FILA ---
+  const handleSaveRow = useCallback(async (row) => {
+    try {
+      const payload = {
+        id_bitrix: row.id_bitrix,
+        codigo_profit: row.codigo,
+        gestion: {
+          bitacora: row.bitacora,
+          obs_ejecutiva: row.obs_ejecutiva,
+          semana: row.semana,
+          auditoria_matriz: row.auditoria, // Guardamos los colores
+        },
+        full_data: { nombre: row.nombre },
+      };
+
+      // --- AQUÍ ESTÁ EL CONSOLE LOG QUE PEDISTE ---
+      console.log("📤 ENVIANDO AL BACKEND:", payload);
+      // --------------------------------------------
+
+      await apiService.saveConfig(payload);
+      alert("✅ Guardado correctamente");
+    } catch (err) {
+      console.error(err);
+      alert("❌ Error al guardar");
+    }
+  }, []);
+  const getDynamicBackground = useCallback((categoryData, defaultColor) => {
     if (categoryData?.e)
       return "bg-green-200 dark:bg-green-900/60 transition-colors duration-300";
     if (categoryData?.p)
@@ -75,149 +568,188 @@ const Matriz = () => {
     if (categoryData?.n)
       return "bg-red-200 dark:bg-red-900/60 transition-colors duration-300";
     return defaultColor;
-  };
-  const handleExclusiveChange = (
-    rowId,
-    category,
-    field,
-    newValue,
-    customGroup = null
-  ) => {
-    handleAuditoriaChange(rowId, selectedDay, category, field, newValue);
-    if (newValue === true) {
-      const siblings = customGroup || ["e", "p", "n"];
-      siblings.forEach((sibling) => {
-        if (sibling !== field) {
-          handleAuditoriaChange(rowId, selectedDay, category, sibling, false);
-        }
-      });
-    }
-  };
+  }, []);
 
-  const EditableCell = ({ value, onChange, placeholder = "..." }) => {
-    const [localValue, setLocalValue] = useState(value || "");
+  const handleExclusiveChange = useCallback(
+    (rowId, category, field, newValue, customGroup = null) => {
+      handleAuditoriaChange(rowId, selectedDay, category, field, newValue);
+      if (newValue === true) {
+        const siblings = customGroup || ["e", "p", "n"];
+        siblings.forEach((sibling) => {
+          if (sibling !== field) {
+            handleAuditoriaChange(rowId, selectedDay, category, sibling, false);
+          }
+        });
+      }
+    },
+    [handleAuditoriaChange, selectedDay],
+  );
 
-    // Sincroniza si el valor externo cambia (ej. al cambiar de día)
-    useEffect(() => {
-      setLocalValue(value || "");
-    }, [value]);
-
-    return (
-      <div className="relative w-full">
-        <input
-          type="text"
-          value={localValue}
-          onChange={(e) => setLocalValue(e.target.value)}
-          onBlur={() => onChange(localValue)} // Guarda al salir del campo
-          onKeyDown={(e) => e.key === "Enter" && onChange(localValue)} // Guarda al dar Enter
-          placeholder={placeholder}
-          className="w-full min-w-[120px] bg-white dark:bg-[#262626] border border-gray-300 dark:border-gray-600 rounded px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#1a9888] dark:text-gray-200"
-        />
-        <Edit3
-          size={12}
-          className="absolute right-2 top-2.5 text-gray-400 pointer-events-none opacity-50"
-        />
-      </div>
-    );
-  };
-
-  const handleAuditChange = (rowId, category, newValue) => {
-    handleAuditoriaChange(rowId, selectedDay, category, newValue);
-  };
+  const handleAuditChange = useCallback(
+    (rowId, category, newValue) => {
+      handleAuditoriaChange(rowId, selectedDay, category, newValue);
+    },
+    [handleAuditoriaChange, selectedDay],
+  );
 
   useEffect(() => {
     setPage(1);
   }, [searchTerm]);
 
-  const filteredData = data.filter((item) => {
-    if (!searchTerm) return true;
-    const term = searchTerm.toLowerCase();
-    const nombre = item.nombre?.toLowerCase() || "";
-    const codigo = item.codigo?.toString().toLowerCase() || "";
-
-    return nombre.includes(term) || codigo.includes(term);
-  });
+  const filteredData = useMemo(() => {
+    return data.filter((item) => {
+      if (!searchTerm) return true;
+      const term = searchTerm.toLowerCase();
+      const nombre = item.nombre?.toLowerCase() || "";
+      const codigo = item.codigo?.toString().toLowerCase() || "";
+      return nombre.includes(term) || codigo.includes(term);
+    });
+  }, [data, searchTerm]);
 
   const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE) || 1;
   const paginatedData = filteredData.slice(
     (page - 1) * ITEMS_PER_PAGE,
-    page * ITEMS_PER_PAGE
+    page * ITEMS_PER_PAGE,
   );
 
   const goToPage = (p) => {
     if (p >= 1 && p <= totalPages) setPage(p);
   };
 
-  const calculateTotal = (category, field) => {
-    if (!data) return 0;
-    return filteredData.reduce((acc, row) => {
-      const isChecked = row.auditoria?.[selectedDay]?.[category]?.[field];
-      return isChecked ? acc + 1 : acc;
-    }, 0);
-  };
+  // --- CÁLCULO DE TOTALES PARA EL HEADER (CORREGIDO) ---
+  const headerCounts = useMemo(() => {
+    const counts = {
+      // Totales de checks simples
+      inicio_whatsapp: { e: 0, c: 0 },
+      accion_venta: { e: 0, p: 0, n: 0 },
+      accion_cobranza: { e: 0, p: 0, n: 0 },
+      llamadas_venta: { e: 0, p: 0, n: 0 },
+      llamadas_cobranza: { e: 0, p: 0, n: 0 },
 
-  const stats = {
-    efectivas: () => {
-      return filteredData.reduce((acc, row) => {
+      // NUEVOS TOTALES
+      puestas_total: 0,
+      cumplidos_total: 0,
+      visitas_dia_total: 0,
+      percent_avg: 0,
+    };
+
+    if (!data.length) return counts;
+
+    filteredData.forEach((row) => {
+      const day = row.auditoria?.[selectedDay];
+      if (!day) return;
+
+      // 1. Sumar checks simples
+      if (day.inicio_whatsapp?.e) counts.inicio_whatsapp.e++;
+      if (day.inicio_whatsapp?.c) counts.inicio_whatsapp.c++;
+      ["e", "p", "n"].forEach((f) => {
+        if (day.accion_venta?.[f]) counts.accion_venta[f]++;
+        if (day.accion_cobranza?.[f]) counts.accion_cobranza[f]++;
+        if (day.llamadas_venta?.[f]) counts.llamadas_venta[f]++;
+        if (day.llamadas_cobranza?.[f]) counts.llamadas_cobranza[f]++;
+      });
+
+      // --- 2. LÓGICA DE CÁLCULO DE TOTALES ---
+
+      // A. PUESTAS (Si hay planificación en el sistema)
+      const s = row.semana || {};
+      const days = ["lunes", "martes", "miercoles", "jueves", "viernes"];
+      const hasPlanning =
+        (row.bitacora && row.bitacora.trim().length > 0) ||
+        (row.obs_ejecutiva && row.obs_ejecutiva.trim().length > 0) ||
+        days.some((day) => s[day]?.tarea && s[day].tarea.trim().length > 0);
+
+      const isPuesta = hasPlanning; // Es un booleano, si true suma 1
+      if (isPuesta) counts.puestas_total++;
+
+      // Helpers
+      const dayKey = selectedDay
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+      const log = Array.isArray(row.gestion)
+        ? row.gestion.find((g) => {
+            if (!g.dia_semana) return false;
+            return (
+              g.dia_semana
+                .toLowerCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "") === dayKey
+            );
+          })
+        : null;
+
+      // ¿Tiene Observación?
+      const hasObs =
+        (day.observacion && day.observacion.toString().trim().length > 0) ||
+        (log && (log.venta_descripcion || log.cobranza_descripcion));
+
+      // B. CUMPLIDO (Puesta + Obs)
+      if (isPuesta && hasObs) counts.cumplidos_total++;
+
+      // C. VISITA (Solo Obs)
+      if (hasObs) counts.visitas_dia_total++;
+    });
+
+    // D. % TOTAL
+    if (counts.puestas_total > 0) {
+      counts.percent_avg = (
+        (counts.cumplidos_total / counts.puestas_total) *
+        100
+      ).toFixed(0);
+    }
+
+    return counts;
+  }, [filteredData, selectedDay, data]);
+
+  const stats = useMemo(() => {
+    return {
+      efectivas: filteredData.reduce((acc, row) => {
         const day = row.auditoria?.[selectedDay];
         if (!day) return acc;
-
         const hasE =
           day.accion_venta?.e ||
           day.accion_cobranza?.e ||
           day.llamadas_venta?.e ||
           day.llamadas_cobranza?.e;
-
         return hasE ? acc + 1 : acc;
-      }, 0);
-    },
-
-    ventaProceso: () => {
-      return filteredData.reduce((acc, row) => {
+      }, 0),
+      ventaProceso: filteredData.reduce((acc, row) => {
         const day = row.auditoria?.[selectedDay];
         if (!day) return acc;
-        const isPending = day.accion_venta?.p || day.llamadas_venta?.p;
-        return isPending ? acc + 1 : acc;
-      }, 0);
-    },
-
-    cobranzaProceso: () => {
-      return filteredData.reduce((acc, row) => {
+        return day.accion_venta?.p || day.llamadas_venta?.p ? acc + 1 : acc;
+      }, 0),
+      cobranzaProceso: filteredData.reduce((acc, row) => {
         const day = row.auditoria?.[selectedDay];
         if (!day) return acc;
-        const isPending = day.accion_cobranza?.p || day.llamadas_cobranza?.p;
-        return isPending ? acc + 1 : acc;
-      }, 0);
-    },
-    sinGestion: () => {
-      return filteredData.reduce((acc, row) => {
+        return day.accion_cobranza?.p || day.llamadas_cobranza?.p
+          ? acc + 1
+          : acc;
+      }, 0),
+      sinGestion: filteredData.reduce((acc, row) => {
         const day = row.auditoria?.[selectedDay];
-
         if (!day) return acc + 1;
-
-        const hasCheckboxes =
-          !!day.accion_venta?.e ||
-          !!day.accion_venta?.p ||
-          !!day.accion_venta?.n ||
-          !!day.accion_cobranza?.e ||
-          !!day.accion_cobranza?.p ||
-          !!day.accion_cobranza?.n ||
-          !!day.llamadas_venta?.e ||
-          !!day.llamadas_venta?.p ||
-          !!day.llamadas_venta?.n ||
-          !!day.llamadas_cobranza?.e ||
-          !!day.llamadas_cobranza?.p ||
-          !!day.llamadas_cobranza?.n;
-
-        const hasObservation =
+        const hasCheck =
+          day.inicio_whatsapp?.e ||
+          day.inicio_whatsapp?.c ||
+          day.accion_venta?.e ||
+          day.accion_venta?.p ||
+          day.accion_venta?.n ||
+          day.accion_cobranza?.e ||
+          day.accion_cobranza?.p ||
+          day.accion_cobranza?.n ||
+          day.llamadas_venta?.e ||
+          day.llamadas_venta?.p ||
+          day.llamadas_venta?.n ||
+          day.llamadas_cobranza?.e ||
+          day.llamadas_cobranza?.p ||
+          day.llamadas_cobranza?.n;
+        const hasObs =
           day.observacion && day.observacion.toString().trim().length > 0;
-
-        const isUntouched = !hasCheckboxes && !hasObservation;
-
-        return isUntouched ? acc + 1 : acc;
-      }, 0);
-    },
-  };
+        return !hasCheck && !hasObs ? acc + 1 : acc;
+      }, 0),
+    };
+  }, [filteredData, selectedDay]);
 
   if (error)
     return (
@@ -226,7 +758,6 @@ const Matriz = () => {
 
   return (
     <div className="p-2 min-h-screen bg-white dark:bg-[#191919]">
-      {/* Header General */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-gray-200 dark:border-gray-700 pb-4">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg text-[#1a9888]">
@@ -241,11 +772,8 @@ const Matriz = () => {
             </p>
           </div>
         </div>
-
         <div className="flex flex-col sm:flex-row items-end sm:items-center gap-4">
-          {/* CONTENEDOR GRUPO: BUSCADOR + STATS */}
           <div className="flex items-center bg-gray-50 dark:bg-[#202020] border border-gray-300 dark:border-gray-600 rounded-lg p-1 shadow-sm">
-            {/* BUSCADOR */}
             <div className="relative border-r border-gray-200 dark:border-gray-700 pr-1">
               <input
                 type="text"
@@ -267,32 +795,29 @@ const Matriz = () => {
                 </button>
               )}
             </div>
-
-            {/* ESTADÍSTICAS DINÁMICAS */}
             <div className="flex items-center h-full py-1">
               <StatBadge
                 label="Efectivas"
-                value={stats.efectivas()}
+                value={stats.efectivas}
                 colorClass="text-green-600"
               />
               <StatBadge
                 label="Venta (P)"
-                value={stats.ventaProceso()}
+                value={stats.ventaProceso}
                 colorClass="text-orange-500"
               />
               <StatBadge
                 label="Cobro (P)"
-                value={stats.cobranzaProceso()}
+                value={stats.cobranzaProceso}
                 colorClass="text-blue-600"
               />
               <StatBadge
                 label="Sin Gestión"
-                value={stats.sinGestion()}
+                value={stats.sinGestion}
                 colorClass="text-red-500"
               />
             </div>
           </div>
-
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 bg-gray-100 dark:bg-[#202020] p-1 rounded-lg border border-gray-200 dark:border-[#333]">
               <span className="text-xs font-bold text-gray-500 px-2 uppercase">
@@ -324,10 +849,10 @@ const Matriz = () => {
         ) : (
           <Table>
             <Thead>
-              {/* --- HEADER NIVEL 1 --- */}
+              {/* Nivel 1 Header */}
               <Tr>
                 <Th
-                  colSpan={8}
+                  colSpan={5}
                   stickyTop
                   className="p-0 border-r border-green-200 dark:border-green-600 bg-green-100 dark:bg-green-900 h-1"
                 ></Th>
@@ -341,7 +866,7 @@ const Matriz = () => {
                   stickyTop
                   className="bg-purple-100 text-purple-800 text-center border-r border-purple-200 z-20 dark:bg-purple-900 dark:text-purple-200"
                 >
-                  GESTIÓN DIARIA:
+                  GESTIÓN DIARIA:{" "}
                   <span className="uppercase font-bold">{selectedDay}</span>
                 </Th>
                 <Th
@@ -352,19 +877,21 @@ const Matriz = () => {
                   colSpan={1}
                   className="p-0 border-r border-pink-200 dark:border-pink-600 bg-pink-200 dark:bg-pink-900 h-1"
                 ></Th>
+                <Th
+                  colSpan={1}
+                  className="bg-white border-l border-gray-200"
+                ></Th>
               </Tr>
-
-              {/* --- HEADER NIVEL 2 --- */}
+              {/* Nivel 2 Header */}
               <Tr>
                 <Th
-                  colSpan={8}
+                  colSpan={5}
                   className="p-0 border-r border-green-200 dark:border-green-600 bg-green-100 dark:bg-green-900 h-1"
                 ></Th>
                 <Th
                   colSpan={10}
                   className="p-0 border-r border-blue-200 dark:border-blue-600 bg-blue-100 dark:bg-blue-900 h-1"
                 ></Th>
-
                 <Th
                   colSpan={2}
                   className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-yellow-900 border-r border-yellow-200 dark:border-yellow-600 text-gray-500"
@@ -401,19 +928,21 @@ const Matriz = () => {
                   colSpan={1}
                   className="p-0 border-r border-pink-200 dark:border-pink-600 bg-pink-200 dark:bg-pink-900 h-1"
                 ></Th>
+                <Th
+                  colSpan={1}
+                  className="bg-white border-l border-gray-200"
+                ></Th>
               </Tr>
-
-              {/* --- HEADER NIVEL 3 (Espaciadores y Títulos) --- */}
+              {/* Nivel 3 Header */}
               <Tr>
                 <Th
-                  colSpan={8}
+                  colSpan={5}
                   className="p-0 border-r border-green-200 dark:border-green-600 bg-green-100 dark:bg-green-900 h-1"
                 ></Th>
                 <Th
                   colSpan={10}
                   className="p-0 border-r border-blue-200 dark:border-blue-600 bg-blue-100 dark:bg-blue-900 h-1"
                 ></Th>
-
                 <Th
                   colSpan={2}
                   className="p-0 border-r border-yellow-200 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-900 h-1"
@@ -430,7 +959,6 @@ const Matriz = () => {
                   colSpan={6}
                   className="p-0 border-r border-yellow-200 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-900 h-1"
                 ></Th>
-
                 <Th
                   colSpan={1}
                   className="p-0 border-r border-yellow-200 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-900 h-1"
@@ -455,7 +983,6 @@ const Matriz = () => {
                 >
                   % de Planificación
                 </Th>
-
                 <Th
                   colSpan={4}
                   className="p-0 border-r border-gray-200 dark:border-gray-600 bg-gray-200 dark:bg-gray-900 h-1"
@@ -464,12 +991,16 @@ const Matriz = () => {
                   colSpan={1}
                   className="p-0 border-r border-pink-200 dark:border-pink-600 bg-pink-200 dark:bg-pink-900 h-1"
                 ></Th>
+                <Th
+                  colSpan={1}
+                  className="bg-white border-l border-gray-200"
+                ></Th>
               </Tr>
 
-              {/* --- CONTAR GESTIONES (Fila con inputs) --- */}
+              {/* --- HEADER NIVEL 4 (INPUTS Y TOTALES) --- */}
               <Tr>
                 <Th
-                  colSpan={8}
+                  colSpan={5}
                   className=" bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-center border-r border-green-200 z-20 text-[15px]"
                 >
                   DATOS DEL CLIENTE (BITRIX)
@@ -480,103 +1011,65 @@ const Matriz = () => {
                 >
                   DATOS FINANCIEROS (PROFIT)
                 </Th>
-
-                {/* Inicio Whatsapp */}
                 <Th className="min-w-[30px] bg-white p-0 border-l border-white">
-                  <HeaderCountInput
-                    value={calculateTotal("inicio_whatsapp", "e")}
-                  />
+                  <HeaderCountInput value={headerCounts.inicio_whatsapp.e} />
                 </Th>
                 <Th className="min-w-[30px] bg-white p-0 border-l border-white">
-                  <HeaderCountInput
-                    value={calculateTotal("inicio_whatsapp", "c")}
-                  />
-                </Th>
-
-                {/* Acción Venta */}
-                <Th className="min-w-[30px] bg-white p-0 border-l border-white">
-                  <HeaderCountInput
-                    value={calculateTotal("accion_venta", "e")}
-                  />
+                  <HeaderCountInput value={headerCounts.inicio_whatsapp.c} />
                 </Th>
                 <Th className="min-w-[30px] bg-white p-0 border-l border-white">
-                  <HeaderCountInput
-                    value={calculateTotal("accion_venta", "p")}
-                  />
+                  <HeaderCountInput value={headerCounts.accion_venta.e} />
                 </Th>
                 <Th className="min-w-[30px] bg-white p-0 border-l border-white">
-                  <HeaderCountInput
-                    value={calculateTotal("accion_venta", "n")}
-                  />
-                </Th>
-
-                {/* Acción Cobranza */}
-                <Th className="min-w-[30px] bg-white p-0 border-l border-white">
-                  <HeaderCountInput
-                    value={calculateTotal("accion_cobranza", "e")}
-                  />
+                  <HeaderCountInput value={headerCounts.accion_venta.p} />
                 </Th>
                 <Th className="min-w-[30px] bg-white p-0 border-l border-white">
-                  <HeaderCountInput
-                    value={calculateTotal("accion_cobranza", "p")}
-                  />
+                  <HeaderCountInput value={headerCounts.accion_venta.n} />
                 </Th>
                 <Th className="min-w-[30px] bg-white p-0 border-l border-white">
-                  <HeaderCountInput
-                    value={calculateTotal("accion_cobranza", "n")}
-                  />
+                  <HeaderCountInput value={headerCounts.accion_cobranza.e} />
+                </Th>
+                <Th className="min-w-[30px] bg-white p-0 border-l border-white">
+                  <HeaderCountInput value={headerCounts.accion_cobranza.p} />
+                </Th>
+                <Th className="min-w-[30px] bg-white p-0 border-l border-white">
+                  <HeaderCountInput value={headerCounts.accion_cobranza.n} />
                 </Th>
                 <Th
                   colSpan={1}
                   className="p-0 border-r border-green-300 dark:border-green-600 bg-slate-300 dark:bg-slate-900 h-1"
                 ></Th>
-
-                {/* Llamadas Venta */}
                 <Th className="min-w-[30px] bg-white p-0 border-l border-white">
-                  <HeaderCountInput
-                    value={calculateTotal("llamadas_venta", "e")}
-                  />
+                  <HeaderCountInput value={headerCounts.llamadas_venta.e} />
                 </Th>
                 <Th className="min-w-[30px] bg-white p-0 border-l border-white">
-                  <HeaderCountInput
-                    value={calculateTotal("llamadas_venta", "p")}
-                  />
+                  <HeaderCountInput value={headerCounts.llamadas_venta.p} />
                 </Th>
                 <Th className="min-w-[30px] bg-white p-0 border-l border-white">
-                  <HeaderCountInput
-                    value={calculateTotal("llamadas_venta", "n")}
-                  />
-                </Th>
-
-                {/* Llamadas Cobranza */}
-                <Th className="min-w-[30px] bg-white p-0 border-l border-white">
-                  <HeaderCountInput
-                    value={calculateTotal("llamadas_cobranza", "e")}
-                  />
+                  <HeaderCountInput value={headerCounts.llamadas_venta.n} />
                 </Th>
                 <Th className="min-w-[30px] bg-white p-0 border-l border-white">
-                  <HeaderCountInput
-                    value={calculateTotal("llamadas_cobranza", "p")}
-                  />
+                  <HeaderCountInput value={headerCounts.llamadas_cobranza.e} />
                 </Th>
                 <Th className="min-w-[30px] bg-white p-0 border-l border-white">
-                  <HeaderCountInput
-                    value={calculateTotal("llamadas_cobranza", "n")}
-                  />
+                  <HeaderCountInput value={headerCounts.llamadas_cobranza.p} />
+                </Th>
+                <Th className="min-w-[30px] bg-white p-0 border-l border-white">
+                  <HeaderCountInput value={headerCounts.llamadas_cobranza.n} />
                 </Th>
 
-                {/* Puestas */}
+                {/* --- 4 CELDAS DE TOTALES (Reemplazan a las de llamadas repetidas) --- */}
                 <Th className="min-w-[30px] bg-white p-0 border-l border-white">
-                  <HeaderCountInput value={calculateTotal("puestas", "e")} />
+                  <HeaderCountInput value={headerCounts.puestas_total} />
                 </Th>
                 <Th className="min-w-[30px] bg-white p-0 border-l border-white">
-                  <HeaderCountInput value={calculateTotal("puestas", "p")} />
+                  <HeaderCountInput value={headerCounts.cumplidos_total} />
                 </Th>
                 <Th className="min-w-[30px] bg-white p-0 border-l border-white">
-                  <HeaderCountInput value={calculateTotal("puestas", "n")} />
+                  <HeaderCountInput value={headerCounts.visitas_dia_total} />
                 </Th>
                 <Th className="min-w-[30px] bg-white p-0 border-l border-white">
-                  <HeaderCountInput value={calculateTotal("puestas", "n")} />
+                  <HeaderCountInput value={`${headerCounts.percent_avg}%`} />
                 </Th>
 
                 <Th
@@ -591,19 +1084,19 @@ const Matriz = () => {
                 >
                   Observación
                 </Th>
+                <Th className="bg-white border-l border-gray-200">Guardar</Th>
               </Tr>
 
-              {/* --- NIVEL 4: Categorías de Gestión (Detalle) --- */}
+              {/* Nivel 5, 6, 7 (Headers de etiquetas - Iguales) */}
               <Tr>
                 <Th
-                  colSpan={8}
+                  colSpan={5}
                   className="p-0 border-r border-green-200 dark:border-green-600 bg-green-100 dark:bg-green-900 h-1"
                 ></Th>
                 <Th
                   colSpan={10}
                   className="p-0 border-r border-blue-200 dark:border-blue-600 bg-blue-100 dark:bg-blue-900 h-1"
                 ></Th>
-
                 <Th
                   colSpan={2}
                   className="text-center text-[10px] uppercase bg-green-50 dark:bg-green-900 border-r dark:border-green-600 border-green-200 text-green-700 dark:text-green-200"
@@ -626,7 +1119,6 @@ const Matriz = () => {
                 >
                   Llamadas
                 </Th>
-
                 <Th
                   colSpan={4}
                   className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-yellow-900 border-r dark:border-yellow-600 border-yellow-200 text-yellow-700 dark:text-yellow-200"
@@ -642,23 +1134,19 @@ const Matriz = () => {
                   className="p-0 border-r border-pink-200 dark:border-pink-600 bg-pink-200 dark:bg-pink-900 h-1"
                 ></Th>
               </Tr>
-
-              {/* --- NIVEL 5 --- */}
               <Tr>
                 <Th
-                  colSpan={8}
+                  colSpan={5}
                   className="p-0 border-r border-green-200 dark:border-green-600 bg-green-100 dark:bg-green-900 h-1"
                 ></Th>
                 <Th
                   colSpan={10}
                   className="p-0 border-r border-blue-200 dark:border-blue-600 bg-blue-100 dark:bg-blue-900 h-1"
                 ></Th>
-
                 <Th
                   colSpan={2}
                   className="p-0 border-r border-green-200 dark:border-green-600 bg-green-50 dark:bg-green-900 h-1"
                 ></Th>
-
                 <Th
                   colSpan={3}
                   className="text-center text-[10px] uppercase bg-blue-50 dark:bg-blue-900 border-r dark:border-blue-600 border-blue-200 text-blue-700 dark:text-blue-200"
@@ -687,7 +1175,6 @@ const Matriz = () => {
                 >
                   Cobranza
                 </Th>
-
                 <Th
                   colSpan={4}
                   className="p-0 border-r border-yellow-200 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-900 h-1"
@@ -701,8 +1188,6 @@ const Matriz = () => {
                   className="p-0 border-r border-pink-200 dark:border-pink-600 bg-pink-200 dark:bg-pink-900 h-1"
                 ></Th>
               </Tr>
-
-              {/* --- NIVEL 6: Columnas Específicas --- */}
               <Tr>
                 <Th
                   stickyLeft={false}
@@ -714,24 +1199,14 @@ const Matriz = () => {
                   Compañia ID
                 </Th>
                 <Th className="min-w-[80px] bg-white dark:bg-[#1e1e1e] text-xs border-t">
-                  Etapa
-                </Th>
-                <Th className="min-w-[80px] bg-white dark:bg-[#1e1e1e] text-xs border-t">
                   Código
                 </Th>
                 <Th className="min-w-[120px] bg-white dark:bg-[#1e1e1e] text-xs border-t">
                   Zona
                 </Th>
-                <Th className="min-w-[100px] bg-white dark:bg-[#1e1e1e] text-xs border-t">
-                  Segmento
-                </Th>
-                <Th className="min-w-[100px] bg-white dark:bg-[#1e1e1e] text-xs border-t">
-                  Coordenadas
-                </Th>
                 <Th className="min-w-[120px] bg-white dark:bg-[#1e1e1e] text-xs border-t">
                   Días
                 </Th>
-
                 <Th className="min-w-[100px] text-xs border-t">Límite Créd.</Th>
                 <Th className="min-w-[100px] text-xs border-t">
                   Saldo Tránsito
@@ -758,8 +1233,6 @@ const Matriz = () => {
                 <Th className="min-w-[100px] text-xs border-t">
                   Venta Mes Anterior
                 </Th>
-
-                {/* Inicio WhatsApp */}
                 <Th
                   className="min-w-[30px] font-bold text-center bg-green-50 dark:bg-green-900 dark:text-green-200 text-[10px] border-l border-green-200"
                   title="Enviado"
@@ -772,8 +1245,6 @@ const Matriz = () => {
                 >
                   CLIENTE
                 </Th>
-
-                {/* Acción Realizada (Venta / Cobranza) */}
                 <Th
                   className="min-w-[30px] font-bold text-center bg-blue-50 dark:bg-blue-900 dark:text-blue-200 text-[10px] border-l border-blue-200"
                   title="Venta Enviado"
@@ -792,7 +1263,6 @@ const Matriz = () => {
                 >
                   N
                 </Th>
-
                 <Th
                   className="min-w-[30px] font-bold text-center bg-blue-50 dark:bg-blue-900 dark:text-blue-200 text-[10px]"
                   title="Cobranza Enviado"
@@ -817,8 +1287,6 @@ const Matriz = () => {
                 >
                   CP
                 </Th>
-
-                {/* Llamadas (Venta / Cobranza) */}
                 <Th
                   className="min-w-[30px] font-bold text-center bg-teal-50 dark:bg-teal-900 dark:text-teal-200 text-[10px] border-l border-teal-200"
                   title="Llamada Venta E"
@@ -837,7 +1305,6 @@ const Matriz = () => {
                 >
                   N
                 </Th>
-
                 <Th
                   className="min-w-[30px] font-bold text-center bg-teal-50 dark:bg-teal-900 dark:text-teal-200 text-[10px]"
                   title="Llamada Cobranza E"
@@ -856,12 +1323,11 @@ const Matriz = () => {
                 >
                   N
                 </Th>
-
                 <Th className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-yellow-900 dark:text-yellow-200 border-r border-yellow-200 text-yellow-700">
                   Planificación
                 </Th>
                 <Th className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-yellow-900 dark:text-yellow-200 border-r border-yellow-200 text-yellow-700">
-                  Acción
+                  Acción del Dia
                 </Th>
                 <Th className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-yellow-900 dark:text-yellow-200 border-r border-yellow-200 text-yellow-700">
                   Diferencia de Coordenadas
@@ -869,7 +1335,6 @@ const Matriz = () => {
                 <Th className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-yellow-900 dark:text-yellow-200 border-r border-yellow-200 text-yellow-700">
                   Observación del vendedor
                 </Th>
-
                 <Th className="text-center text-[10px] uppercase bg-gray-200 dark:bg-gray-900 dark:text-gray-200 border-r border-gray-200 text-gray-700">
                   Fecha de Registro
                 </Th>
@@ -885,438 +1350,23 @@ const Matriz = () => {
                 <Th className="text-center text-[10px] uppercase bg-pink-200 dark:bg-pink-900 dark:text-pink-200 border-r border-pink-200 text-pink-700">
                   Observaciones
                 </Th>
+                <Th className="bg-white border-l border-gray-200">Guardar</Th>
               </Tr>
             </Thead>
 
             <Tbody>
               {paginatedData.length > 0 ? (
-                paginatedData.map((row) => {
-                  // --- CÁLCULO DE COLORES DINÁMICOS POR FILA ---
-                  const auditData = row.auditoria?.[selectedDay];
-
-                  // Acciones (Base Azul)
-                  const bgAccionVenta = getDynamicBackground(
-                    auditData?.accion_venta,
-                    "bg-blue-50/20"
-                  );
-                  const bgAccionCobranza = getDynamicBackground(
-                    auditData?.accion_cobranza,
-                    "bg-blue-50/20"
-                  );
-
-                  // Llamadas (Base Naranja)
-                  const bgLlamadaVenta = getDynamicBackground(
-                    auditData?.llamadas_venta,
-                    "bg-orange-50/20"
-                  );
-                  const bgLlamadaCobranza = getDynamicBackground(
-                    auditData?.llamadas_cobranza,
-                    "bg-orange-50/20"
-                  );
-
-                  const logDelDia = row.gestion?.find((g) => {
-                    if (!g.dia_semana) return false;
-                    const diaApi = g.dia_semana
-                      .toLowerCase()
-                      .normalize("NFD")
-                      .replace(/[\u0300-\u036f]/g, "");
-                    const diaSelect = selectedDay
-                      .toLowerCase()
-                      .normalize("NFD")
-                      .replace(/[\u0300-\u036f]/g, "");
-                    return diaApi === diaSelect;
-                  });
-
-                  return (
-                    <Tr
-                      key={row.id}
-                      className="hover:bg-gray-50 dark:hover:bg-[#333]"
-                    >
-                      {/* BITRIX */}
-                      <Td
-                        stickyLeft={false}
-                        className="font-bold border-r text-xs max-w-[180px] truncate bg-white dark:bg-[#191919] z-10"
-                        title={row.nombre}
-                      >
-                        {row.nombre}
-                      </Td>
-                      <Td className="text-xs text-gray-500">{row.id_bitrix}</Td>
-                      <Td className="text-xs text-gray-400">
-                        {row.etapa || "-"}
-                      </Td>
-                      <Td className="text-xs font-mono">{row.codigo}</Td>
-                      <Td
-                        className="text-xs truncate max-w-[120px]"
-                        title={row.zona}
-                      >
-                        {row.zona}
-                      </Td>
-                      <Td
-                        className="text-xs truncate max-w-[100px]"
-                        title={row.segmento}
-                      >
-                        {row.segmento}
-                      </Td>
-                      <Td
-                        className="text-xs truncate max-w-[100px]"
-                        title={row.coordenadas}
-                      >
-                        {row.coordenadas}
-                      </Td>
-                      <Td
-                        className="text-xs truncate max-w-[120px]"
-                        title={row.diasVisita}
-                      >
-                        {row.diasVisita}
-                      </Td>
-                      {/* PROFIT */}
-                      <Td className="text-right text-xs text-blue-700">
-                        {formatCurrency(row.limite_credito)}
-                      </Td>
-                      <Td className="text-right text-xs">
-                        {formatCurrency(row.saldo_transito)}
-                      </Td>
-                      <Td
-                        className={`text-right text-xs ${
-                          row.saldo_vencido > 0 ? "text-red-500 font-bold" : ""
-                        }`}
-                      >
-                        {formatCurrency(row.saldo_vencido)}
-                      </Td>
-                      <Td className="text-center text-xs whitespace-nowrap">
-                        {row.fecha_ultima_compra}
-                      </Td>
-                      <Td className="text-xs text-center">
-                        {row.factura_morosidad}
-                      </Td>
-                      <Td className="text-right text-xs whitespace-nowrap">
-                        {row.ultimo_cobro}
-                      </Td>
-                      <Td className="text-center text-xs">
-                        {row.horario_caja}
-                      </Td>
-                      <Td className="text-center text-xs">
-                        {row.posee_convenio}
-                      </Td>
-                      <Td className="text-right text-xs font-semibold bg-blue-50/50 dark:bg-blue-900/10">
-                        {formatCurrency(row.venta_mes_actual)}
-                      </Td>
-                      <Td className="text-right text-xs text-gray-500 border-r border-gray-200">
-                        {formatCurrency(row.venta_mes_pasado)}
-                      </Td>
-
-                      {/* --- GESTIÓN DIARIA CHECKBOXES --- */}
-                      <Td className="bg-green-50/20 border-l border-green-100 p-0 text-center">
-                        <TableCheckbox
-                          checked={
-                            row.auditoria[selectedDay]?.inicio_whatsapp?.e
-                          }
-                          onChange={(val) =>
-                            handleExclusiveChange(
-                              row.id,
-                              "inicio_whatsapp",
-                              "e",
-                              val,
-                              ["e", "c"]
-                            )
-                          }
-                          colorClass="text-green-600 focus:ring-green-500"
-                        />
-                      </Td>
-
-                      <Td className="bg-green-50/20 border-r border-green-100 p-0 text-center">
-                        <TableCheckbox
-                          checked={
-                            row.auditoria[selectedDay]?.inicio_whatsapp?.c
-                          }
-                          onChange={(val) =>
-                            handleExclusiveChange(
-                              row.id,
-                              "inicio_whatsapp",
-                              "c",
-                              val,
-                              ["e", "c"]
-                            )
-                          }
-                          colorClass="text-green-600 focus:ring-green-500"
-                        />
-                      </Td>
-                      <Td
-                        className={`${bgAccionVenta} border-l border-blue-100 p-0 text-center`}
-                      >
-                        <TableCheckbox
-                          checked={auditData?.accion_venta?.e}
-                          onChange={(val) =>
-                            handleExclusiveChange(
-                              row.id,
-                              "accion_venta",
-                              "e",
-                              val
-                            )
-                          }
-                          colorClass="text-blue-600 focus:ring-blue-500"
-                        />
-                      </Td>
-                      <Td className={`${bgAccionVenta} p-0 text-center`}>
-                        <TableCheckbox
-                          checked={auditData?.accion_venta?.p}
-                          onChange={(val) =>
-                            handleExclusiveChange(
-                              row.id,
-                              "accion_venta",
-                              "p",
-                              val
-                            )
-                          }
-                          colorClass="text-blue-600 focus:ring-blue-500"
-                        />
-                      </Td>
-                      <Td
-                        className={`${bgAccionVenta} border-r border-blue-100 p-0 text-center`}
-                      >
-                        <TableCheckbox
-                          checked={auditData?.accion_venta?.n}
-                          onChange={(val) =>
-                            handleExclusiveChange(
-                              row.id,
-                              "accion_venta",
-                              "n",
-                              val
-                            )
-                          }
-                          colorClass="text-red-600 focus:ring-red-500"
-                        />
-                      </Td>
-                      {/* Acción Cobranza: E, P, N (EXCLUSIVO) */}
-                      <Td className={`${bgAccionCobranza} p-0 text-center`}>
-                        <TableCheckbox
-                          checked={auditData?.accion_cobranza?.e}
-                          onChange={(val) =>
-                            handleExclusiveChange(
-                              row.id,
-                              "accion_cobranza",
-                              "e",
-                              val
-                            )
-                          }
-                          colorClass="text-blue-600 focus:ring-blue-500"
-                        />
-                      </Td>
-                      <Td className={`${bgAccionCobranza} p-0 text-center`}>
-                        <TableCheckbox
-                          checked={auditData?.accion_cobranza?.p}
-                          onChange={(val) =>
-                            handleExclusiveChange(
-                              row.id,
-                              "accion_cobranza",
-                              "p",
-                              val
-                            )
-                          }
-                          colorClass="text-blue-600 focus:ring-blue-500"
-                        />
-                      </Td>
-                      <Td
-                        className={`${bgAccionCobranza} border-r border-blue-100 p-0 text-center`}
-                      >
-                        <TableCheckbox
-                          checked={auditData?.accion_cobranza?.n}
-                          onChange={(val) =>
-                            handleExclusiveChange(
-                              row.id,
-                              "accion_cobranza",
-                              "n",
-                              val
-                            )
-                          }
-                          colorClass="text-red-600 focus:ring-red-500"
-                        />
-                      </Td>
-
-                      {/* CP */}
-                      <Td className="bg-slate-300 dark:bg-slate-800 border-r border-gray-300 p-0 text-center">
-                        <TableCheckbox
-                          checked={auditData?.cp || false}
-                          onChange={(val) =>
-                            handleAuditChange(row.id, "cp", val)
-                          }
-                          colorClass="text-purple-600 focus:ring-purple-500"
-                        />
-                      </Td>
-
-                      {/* Llamadas Venta: E, P, N (EXCLUSIVO + Base Naranja) */}
-                      <Td
-                        className={`${bgLlamadaVenta} border-l border-orange-100 p-0 text-center`}
-                      >
-                        <TableCheckbox
-                          checked={auditData?.llamadas_venta?.e}
-                          onChange={(val) =>
-                            handleExclusiveChange(
-                              row.id,
-                              "llamadas_venta",
-                              "e",
-                              val
-                            )
-                          }
-                          colorClass="text-orange-600 focus:ring-orange-500"
-                        />
-                      </Td>
-                      <Td className={`${bgLlamadaVenta} p-0 text-center`}>
-                        <TableCheckbox
-                          checked={auditData?.llamadas_venta?.p}
-                          onChange={(val) =>
-                            handleExclusiveChange(
-                              row.id,
-                              "llamadas_venta",
-                              "p",
-                              val
-                            )
-                          }
-                          colorClass="text-orange-600 focus:ring-orange-500"
-                        />
-                      </Td>
-                      <Td
-                        className={`${bgLlamadaVenta} border-r border-orange-100 p-0 text-center`}
-                      >
-                        <TableCheckbox
-                          checked={auditData?.llamadas_venta?.n}
-                          onChange={(val) =>
-                            handleExclusiveChange(
-                              row.id,
-                              "llamadas_venta",
-                              "n",
-                              val
-                            )
-                          }
-                          colorClass="text-red-600 focus:ring-red-500"
-                        />
-                      </Td>
-                      {/* Llamadas Cobranza: E, P, N (EXCLUSIVO + Base Naranja) */}
-                      <Td className={`${bgLlamadaCobranza} p-0 text-center`}>
-                        <TableCheckbox
-                          checked={auditData?.llamadas_cobranza?.e}
-                          onChange={(val) =>
-                            handleExclusiveChange(
-                              row.id,
-                              "llamadas_cobranza",
-                              "e",
-                              val
-                            )
-                          }
-                          colorClass="text-orange-600 focus:ring-orange-500"
-                        />
-                      </Td>
-                      <Td className={`${bgLlamadaCobranza} p-0 text-center`}>
-                        <TableCheckbox
-                          checked={auditData?.llamadas_cobranza?.p}
-                          onChange={(val) =>
-                            handleExclusiveChange(
-                              row.id,
-                              "llamadas_cobranza",
-                              "p",
-                              val
-                            )
-                          }
-                          colorClass="text-orange-600 focus:ring-orange-500"
-                        />
-                      </Td>
-                      <Td
-                        className={`${bgLlamadaCobranza} border-r border-orange-100 p-0 text-center`}
-                      >
-                        <TableCheckbox
-                          checked={auditData?.llamadas_cobranza?.n}
-                          onChange={(val) =>
-                            handleExclusiveChange(
-                              row.id,
-                              "llamadas_cobranza",
-                              "n",
-                              val
-                            )
-                          }
-                          colorClass="text-red-600 focus:ring-red-500"
-                        />
-                      </Td>
-                      {/* --- VISITAS ASESOR --- */}
-                      <Td className="text-center text-xs whitespace-nowrap">
-                        ✅
-                      </Td>
-                      <Td className="text-xs text-center">Viene de alla</Td>
-                      <Td className="text-right text-xs whitespace-nowrap">
-                        Viene de alla
-                      </Td>
-                      <Td className="text-center text-xs">
-                        {!logDelDia?.venta_descripcion &&
-                        !logDelDia?.cobranza_descripcion ? (
-                          "-"
-                        ) : (
-                          <div className="flex flex-col gap-1">
-                            {logDelDia?.venta_descripcion && (
-                              <span
-                                className="text-blue-600 block truncate max-w-[180px]"
-                                title={logDelDia.venta_descripcion}
-                              >
-                                V: {logDelDia.venta_descripcion}
-                              </span>
-                            )}
-                            {logDelDia?.cobranza_descripcion && (
-                              <span
-                                className="text-teal-600 block truncate max-w-[180px]"
-                                title={logDelDia.cobranza_descripcion}
-                              >
-                                C: {logDelDia.cobranza_descripcion}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </Td>
-
-                      {/* --- VENDEDORES --- */}
-                      <Td className="text-center text-xs whitespace-nowrap">
-                        {logDelDia?.fecha_registro}
-                      </Td>
-                      <Td className="text-xs text-center">
-                        {logDelDia?.venta_tipoGestion}
-                      </Td>
-                      <Td className="text-right text-xs whitespace-nowrap">
-                        {logDelDia?.cobranza_tipoGestion}
-                      </Td>
-                      <Td className="text-center text-xs">
-                        {!logDelDia?.venta_descripcion &&
-                        !logDelDia?.cobranza_descripcion ? (
-                          "-"
-                        ) : (
-                          <div className="flex flex-col gap-1">
-                            {logDelDia?.venta_descripcion && (
-                              <span
-                                className="text-blue-600 block truncate max-w-[180px]"
-                                title={logDelDia.venta_descripcion}
-                              >
-                                V: {logDelDia.venta_descripcion}
-                              </span>
-                            )}
-                            {logDelDia?.cobranza_descripcion && (
-                              <span
-                                className="text-teal-600 block truncate max-w-[180px]"
-                                title={logDelDia.cobranza_descripcion}
-                              >
-                                C: {logDelDia.cobranza_descripcion}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </Td>
-                      <Td className="min-w-[200px]">
-                        <EditableCell
-                          value={auditData?.observacion || ""}
-                          onChange={(val) =>
-                            handleAuditChange(row.id, "observacion", val)
-                          }
-                          placeholder="Escribe la observación del día..."
-                        />
-                      </Td>
-                    </Tr>
-                  );
-                })
+                paginatedData.map((row) => (
+                  <AuditRow
+                    key={row.id}
+                    row={row}
+                    selectedDay={selectedDay}
+                    handleExclusiveChange={handleExclusiveChange}
+                    handleAuditChange={handleAuditChange}
+                    getDynamicBackground={getDynamicBackground}
+                    handleSaveRow={handleSaveRow}
+                  />
+                ))
               ) : (
                 <Tr>
                   <Td colSpan={40} className="text-center py-8 text-gray-500">
@@ -1364,7 +1414,6 @@ const Matriz = () => {
             <ChevronsRight size={16} />
           </button>
         </div>
-
         <form
           onSubmit={(e) => {
             e.preventDefault();
