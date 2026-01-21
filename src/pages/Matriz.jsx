@@ -553,7 +553,7 @@ const Matriz = () => {
       console.log("📤 ENVIANDO AL BACKEND:", payload);
       // --------------------------------------------
 
-      await apiService.saveConfig(payload);
+      await apiService.saveMatrix(payload);
       alert("✅ Guardado correctamente");
     } catch (err) {
       console.error(err);

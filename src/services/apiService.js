@@ -1,6 +1,5 @@
-/* eslint-disable no-undef */
-const BASE_URL = "http://localhost:8001/api";
-const BASE_AUTH_URL = "http://localhost:8001/api/usuarios";
+const BASE_URL = "http://192.168.4.69:8001/api";
+const BASE_AUTH_URL = "http://192.168.4.69:8001/api/usuarios";
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem("authToken");
@@ -32,6 +31,7 @@ async function fetchJson(url, options = {}) {
 }
 
 export const apiService = {
+  // --- AUTENTICACIÓN ---
   login: async (credentials) => {
     const response = await fetch(`${BASE_AUTH_URL}/login`, {
       method: "POST",
@@ -48,7 +48,6 @@ export const apiService = {
 
   // --- USUARIOS ---
 
-  // 1. Crear Usuario (POST)
   registerUser: (userData) => {
     return fetchJson(`${BASE_URL}/usuarios/crear`, {
       method: "POST",
@@ -56,14 +55,12 @@ export const apiService = {
     });
   },
 
-  // 2. Obtener Todos los Usuarios (GET)
   getUsers: () => {
     return fetchJson(`${BASE_URL}/usuarios`, {
       method: "GET",
     });
   },
 
-  // 3. Actualizar Usuario (PUT)
   updateUser: (id, userData) => {
     return fetchJson(`${BASE_URL}/usuarios/${id}`, {
       method: "PUT",
@@ -71,14 +68,12 @@ export const apiService = {
     });
   },
 
-  // 4. Eliminar Usuario (DELETE)
   deleteUser: (id) => {
     return fetchJson(`${BASE_URL}/usuarios/${id}`, {
       method: "DELETE",
     });
   },
 
-  // 5. Obtener Segmentos (GET)
   getSegmentos: () => {
     return fetchJson(`${BASE_URL}/usuarios/segmentos`);
   },
@@ -92,7 +87,21 @@ export const apiService = {
     });
   },
 
-  // --- AUDITORÍA ---
+  getAllCompanies: () => {
+    return fetchJson(`${BASE_URL}/clientes/companies`, {
+      method: "POST",
+      body: JSON.stringify({ start: 0 }),
+    });
+  },
+
+  // --- MATRIZ Y AUDITORÍA ---
+
+  saveMatrix: (payload) => {
+    return fetchJson(`${BASE_URL}/matrix`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
 
   saveConfig: (payload) => {
     return fetchJson(`${BASE_URL}/auditoria`, {
@@ -103,18 +112,5 @@ export const apiService = {
 
   getGeoAudit: (offset = 0) => {
     return fetchJson(`${BASE_URL}/profit-bitrix?start=${offset}`);
-  },
-
-  getAllCompanies: () => {
-    return fetchJson(`${BASE_URL}/clientes/companies`, {
-      method: "POST",
-      body: JSON.stringify({ start: 0 }),
-    });
-  },
-  saveAuditoria: (payload) => {
-    console.log("Guardando auditoría:", payload);
-    return new Promise((resolve) =>
-      setTimeout(() => resolve({ success: true }), 1000),
-    );
   },
 };
