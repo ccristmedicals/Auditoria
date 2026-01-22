@@ -33,9 +33,9 @@ const calculateDistance = (coord1, coord2) => {
     const a =
       Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
       Math.cos(phi1) *
-        Math.cos(phi2) *
-        Math.sin(deltaLambda / 2) *
-        Math.sin(deltaLambda / 2);
+      Math.cos(phi2) *
+      Math.sin(deltaLambda / 2) *
+      Math.sin(deltaLambda / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
     const distance = R * c; // en metros
@@ -54,25 +54,42 @@ export const useAuditoria = () => {
     const loadData = async () => {
       try {
         setLoading(true);
-        const rawData = await apiService.getAllCompanies();
 
-        let dataToMap = [];
+        // Fetch base companies and registered matrix data in parallel
+        const [rawData, matrixData] = await Promise.all([
+          apiService.getAllCompanies(),
+          apiService.getMatrix(),
+        ]);
+
+        let companies = [];
         if (Array.isArray(rawData)) {
-          dataToMap = rawData;
+          companies = rawData;
         } else if (rawData && Array.isArray(rawData.data)) {
-          dataToMap = rawData.data;
+          companies = rawData.data;
         } else if (rawData && typeof rawData === "object") {
-          dataToMap = Object.values(rawData);
-        } else {
-          dataToMap = [];
+          companies = Object.values(rawData);
         }
 
-        const processedData = dataToMap
+        // Create a map for quick access to matrix data by id_bitrix
+        const matrixMap = new Map();
+        if (Array.isArray(matrixData)) {
+          matrixData.forEach((item) => {
+            if (item.id_bitrix) {
+              matrixMap.set(item.id_bitrix.toString(), item);
+            }
+          });
+        }
+
+        const processedData = companies
           .map((item) => {
             if (!item) return null;
 
             const b = item.bitrix || {};
             const p = item.profit || {};
+
+            // Find registered matrix data for this client
+            const registered = matrixMap.get(b.ID?.toString());
+            const gestionData = registered?.gestion || {};
 
             // 1. GESTION (Historial): Ahora es siempre un Array
             const g = Array.isArray(item.gestion) ? item.gestion : [];
@@ -117,13 +134,13 @@ export const useAuditoria = () => {
               // --- GESTIÓN (Historial Array con Ubicaciones) ---
               gestion: g,
 
-              // --- PLANIFICACIÓN (NUEVOS CAMPOS) ---
-              bitacora: item.bitacora || "",
-              obs_ejecutiva: item.obs_ejecutiva || "",
-              semana: item.semana || {},
+              // --- PLANIFICACIÓN (CARGAR DESDE DATOS REGISTRADOS SI EXISTEN) ---
+              bitacora: gestionData.bitacora || item.bitacora || "",
+              obs_ejecutiva: gestionData.obs_ejecutiva || item.obs_ejecutiva || "",
+              semana: gestionData.semana || item.semana || {},
 
-              // --- AUDITORIA DIARIA ---
-              auditoria: {
+              // --- AUDITORIA DIARIA (CARGAR DESDE DATOS REGISTRADOS SI EXISTEN) ---
+              auditoria: gestionData.auditoria_matriz || {
                 lunes: createDailyAudit(),
                 martes: createDailyAudit(),
                 miercoles: createDailyAudit(),

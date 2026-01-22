@@ -113,4 +113,10 @@ export const apiService = {
   getGeoAudit: (offset = 0) => {
     return fetchJson(`${BASE_URL}/profit-bitrix?start=${offset}`);
   },
+
+  getMatrix: () => {
+    return fetchJson(`${BASE_URL}/matrix`, {
+      method: "GET",
+    });
+  },
 };

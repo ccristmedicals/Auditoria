@@ -69,6 +69,34 @@ const formatCurrency = (val) =>
     val,
   );
 
+// --- HELPER PARA FECHAS ---
+const isWithinCurrentWeek = (dateStr) => {
+  if (!dateStr || dateStr === "—" || dateStr === "-") return false;
+
+  // Intentamos parsear la fecha (asumiendo formatos comunes como YYYY-MM-DD o DD/MM/YYYY)
+  let date;
+  if (dateStr.includes("/")) {
+    const [day, month, year] = dateStr.split("/").map(Number);
+    date = new Date(year, month - 1, day);
+  } else {
+    date = new Date(dateStr);
+  }
+
+  if (isNaN(date.getTime())) return false;
+
+  const now = new Date();
+  const dayOfWeek = now.getDay() || 7; // Lunes = 1, Domingo = 7
+  const startOfWeek = new Date(now);
+  startOfWeek.setDate(now.getDate() - (dayOfWeek - 1));
+  startOfWeek.setHours(0, 0, 0, 0);
+
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(startOfWeek.getDate() + 6);
+  endOfWeek.setHours(23, 59, 59, 999);
+
+  return date >= startOfWeek && date <= endOfWeek;
+};
+
 const TableCheckbox = React.memo(({ checked, onChange, colorClass }) => (
   <div className="flex justify-center">
     <input
@@ -217,6 +245,30 @@ const AuditRow = React.memo(
       const dailyTask = s[dayKey]?.tarea;
       return dailyTask && dailyTask.toString().trim().length > 0;
     }, [row.semana, selectedDay]);
+
+    // B. LÓGICA 'De N-P a E'
+    const deNpAE = useMemo(() => {
+      if (!auditData) return false;
+
+      // 1. ¿Tiene marcadas Proceso o Negativa?
+      const isNP =
+        auditData.accion_venta?.p ||
+        auditData.accion_venta?.n ||
+        auditData.accion_cobranza?.p ||
+        auditData.accion_cobranza?.n ||
+        auditData.llamadas_venta?.p ||
+        auditData.llamadas_venta?.n ||
+        auditData.llamadas_cobranza?.p ||
+        auditData.llamadas_cobranza?.n;
+
+      if (!isNP) return false;
+
+      // 2. ¿Fecha Últ. Compra y Fecha Últ. Cobro en la semana actual?
+      const compraEnSemana = isWithinCurrentWeek(row.fecha_ultima_compra);
+      const cobroEnSemana = isWithinCurrentWeek(row.fecha_ultimo_cobro || row.ultimo_cobro);
+
+      return compraEnSemana && cobroEnSemana;
+    }, [auditData, row.fecha_ultima_compra, row.fecha_ultimo_cobro, row.ultimo_cobro]);
 
     return (
       <Tr className="hover:bg-gray-50 dark:hover:bg-[#333]">
@@ -529,6 +581,14 @@ const AuditRow = React.memo(
             )}
           </button>
         </Td>
+        {/* DE N-P A E */}
+        <Td className="text-center p-2 border-l border-gray-200">
+          <span
+            className={`font-bold text-xs px-2 py-1 rounded ${deNpAE ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}
+          >
+            {deNpAE ? "SÍ" : "NO"}
+          </span>
+        </Td>
       </Tr>
     );
   },
@@ -678,14 +738,14 @@ const Matriz = () => {
       // Helpers para saber si hubo gestión real (Obs)
       const log = Array.isArray(row.gestion)
         ? row.gestion.find((g) => {
-            if (!g.dia_semana) return false;
-            return (
-              g.dia_semana
-                .toLowerCase()
-                .normalize("NFD")
-                .replace(/[\u0300-\u036f]/g, "") === dayKey
-            );
-          })
+          if (!g.dia_semana) return false;
+          return (
+            g.dia_semana
+              .toLowerCase()
+              .normalize("NFD")
+              .replace(/[\u0300-\u036f]/g, "") === dayKey
+          );
+        })
         : null;
 
       // ¿Tiene Observación (Manual del día O Histórica del día)?
@@ -890,6 +950,10 @@ const Matriz = () => {
                   colSpan={1}
                   className="bg-white border-l border-gray-200"
                 ></Th>
+                <Th
+                  colSpan={1}
+                  className="bg-white border-l border-gray-200"
+                ></Th>
               </Tr>
               {/* Nivel 2 Header */}
               <Tr>
@@ -936,6 +1000,10 @@ const Matriz = () => {
                 <Th
                   colSpan={1}
                   className="p-0 border-r border-pink-200 dark:border-pink-600 bg-pink-200 dark:bg-pink-900 h-1"
+                ></Th>
+                <Th
+                  colSpan={1}
+                  className="bg-white border-l border-gray-200"
                 ></Th>
                 <Th
                   colSpan={1}
@@ -999,6 +1067,10 @@ const Matriz = () => {
                 <Th
                   colSpan={1}
                   className="p-0 border-r border-pink-200 dark:border-pink-600 bg-pink-200 dark:bg-pink-900 h-1"
+                ></Th>
+                <Th
+                  colSpan={1}
+                  className="bg-white border-l border-gray-200"
                 ></Th>
                 <Th
                   colSpan={1}
@@ -1093,7 +1165,8 @@ const Matriz = () => {
                 >
                   Observación
                 </Th>
-                <Th className="bg-white border-l border-gray-200">Guardar</Th>
+                <Th className="bg-white border-l border-gray-200 text-[10px] uppercase font-bold text-center">Guardar</Th>
+                <Th className="bg-white border-l border-gray-200 text-[10px] uppercase font-bold text-center">De N-P a E</Th>
               </Tr>
 
               {/* Nivel 5, 6, 7 (Headers de etiquetas - Iguales) */}
@@ -1137,6 +1210,10 @@ const Matriz = () => {
                 <Th
                   colSpan={4}
                   className="p-0 border-r border-gray-200 dark:border-gray-600 bg-gray-200 dark:bg-gray-900 h-1"
+                ></Th>
+                <Th
+                  colSpan={1}
+                  className="p-0 border-r border-pink-200 dark:border-pink-600 bg-pink-200 dark:bg-pink-900 h-1"
                 ></Th>
                 <Th
                   colSpan={1}
@@ -1191,6 +1268,10 @@ const Matriz = () => {
                 <Th
                   colSpan={4}
                   className="p-0 border-r border-gray-200 dark:border-gray-600 bg-gray-200 dark:bg-gray-900 h-1"
+                ></Th>
+                <Th
+                  colSpan={1}
+                  className="p-0 border-r border-pink-200 dark:border-pink-600 bg-pink-200 dark:bg-pink-900 h-1"
                 ></Th>
                 <Th
                   colSpan={1}
@@ -1359,7 +1440,8 @@ const Matriz = () => {
                 <Th className="text-center text-[10px] uppercase bg-pink-200 dark:bg-pink-900 dark:text-pink-200 border-r border-pink-200 text-pink-700">
                   Observaciones
                 </Th>
-                <Th className="bg-white border-l border-gray-200">Guardar</Th>
+                <Th className="bg-white border-l border-gray-200 text-xs text-center uppercase font-bold">Guardar</Th>
+                <Th className="bg-white border-l border-gray-200 text-[10px] text-center uppercase font-bold">De N-P a E</Th>
               </Tr>
             </Thead>
 
@@ -1378,7 +1460,7 @@ const Matriz = () => {
                 ))
               ) : (
                 <Tr>
-                  <Td colSpan={40} className="text-center py-8 text-gray-500">
+                  <Td colSpan={41} className="text-center py-8 text-gray-500">
                     No se encontraron resultados para "{searchTerm}"
                   </Td>
                 </Tr>
