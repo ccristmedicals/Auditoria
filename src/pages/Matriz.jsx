@@ -265,10 +265,17 @@ const AuditRow = React.memo(
 
       // 2. ¿Fecha Últ. Compra y Fecha Últ. Cobro en la semana actual?
       const compraEnSemana = isWithinCurrentWeek(row.fecha_ultima_compra);
-      const cobroEnSemana = isWithinCurrentWeek(row.fecha_ultimo_cobro || row.ultimo_cobro);
+      const cobroEnSemana = isWithinCurrentWeek(
+        row.fecha_ultimo_cobro || row.ultimo_cobro,
+      );
 
       return compraEnSemana && cobroEnSemana;
-    }, [auditData, row.fecha_ultima_compra, row.fecha_ultimo_cobro, row.ultimo_cobro]);
+    }, [
+      auditData,
+      row.fecha_ultima_compra,
+      row.fecha_ultimo_cobro,
+      row.ultimo_cobro,
+    ]);
 
     return (
       <Tr className="hover:bg-gray-50 dark:hover:bg-[#333]">
@@ -539,7 +546,7 @@ const AuditRow = React.memo(
             <div className="flex flex-col gap-1">
               {logDelDia?.venta_descripcion && (
                 <span
-                  className="text-blue-600 block truncate max-w-[180px]"
+                  className="text-green-600 block truncate max-w-[180px]"
                   title={logDelDia.venta_descripcion}
                 >
                   V: {logDelDia.venta_descripcion}
@@ -547,7 +554,7 @@ const AuditRow = React.memo(
               )}
               {logDelDia?.cobranza_descripcion && (
                 <span
-                  className="text-teal-600 block truncate max-w-[180px]"
+                  className="text-blue-600 block truncate max-w-[180px]"
                   title={logDelDia.cobranza_descripcion}
                 >
                   C: {logDelDia.cobranza_descripcion}
@@ -684,7 +691,6 @@ const Matriz = () => {
     if (p >= 1 && p <= totalPages) setPage(p);
   };
 
-  // --- CÁLCULO DE TOTALES PARA EL HEADER (CORREGIDO) ---
   // --- CÁLCULO DE TOTALES PARA EL HEADER (LÓGICA POR DÍA) ---
   const headerCounts = useMemo(() => {
     const counts = {
@@ -695,7 +701,6 @@ const Matriz = () => {
       llamadas_venta: { e: 0, p: 0, n: 0 },
       llamadas_cobranza: { e: 0, p: 0, n: 0 },
 
-      // NUEVOS TOTALES (Lógica estricta)
       puestas_total: 0,
       cumplidos_total: 0,
       visitas_dia_total: 0,
@@ -704,8 +709,6 @@ const Matriz = () => {
 
     if (!data.length) return counts;
 
-    // Normalizamos el día seleccionado UNA sola vez fuera del bucle
-    // Ejemplo: "Miércoles" -> "miercoles"
     const dayKey = selectedDay
       .toLowerCase()
       .normalize("NFD")
@@ -728,7 +731,6 @@ const Matriz = () => {
       // --- 2. LÓGICA DE TOTALES ESTRICTA POR DÍA ---
 
       // A. PUESTAS: Solo si hay tarea en ESE día específico (dayKey)
-      // Ya NO miramos bitacora ni obs_ejecutiva general para contar "Puesta"
       const s = row.semana || {};
       const dailyTask = s[dayKey]?.tarea;
       const isPuesta = dailyTask && dailyTask.toString().trim().length > 0;
@@ -738,14 +740,14 @@ const Matriz = () => {
       // Helpers para saber si hubo gestión real (Obs)
       const log = Array.isArray(row.gestion)
         ? row.gestion.find((g) => {
-          if (!g.dia_semana) return false;
-          return (
-            g.dia_semana
-              .toLowerCase()
-              .normalize("NFD")
-              .replace(/[\u0300-\u036f]/g, "") === dayKey
-          );
-        })
+            if (!g.dia_semana) return false;
+            return (
+              g.dia_semana
+                .toLowerCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "") === dayKey
+            );
+          })
         : null;
 
       // ¿Tiene Observación (Manual del día O Histórica del día)?
@@ -1165,8 +1167,12 @@ const Matriz = () => {
                 >
                   Observación
                 </Th>
-                <Th className="bg-white border-l border-gray-200 text-[10px] uppercase font-bold text-center">Guardar</Th>
-                <Th className="bg-white border-l border-gray-200 text-[10px] uppercase font-bold text-center">De N-P a E</Th>
+                <Th className="bg-white border-l border-gray-200 text-[10px] uppercase font-bold text-center">
+                  Guardar
+                </Th>
+                <Th className="bg-white border-l border-gray-200 text-[10px] uppercase font-bold text-center">
+                  De N-P a E
+                </Th>
               </Tr>
 
               {/* Nivel 5, 6, 7 (Headers de etiquetas - Iguales) */}
@@ -1217,7 +1223,7 @@ const Matriz = () => {
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="p-0 border-r border-pink-200 dark:border-pink-600 bg-pink-200 dark:bg-pink-900 h-1"
+                  className="bg-white border-r border-gray-200"
                 ></Th>
               </Tr>
               <Tr>
@@ -1275,7 +1281,7 @@ const Matriz = () => {
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="p-0 border-r border-pink-200 dark:border-pink-600 bg-pink-200 dark:bg-pink-900 h-1"
+                  className="bg-white border-r border-gray-200"
                 ></Th>
               </Tr>
               <Tr>
@@ -1440,8 +1446,12 @@ const Matriz = () => {
                 <Th className="text-center text-[10px] uppercase bg-pink-200 dark:bg-pink-900 dark:text-pink-200 border-r border-pink-200 text-pink-700">
                   Observaciones
                 </Th>
-                <Th className="bg-white border-l border-gray-200 text-xs text-center uppercase font-bold">Guardar</Th>
-                <Th className="bg-white border-l border-gray-200 text-[10px] text-center uppercase font-bold">De N-P a E</Th>
+                <Th className="bg-white border-l border-gray-200 text-xs text-center uppercase font-bold">
+                  Guardar
+                </Th>
+                <Th className="bg-white border-l border-gray-200 text-[10px] text-center uppercase font-bold">
+                  De N-P a E
+                </Th>
               </Tr>
             </Thead>
 
