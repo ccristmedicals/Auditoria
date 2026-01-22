@@ -182,37 +182,41 @@ const AuditRow = React.memo(
       return s[dayKey]?.tarea || "";
     }, [row.semana, selectedDay]);
 
-    // --- CÁLCULO DE DISTANCIA ---
-    const distancia = useMemo(() => {
-      // 1. Obtener coordenada planificada (Bitrix)
+    // --- CÁLCULO DE DISTANCIA (CORREGIDO) ---
+    const { distanciaTxt, esLejos } = useMemo(() => {
       const planificada = row.coordenadas;
-
-      // 2. Obtener coordenada real (del log del día)
       const real = logDelDia?.ubicacion;
 
-      // 3. Calcular si existen ambas
       if (planificada && real && row.calculateDistance) {
         const mts = row.calculateDistance(planificada, real);
+
         if (mts !== null) {
-          // Formato amigable: Si es > 1000m mostrar km, sino m
-          return mts > 1000 ? `${(mts / 1000).toFixed(2)} km` : `${mts} m`;
+          // 1. Definir si está lejos (Umbral de ejemplo: 200 metros)
+          // Si mts > 200, se marca en ROJO. Ajusta el 200 a tu gusto.
+          const isFar = mts > 200;
+
+          // 2. Formatear el texto
+          const txt = mts > 1000 ? `${(mts / 1000).toFixed(2)} km` : `${mts} m`;
+
+          return { distanciaTxt: txt, esLejos: isFar };
         }
       }
-      return "-";
+      // Valor por defecto
+      return { distanciaTxt: "-", esLejos: false };
     }, [row.coordenadas, logDelDia, row.calculateDistance]);
 
     // --- 2. CÁLCULOS LÓGICOS DE LA FILA ---
 
-    // A. PLANIFICACIÓN (Puestas): ¿Tiene Bitacora, Obs Ejecutiva o Tarea en la semana?
+    // A. PLANIFICACIÓN (Puestas): ¿Tiene Tarea en la semana?
     const hasPlanning = useMemo(() => {
-      if (row.bitacora && row.bitacora.trim().length > 0) return true;
-      if (row.obs_ejecutiva && row.obs_ejecutiva.trim().length > 0) return true;
       const s = row.semana || {};
-      const days = ["lunes", "martes", "miercoles", "jueves", "viernes"];
-      return days.some(
-        (day) => s[day]?.tarea && s[day].tarea.trim().length > 0,
-      );
-    }, [row.bitacora, row.obs_ejecutiva, row.semana]);
+      const dayKey = selectedDay
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+      const dailyTask = s[dayKey]?.tarea;
+      return dailyTask && dailyTask.toString().trim().length > 0;
+    }, [row.semana, selectedDay]);
 
     return (
       <Tr className="hover:bg-gray-50 dark:hover:bg-[#333]">
@@ -436,9 +440,13 @@ const AuditRow = React.memo(
 
         {/* --- DIFERENCIA COORDENADAS --- */}
         <Td
-          className={`text-center text-xs whitespace-nowrap font-medium ${distancia !== "-" && parseInt(distancia) > 100 ? "text-red-500" : "text-green-600"}`}
+          className={`text-center text-xs whitespace-nowrap font-medium ${
+            distanciaTxt !== "-" && esLejos
+              ? "text-red-500 font-bold"
+              : "text-green-600"
+          }`}
         >
-          {distancia}
+          {distanciaTxt}
         </Td>
         <Td className="text-center text-xs">
           {!logDelDia?.venta_descripcion && !logDelDia?.cobranza_descripcion ? (
@@ -544,7 +552,7 @@ const Matriz = () => {
           bitacora: row.bitacora,
           obs_ejecutiva: row.obs_ejecutiva,
           semana: row.semana,
-          auditoria_matriz: row.auditoria, // Guardamos los colores
+          auditoria_matriz: row.auditoria,
         },
         full_data: { nombre: row.nombre },
       };
@@ -617,16 +625,17 @@ const Matriz = () => {
   };
 
   // --- CÁLCULO DE TOTALES PARA EL HEADER (CORREGIDO) ---
+  // --- CÁLCULO DE TOTALES PARA EL HEADER (LÓGICA POR DÍA) ---
   const headerCounts = useMemo(() => {
     const counts = {
-      // Totales de checks simples
+      // Totales de checks simples (Colores)
       inicio_whatsapp: { e: 0, c: 0 },
       accion_venta: { e: 0, p: 0, n: 0 },
       accion_cobranza: { e: 0, p: 0, n: 0 },
       llamadas_venta: { e: 0, p: 0, n: 0 },
       llamadas_cobranza: { e: 0, p: 0, n: 0 },
 
-      // NUEVOS TOTALES
+      // NUEVOS TOTALES (Lógica estricta)
       puestas_total: 0,
       cumplidos_total: 0,
       visitas_dia_total: 0,
@@ -635,11 +644,18 @@ const Matriz = () => {
 
     if (!data.length) return counts;
 
+    // Normalizamos el día seleccionado UNA sola vez fuera del bucle
+    // Ejemplo: "Miércoles" -> "miercoles"
+    const dayKey = selectedDay
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+
     filteredData.forEach((row) => {
       const day = row.auditoria?.[selectedDay];
       if (!day) return;
 
-      // 1. Sumar checks simples
+      // 1. Sumar checks simples de colores (Igual que antes)
       if (day.inicio_whatsapp?.e) counts.inicio_whatsapp.e++;
       if (day.inicio_whatsapp?.c) counts.inicio_whatsapp.c++;
       ["e", "p", "n"].forEach((f) => {
@@ -649,24 +665,17 @@ const Matriz = () => {
         if (day.llamadas_cobranza?.[f]) counts.llamadas_cobranza[f]++;
       });
 
-      // --- 2. LÓGICA DE CÁLCULO DE TOTALES ---
+      // --- 2. LÓGICA DE TOTALES ESTRICTA POR DÍA ---
 
-      // A. PUESTAS (Si hay planificación en el sistema)
+      // A. PUESTAS: Solo si hay tarea en ESE día específico (dayKey)
+      // Ya NO miramos bitacora ni obs_ejecutiva general para contar "Puesta"
       const s = row.semana || {};
-      const days = ["lunes", "martes", "miercoles", "jueves", "viernes"];
-      const hasPlanning =
-        (row.bitacora && row.bitacora.trim().length > 0) ||
-        (row.obs_ejecutiva && row.obs_ejecutiva.trim().length > 0) ||
-        days.some((day) => s[day]?.tarea && s[day].tarea.trim().length > 0);
+      const dailyTask = s[dayKey]?.tarea;
+      const isPuesta = dailyTask && dailyTask.toString().trim().length > 0;
 
-      const isPuesta = hasPlanning; // Es un booleano, si true suma 1
       if (isPuesta) counts.puestas_total++;
 
-      // Helpers
-      const dayKey = selectedDay
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "");
+      // Helpers para saber si hubo gestión real (Obs)
       const log = Array.isArray(row.gestion)
         ? row.gestion.find((g) => {
             if (!g.dia_semana) return false;
@@ -679,19 +688,19 @@ const Matriz = () => {
           })
         : null;
 
-      // ¿Tiene Observación?
+      // ¿Tiene Observación (Manual del día O Histórica del día)?
       const hasObs =
         (day.observacion && day.observacion.toString().trim().length > 0) ||
         (log && (log.venta_descripcion || log.cobranza_descripcion));
 
-      // B. CUMPLIDO (Puesta + Obs)
+      // B. CUMPLIDO (Era Puesta del día Y tuvo Obs)
       if (isPuesta && hasObs) counts.cumplidos_total++;
 
-      // C. VISITA (Solo Obs)
+      // C. VISITA DEL DÍA (Solo tuvo Obs, planificado o no)
       if (hasObs) counts.visitas_dia_total++;
     });
 
-    // D. % TOTAL
+    // D. % TOTAL (Cumplidos / Puestas)
     if (counts.puestas_total > 0) {
       counts.percent_avg = (
         (counts.cumplidos_total / counts.puestas_total) *
