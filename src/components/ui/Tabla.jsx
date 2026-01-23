@@ -44,6 +44,7 @@ export const Th = ({
     children,
     stickyLeft = false,
     stickyTop = true,
+    stickyRight = false,
     align = "center",
     className = "",
     ...props
@@ -56,17 +57,23 @@ export const Th = ({
     if (stickyLeft && stickyTop) {
         stickyClasses = "sticky left-0 top-0 border-r border-gray-200 dark:border-[#464646]";
         zIndex = "z-30";
+    } else if (stickyRight && stickyTop) {
+        stickyClasses = "sticky right-0 top-0 border-l border-gray-200 dark:border-[#464646]";
+        zIndex = "z-30";
     } else if (stickyTop) {
         stickyClasses = "sticky top-0";
         zIndex = "z-20";
     } else if (stickyLeft) {
         stickyClasses = "sticky left-0 border-r border-gray-200 dark:border-[#464646]";
         zIndex = "z-20";
+    } else if (stickyRight) {
+        stickyClasses = "sticky right-0 border-l border-gray-200 dark:border-[#464646]";
+        zIndex = "z-20";
     }
 
     const defaultBg = "bg-gray-50 dark:bg-[#262626]";
     const hasBgClass = className.includes("bg-");
-    const bgClass = (stickyLeft || stickyTop) && !hasBgClass ? defaultBg : "";
+    const bgClass = (stickyLeft || stickyTop || stickyRight) && !hasBgClass ? defaultBg : "";
 
     return (
         <th
@@ -82,6 +89,7 @@ export const Th = ({
 export const Td = ({
     children,
     stickyLeft = false,
+    stickyRight = false,
     align = "center",
     className = "",
     ...props
@@ -96,11 +104,15 @@ export const Td = ({
         stickyClasses = "sticky left-0 border-r border-gray-200 dark:border-[#464646]";
         zIndex = "z-10";
         textColors = "font-medium text-gray-900 dark:text-white"; // ✅ Color destacado para columnas fijas
+    } else if (stickyRight) {
+        stickyClasses = "sticky right-0 border-l border-gray-200 dark:border-[#464646]";
+        zIndex = "z-10";
+        textColors = "font-medium text-gray-900 dark:text-white";
     }
 
     const defaultBg = "bg-white dark:bg-[#262626]";
     const hasBgClass = className.includes("bg-");
-    const bgClass = stickyLeft && !hasBgClass ? defaultBg : "";
+    const bgClass = (stickyLeft || stickyRight) && !hasBgClass ? defaultBg : "";
 
     return (
         <td

@@ -58,11 +58,10 @@ const FilterMultiSelect = ({ label, options, selected, onChange }) => {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-2 px-3 py-2 text-sm border rounded-lg transition-all shadow-sm ${
-          selected.length > 0
+        className={`flex items-center gap-2 px-3 py-2 text-sm border rounded-lg transition-all shadow-sm ${selected.length > 0
             ? "bg-teal-50 border-[#1a9888] text-[#1a9888] ring-1 ring-[#1a9888] dark:bg-teal-900/20 dark:border-teal-800"
             : "bg-white border-gray-300 text-gray-700 dark:bg-[#262626] dark:border-gray-600 dark:text-gray-300"
-        }`}
+          }`}
       >
         <Filter size={16} />
         <span>{label}</span>
@@ -91,18 +90,16 @@ const FilterMultiSelect = ({ label, options, selected, onChange }) => {
                   <div
                     key={opt}
                     onClick={() => toggleOption(opt)}
-                    className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer text-sm transition-all ${
-                      isSelected
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer text-sm transition-all ${isSelected
                         ? "bg-teal-50 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300 font-medium"
                         : "hover:bg-gray-100 dark:hover:bg-[#333] text-gray-600 dark:text-gray-400"
-                    }`}
+                      }`}
                   >
                     <div
-                      className={`w-5 h-5 border rounded flex items-center justify-center transition-colors ${
-                        isSelected
+                      className={`w-5 h-5 border rounded flex items-center justify-center transition-colors ${isSelected
                           ? "bg-[#1a9888] border-[#1a9888]"
                           : "border-gray-400 dark:border-gray-600"
-                      }`}
+                        }`}
                     >
                       {isSelected && (
                         <CheckSquare size={14} className="text-white" />
@@ -327,9 +324,8 @@ const CompanyRow = React.memo(
         </Td>
         <Td
           align="right"
-          className={`font-mono text-xs font-bold ${
-            row.saldo_vencido > 0 ? "text-red-600" : "text-green-600"
-          }`}
+          className={`font-mono text-xs font-bold ${row.saldo_vencido > 0 ? "text-red-600" : "text-green-600"
+            }`}
         >
           {formatCurrency(row.saldo_vencido)}
         </Td>
@@ -603,11 +599,10 @@ const BaseDatosBitrix = () => {
           {/* 3. TOGGLE VENCIDOS (Filtro Hook) */}
           <button
             onClick={() => setOnlyVencidos(!onlyVencidos)}
-            className={`flex items-center gap-2 px-3 py-2 text-sm border rounded-lg transition-all shadow-sm ${
-              onlyVencidos
+            className={`flex items-center gap-2 px-3 py-2 text-sm border rounded-lg transition-all shadow-sm ${onlyVencidos
                 ? "bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300 ring-1 ring-red-200"
                 : "bg-white border-gray-300 text-gray-700 dark:bg-[#262626] dark:border-gray-600 dark:text-gray-300 hover:bg-gray-50"
-            }`}
+              }`}
           >
             {onlyVencidos ? <CheckSquare size={16} /> : <Square size={16} />}
             <span>Solo Vencidos</span>
@@ -635,11 +630,10 @@ const BaseDatosBitrix = () => {
           {/* FILTRO VER SELECCIONADOS */}
           <button
             onClick={() => setShowOnlySelected(!showOnlySelected)}
-            className={`px-3 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 shadow-sm ${
-              showOnlySelected
+            className={`px-3 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 shadow-sm ${showOnlySelected
                 ? "bg-[#1a9888] text-white border-[#1a9888]"
                 : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-[#1a9888]"
-            }`}
+              }`}
           >
             <Filter size={16} />
             {showOnlySelected ? "Ver Todos" : "Ver Selec."}
@@ -835,7 +829,7 @@ const BaseDatosBitrix = () => {
                   Vie-Tar
                 </Th>
 
-                <Th className="min-w-[80px] bg-white dark:bg-[#191919] border-l shadow-[-4px_0_5px_-2px_rgba(0,0,0,0.1)] text-center">
+                <Th stickyRight className="min-w-[80px] bg-white dark:bg-[#191919] border-l shadow-[-4px_0_5px_-2px_rgba(0,0,0,0.1)] text-center">
                   Guardar
                 </Th>
               </Tr>

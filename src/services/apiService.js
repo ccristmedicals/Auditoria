@@ -12,6 +12,7 @@ const getAuthHeaders = () => {
 async function fetchJson(url, options = {}) {
   const headers = { ...getAuthHeaders(), ...options.headers };
 
+  console.log(`[API Request] ${options.method || "GET"} ${url}`, options.body ? JSON.parse(options.body) : "");
   const response = await fetch(url, { ...options, headers });
 
   if (!response.ok) {
@@ -49,6 +50,7 @@ export const apiService = {
   // --- USUARIOS ---
 
   registerUser: (userData) => {
+    console.log("[registerUser] Sending data to backend:", userData);
     return fetchJson(`${BASE_URL}/usuarios/crear`, {
       method: "POST",
       body: JSON.stringify(userData),
@@ -80,17 +82,17 @@ export const apiService = {
 
   // --- BITRIX & CLIENTES ---
 
-  getBitrixCompanies: (start = 0) => {
+  getBitrixCompanies: (start = 0, segmentos = []) => {
     return fetchJson(`${BASE_URL}/clientes/companies`, {
       method: "POST",
-      body: JSON.stringify({ start }),
+      body: JSON.stringify({ start, segmentos }),
     });
   },
 
-  getAllCompanies: (payload = {}) => {
+  getAllCompanies: (segmentos = []) => {
     return fetchJson(`${BASE_URL}/clientes/companies`, {
       method: "POST",
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ start: 0, segmentos }),
     });
   },
 
