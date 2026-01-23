@@ -87,10 +87,10 @@ export const apiService = {
     });
   },
 
-  getAllCompanies: () => {
+  getAllCompanies: (payload = {}) => {
     return fetchJson(`${BASE_URL}/clientes/companies`, {
       method: "POST",
-      body: JSON.stringify({ start: 0 }),
+      body: JSON.stringify(payload),
     });
   },
 

@@ -7,33 +7,35 @@ import BaseDatosBitrix from "../pages/BaseDatosBitrix";
 import RegisterPage from "../pages/RegisterPage";
 import AuditoriaGeo from "../pages/AuditoriaGeo";
 import Matriz from "../pages/Matriz";
+import Rendimiento from "../pages/Rendimiento";
 
 const AppRoutes = () => {
-    return (
-        <Routes>
-            {/* Rutas Públicas */}
-            <Route path="/" element={<Navigate to="/login" replace />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
+  return (
+    <Routes>
+      {/* Rutas Públicas */}
+      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
 
-            {/* Rutas Protegidas dentro del MainLayout */}
-            <Route
-                element={
-                    <PrivateRoute>
-                        <MainLayout />
-                    </PrivateRoute>
-                }
-            >
-                <Route path="/gestion-usuarios" element={<GestionUsuarios />} />
-                <Route path="/base-datos-bitrix" element={<BaseDatosBitrix />} />
-                <Route path="/base-datos-profit" element={<AuditoriaGeo />} />
-                <Route path="/matriz" element={<Matriz />} />
-            </Route>
+      {/* Rutas Protegidas dentro del MainLayout */}
+      <Route
+        element={
+          <PrivateRoute>
+            <MainLayout />
+          </PrivateRoute>
+        }
+      >
+        <Route path="/gestion-usuarios" element={<GestionUsuarios />} />
+        <Route path="/base-datos-bitrix" element={<BaseDatosBitrix />} />
+        <Route path="/base-datos-profit" element={<AuditoriaGeo />} />
+        <Route path="/matriz" element={<Matriz />} />
+        <Route path="/rendimiento" element={<Rendimiento />} />
+      </Route>
 
-            {/* Ruta para manejar páginas no encontradas */}
-            <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
-    );
+      {/* Ruta para manejar páginas no encontradas */}
+      <Route path="*" element={<Navigate to="/login" replace />} />
+    </Routes>
+  );
 };
 
 export default AppRoutes;

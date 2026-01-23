@@ -6,6 +6,7 @@ import {
   Sun,
   User,
   Container,
+  TrendingUp,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -40,10 +41,11 @@ export default function Sidebar() {
       icon: <DatabaseZap />,
     },
     { to: "/matriz", label: "Matriz", icon: <Container /> },
+    { to: "/rendimiento", label: "Rendimiento", icon: <TrendingUp /> },
   ];
 
   return (
-    <aside className="w-64 min-w-[16rem] max-w-[16rem] bg-gradient-to-b from-[#1a9888] to-[#023831] text-white h-screen py-6 px-4 shadow-2xl sticky top-0 transition-all duration-300 flex flex-col">
+    <aside className="w-64 min-w-[16rem] max-w-[16rem] bg-linear-to-b from-[#1a9888] to-[#023831] text-white h-screen py-6 px-4 shadow-2xl sticky top-0 transition-all duration-300 flex flex-col">
       <div className="text-2xl font-bold mb-6 tracking-wide px-3">Menú</div>
       <nav className="flex flex-col gap-2 flex-1 overflow-y-auto pr-2 sidebar-nav">
         {links.map(({ to, label, icon }, index) => {
