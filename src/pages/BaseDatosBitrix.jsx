@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable react-hooks/set-state-in-effect */
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useBaseDatosBitrix } from "../hooks/useBaseDatosBitrix";
 import {
@@ -24,10 +24,101 @@ import {
   Filter,
   Search,
   X,
+  ChevronDown,
+  CheckSquare,
+  Square,
 } from "lucide-react";
 import { apiService } from "../services/apiService";
 
-// --- COMPONENTES AUXILIARES MEMORIZADOS ---
+// --- CONSTANTES ---
+const OPCIONES_SEGMENTOS = [
+  "40",
+  "TRUJILLO",
+  "MERIDA",
+  "MERIDA - ALTA",
+  "MERIDA - BAJA",
+  "CARACAS",
+];
+
+// --- COMPONENTES AUXILIARES ---
+
+// 1. Selector Múltiple para Filtros (NUEVO)
+const FilterMultiSelect = ({ label, options, selected, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const toggleOption = (val) => {
+    if (selected.includes(val)) {
+      onChange(selected.filter((item) => item !== val));
+    } else {
+      onChange([...selected, val]);
+    }
+  };
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={`flex items-center gap-2 px-3 py-2 text-sm border rounded-lg transition-all shadow-sm ${
+          selected.length > 0
+            ? "bg-teal-50 border-[#1a9888] text-[#1a9888] ring-1 ring-[#1a9888] dark:bg-teal-900/20 dark:border-teal-800"
+            : "bg-white border-gray-300 text-gray-700 dark:bg-[#262626] dark:border-gray-600 dark:text-gray-300"
+        }`}
+      >
+        <Filter size={16} />
+        <span>{label}</span>
+        {selected.length > 0 && (
+          <span className="bg-[#1a9888] text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
+            {selected.length}
+          </span>
+        )}
+        <ChevronDown size={14} className="ml-1 opacity-50" />
+      </button>
+
+      {isOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-10"
+            onClick={() => setIsOpen(false)}
+          />
+          <div className="absolute z-20 mt-2 w-64 bg-white dark:bg-[#1e1e1e] border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl p-2 animate-in fade-in zoom-in-95 duration-100 left-0">
+            <div className="text-xs font-bold text-gray-400 mb-2 px-2 uppercase tracking-wider">
+              Seleccionar Segmentos
+            </div>
+            <div className="max-h-60 overflow-y-auto space-y-1 custom-scrollbar">
+              {options.map((opt) => {
+                const isSelected = selected.includes(opt);
+                return (
+                  <div
+                    key={opt}
+                    onClick={() => toggleOption(opt)}
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer text-sm transition-all ${
+                      isSelected
+                        ? "bg-teal-50 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300 font-medium"
+                        : "hover:bg-gray-100 dark:hover:bg-[#333] text-gray-600 dark:text-gray-400"
+                    }`}
+                  >
+                    <div
+                      className={`w-5 h-5 border rounded flex items-center justify-center transition-colors ${
+                        isSelected
+                          ? "bg-[#1a9888] border-[#1a9888]"
+                          : "border-gray-400 dark:border-gray-600"
+                      }`}
+                    >
+                      {isSelected && (
+                        <CheckSquare size={14} className="text-white" />
+                      )}
+                    </div>
+                    {opt}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
 
 const ErrorAwareCell = React.memo(({ value, isError, icon = false }) => {
   if (isError) {
@@ -119,15 +210,13 @@ const CompanyRow = React.memo(
     const renderStyledContent = (textString) => {
       if (!textString) return "-";
 
-      // Separamos por " / " que es como lo unimos en el hook
       const parts = textString.split(" / ");
 
       return (
         <div className="flex flex-col gap-1">
           {parts.map((part, index) => {
-            let colorClass = "text-gray-600 dark:text-gray-400"; // Por defecto
+            let colorClass = "text-gray-600 dark:text-gray-400";
 
-            // Lógica de colores pedida: Venta=Verde, Cobranza=Azul
             if (part.startsWith("V:")) {
               colorClass = "text-green-700 dark:text-green-400 font-medium";
             } else if (part.startsWith("C:")) {
@@ -137,7 +226,7 @@ const CompanyRow = React.memo(
             return (
               <span
                 key={index}
-                className={`${colorClass} break-words whitespace-normal leading-tight text-xs`}
+                className={`${colorClass} wrap-break-word whitespace-normal leading-tight text-xs`}
               >
                 {part}
               </span>
@@ -151,14 +240,14 @@ const CompanyRow = React.memo(
     const renderDayCells = (dayPrefix, bgColorClass, borderClass = "") => {
       return (
         <>
-          {/* ACCIÓN (Solo Lectura con Colores) */}
+          {/* ACCIÓN (Solo Lectura) */}
           <Td className={`${bgColorClass} min-w-[150px] align-top`}>
             <div className="px-2 py-1.5">
               {renderStyledContent(row[`${dayPrefix}_accion`])}
             </div>
           </Td>
 
-          {/* OBSERVACIÓN (Solo Lectura con Colores) */}
+          {/* OBSERVACIÓN (Solo Lectura) */}
           <Td className={`${bgColorClass} min-w-[150px] align-top`}>
             <div className="px-2 py-1.5 italic">
               {renderStyledContent(row[`${dayPrefix}_observacion`])}
@@ -206,7 +295,7 @@ const CompanyRow = React.memo(
           </div>
         </Td>
 
-        {/* Celdas Informativas (Bitrix/Profit) */}
+        {/* Celdas Informativas */}
         <Td>
           <ErrorAwareCell
             value={row.codigo_profit}
@@ -271,7 +360,7 @@ const CompanyRow = React.memo(
           {formatCurrency(row.ventas_anterior)}
         </Td>
 
-        {/* --- SECCIÓN GESTIÓN (Inputs Grandes Editables) --- */}
+        {/* --- SECCIÓN GESTIÓN --- */}
         <Td className="bg-gray-50 dark:bg-gray-800 border-l border-gray-200 dark:border-[#333] min-w-[300px]">
           <EditableCell
             value={row.bitacora}
@@ -326,17 +415,27 @@ const BaseDatosBitrix = () => {
   const {
     companies,
     loading,
-    handleCompanyChange,
+    // Filtros del Hook
+    selectedSegments,
+    setSelectedSegments,
+    filterZona,
+    setFilterZona,
+    onlyVencidos,
+    setOnlyVencidos,
+    // Paginación
     page,
     totalPages,
     totalRecords,
     goToPage,
+    // Acciones
+    handleCompanyChange,
+    refresh,
   } = useBaseDatosBitrix();
 
   const [jumpPage, setJumpPage] = useState("");
   const [selectedIds, setSelectedIds] = useState([]);
   const [showOnlySelected, setShowOnlySelected] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [localSearchTerm, setLocalSearchTerm] = useState(""); // Búsqueda por Nombre/ID en resultados
 
   const toggleSelect = useCallback((id_interno) => {
     setSelectedIds((prev) =>
@@ -358,23 +457,26 @@ const BaseDatosBitrix = () => {
     [companies],
   );
 
+  // Filtro adicional para Nombre/ID dentro de la página actual
   const displayedCompanies = useMemo(() => {
     let result = companies;
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
+
+    // Filtro Local por Nombre/ID
+    if (localSearchTerm) {
+      const term = localSearchTerm.toLowerCase();
       result = result.filter(
         (company) =>
           company.nombre?.toLowerCase().includes(term) ||
           company.id?.toString().includes(term) ||
-          company.codigo_profit?.toLowerCase().includes(term) ||
-          company.ciudad?.toLowerCase().includes(term),
+          company.codigo_profit?.toLowerCase().includes(term),
       );
     }
+
     if (showOnlySelected) {
       result = result.filter((c) => selectedIds.includes(c.id_interno));
     }
     return result;
-  }, [companies, searchTerm, showOnlySelected, selectedIds]);
+  }, [companies, localSearchTerm, showOnlySelected, selectedIds]);
 
   const formatCurrency = useCallback((amount) => {
     return new Intl.NumberFormat("es-VE", {
@@ -425,7 +527,8 @@ const BaseDatosBitrix = () => {
       JSON.stringify(payload, null, 2),
     );
     try {
-      const response = await apiService.saveConfig(payload);
+      // Usamos saveMatrix o saveConfig dependiendo de tu API
+      const response = await apiService.saveMatrix(payload);
       if (response) {
         alert(`✅ Gestión de "${companyData.nombre}" guardada correctamente.`);
       }
@@ -448,7 +551,7 @@ const BaseDatosBitrix = () => {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 min-h-screen bg-white dark:bg-[#191919]">
-      {/* Header */}
+      {/* --- HEADER Y BARRA DE FILTROS --- */}
       <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mb-6 border-b border-gray-200 dark:border-gray-700 pb-4">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg text-[#1a9888]">
@@ -466,54 +569,93 @@ const BaseDatosBitrix = () => {
         </div>
 
         <div className="flex flex-col sm:flex-row flex-wrap gap-3 items-start sm:items-center">
-          {/* --- BUSCADOR --- */}
-          <div className="relative w-full sm:w-64">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search size={16} className="text-gray-400" />
-            </div>
+          {/* 1. INPUT ZONA (Filtro del Hook) */}
+          <div className="relative w-full sm:w-48 group">
             <input
               type="text"
-              placeholder="Buscar cliente, ID, código..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Filtrar Zona..."
+              value={filterZona}
+              onChange={(e) => setFilterZona(e.target.value)}
               className="w-full pl-9 pr-8 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1a9888]/50 focus:border-[#1a9888] transition-all"
             />
-            {searchTerm && (
+            <Search
+              size={16}
+              className="absolute left-3 top-2.5 text-gray-400 group-focus-within:text-[#1a9888]"
+            />
+            {filterZona && (
               <button
-                onClick={() => setSearchTerm("")}
-                className="absolute inset-y-0 right-0 pr-2 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                onClick={() => setFilterZona("")}
+                className="absolute right-2 top-2.5 text-gray-400 hover:text-red-500"
               >
                 <X size={14} />
               </button>
             )}
           </div>
 
-          {/* BOTÓN FILTRO SELECCIONADOS */}
+          {/* 2. SELECTOR SEGMENTOS (Filtro Backend) */}
+          <FilterMultiSelect
+            label="Segmentos"
+            options={OPCIONES_SEGMENTOS}
+            selected={selectedSegments}
+            onChange={setSelectedSegments}
+          />
+
+          {/* 3. TOGGLE VENCIDOS (Filtro Hook) */}
+          <button
+            onClick={() => setOnlyVencidos(!onlyVencidos)}
+            className={`flex items-center gap-2 px-3 py-2 text-sm border rounded-lg transition-all shadow-sm ${
+              onlyVencidos
+                ? "bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300 ring-1 ring-red-200"
+                : "bg-white border-gray-300 text-gray-700 dark:bg-[#262626] dark:border-gray-600 dark:text-gray-300 hover:bg-gray-50"
+            }`}
+          >
+            {onlyVencidos ? <CheckSquare size={16} /> : <Square size={16} />}
+            <span>Solo Vencidos</span>
+          </button>
+
+          {/* 4. BUSCADOR LOCAL (Nombre/ID) */}
+          <div className="relative w-full sm:w-48">
+            <input
+              type="text"
+              placeholder="Buscar por Nombre/ID..."
+              value={localSearchTerm}
+              onChange={(e) => setLocalSearchTerm(e.target.value)}
+              className="w-full pl-3 pr-8 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-gray-400 transition-all"
+            />
+            {localSearchTerm && (
+              <button
+                onClick={() => setLocalSearchTerm("")}
+                className="absolute right-2 top-2.5 text-gray-400 hover:text-red-500"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+
+          {/* FILTRO VER SELECCIONADOS */}
           <button
             onClick={() => setShowOnlySelected(!showOnlySelected)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 shadow-sm ${
+            className={`px-3 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 shadow-sm ${
               showOnlySelected
-                ? "bg-[#1a9888] text-white border-[#1a9888] ring-2 ring-[#1a9888]/20"
+                ? "bg-[#1a9888] text-white border-[#1a9888]"
                 : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-[#1a9888]"
             }`}
           >
             <Filter size={16} />
-            {showOnlySelected ? "Mostrar Todos" : "Ver Seleccionados"}
+            {showOnlySelected ? "Ver Todos" : "Ver Selec."}
           </button>
 
-          <div className="px-3 py-1 bg-red-50 text-red-600 rounded-lg border border-red-100 dark:bg-red-900/20 dark:border-red-800 flex items-center gap-2 text-xs h-[38px]">
-            <AlertTriangle size={14} />
-            <span>
-              Errores:{" "}
-              <strong>
-                {
-                  companies.filter(
-                    (c) => !c.codigo_profit || c.codigo_profit === "0",
-                  ).length
-                }
-              </strong>
-            </span>
-          </div>
+          {/* REFRESCAR */}
+          <button
+            onClick={refresh}
+            disabled={loading}
+            className="p-2 text-gray-500 bg-white border border-gray-300 hover:text-[#1a9888] hover:border-[#1a9888] hover:bg-teal-50 rounded-lg transition-all shadow-sm"
+          >
+            <RefreshCw
+              size={20}
+              className={loading ? "animate-spin text-[#1a9888]" : ""}
+            />
+          </button>
         </div>
       </div>
 

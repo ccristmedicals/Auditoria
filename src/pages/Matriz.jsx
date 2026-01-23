@@ -73,19 +73,30 @@ const formatCurrency = (val) =>
 const isWithinCurrentWeek = (dateStr) => {
   if (!dateStr || dateStr === "—" || dateStr === "-") return false;
 
-  // Intentamos parsear la fecha (asumiendo formatos comunes como YYYY-MM-DD o DD/MM/YYYY)
+  // Forzamos el parseo a hora local para evitar desfases de zona horaria (UTC vs Local)
   let date;
   if (dateStr.includes("/")) {
     const [day, month, year] = dateStr.split("/").map(Number);
     date = new Date(year, month - 1, day);
+  } else if (dateStr.includes("-")) {
+    const parts = dateStr.split("-").map(Number);
+    if (parts[0] > 1000) {
+      // YYYY-MM-DD
+      date = new Date(parts[0], parts[1] - 1, parts[2]);
+    } else {
+      // DD-MM-YYYY
+      date = new Date(parts[2], parts[1] - 1, parts[0]);
+    }
   } else {
     date = new Date(dateStr);
   }
 
   if (isNaN(date.getTime())) return false;
 
+  // Normalizamos a la fecha de hoy local
   const now = new Date();
   const dayOfWeek = now.getDay() || 7; // Lunes = 1, Domingo = 7
+
   const startOfWeek = new Date(now);
   startOfWeek.setDate(now.getDate() - (dayOfWeek - 1));
   startOfWeek.setHours(0, 0, 0, 0);
@@ -499,11 +510,10 @@ const AuditRow = React.memo(
 
         {/* --- DIFERENCIA COORDENADAS --- */}
         <Td
-          className={`text-center text-xs whitespace-nowrap font-medium ${
-            distanciaTxt !== "-" && esLejos
-              ? "text-red-500 font-bold"
-              : "text-green-600"
-          }`}
+          className={`text-center text-xs whitespace-nowrap font-medium ${distanciaTxt !== "-" && esLejos
+            ? "text-red-500 font-bold"
+            : "text-green-600"
+            }`}
         >
           {distanciaTxt}
         </Td>
@@ -603,38 +613,43 @@ const AuditRow = React.memo(
 
 // --- COMPONENTE PRINCIPAL ---
 const Matriz = () => {
-  const { data, loading, error, handleAuditoriaChange } = useAuditoria();
+  const { data, loading, error, handleAuditoriaChange, refresh } = useAuditoria();
   const [selectedDay, setSelectedDay] = useState("lunes");
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
   const ITEMS_PER_PAGE = 25;
 
   // --- FUNCIÓN PARA GUARDAR FILA ---
-  const handleSaveRow = useCallback(async (row) => {
-    try {
-      const payload = {
-        id_bitrix: row.id_bitrix,
-        codigo_profit: row.codigo,
-        gestion: {
-          bitacora: row.bitacora,
-          obs_ejecutiva: row.obs_ejecutiva,
-          semana: row.semana,
-          auditoria_matriz: row.auditoria,
-        },
-        full_data: { nombre: row.nombre },
-      };
+  const handleSaveRow = useCallback(
+    async (row) => {
+      try {
+        const payload = {
+          id_bitrix: row.id_bitrix,
+          codigo_profit: row.codigo,
+          gestion: {
+            bitacora: row.bitacora,
+            obs_ejecutiva: row.obs_ejecutiva,
+            semana: row.semana,
+            auditoria_matriz: row.auditoria,
+          },
+          full_data: { nombre: row.nombre },
+        };
 
-      // --- AQUÍ ESTÁ EL CONSOLE LOG QUE PEDISTE ---
-      console.log("📤 ENVIANDO AL BACKEND:", payload);
-      // --------------------------------------------
+        console.log("📤 ENVIANDO AL BACKEND:", payload);
 
-      await apiService.saveMatrix(payload);
-      alert("✅ Guardado correctamente");
-    } catch (err) {
-      console.error(err);
-      alert("❌ Error al guardar");
-    }
-  }, []);
+        await apiService.saveMatrix(payload);
+
+        // --- RECARGA AUTOMÁTICA DE DATOS SIN REFRESH DE PÁGINA ---
+        await refresh(false); // false para no mostrar el spinner de carga completa si no quieres, o true para feedback claro
+
+        alert("✅ Guardado correctamente");
+      } catch (err) {
+        console.error(err);
+        alert("❌ Error al guardar");
+      }
+    },
+    [refresh],
+  );
   const getDynamicBackground = useCallback((categoryData, defaultColor) => {
     if (categoryData?.e)
       return "bg-green-200 dark:bg-green-900/60 transition-colors duration-300";
@@ -704,6 +719,7 @@ const Matriz = () => {
       puestas_total: 0,
       cumplidos_total: 0,
       visitas_dia_total: 0,
+      deNpAE_total: 0,
       percent_avg: 0,
     };
 
@@ -760,9 +776,26 @@ const Matriz = () => {
 
       // C. VISITA DEL DÍA (Solo tuvo Obs, planificado o no)
       if (hasObs) counts.visitas_dia_total++;
+
+      // D. DE N-P A E (Cálculo inmediato para el total)
+      const isNP =
+        day.accion_venta?.p ||
+        day.accion_venta?.n ||
+        day.accion_cobranza?.p ||
+        day.accion_cobranza?.n ||
+        day.llamadas_venta?.p ||
+        day.llamadas_venta?.n ||
+        day.llamadas_cobranza?.p ||
+        day.llamadas_cobranza?.n;
+
+      if (isNP) {
+        const compraSemana = isWithinCurrentWeek(row.fecha_ultima_compra);
+        const cobroSemana = isWithinCurrentWeek(row.fecha_ultimo_cobro || row.ultimo_cobro);
+        if (compraSemana && cobroSemana) counts.deNpAE_total++;
+      }
     });
 
-    // D. % TOTAL (Cumplidos / Puestas)
+    // E. % TOTAL (Cumplidos / Puestas)
     if (counts.puestas_total > 0) {
       counts.percent_avg = (
         (counts.cumplidos_total / counts.puestas_total) *
@@ -886,6 +919,11 @@ const Matriz = () => {
                 label="Sin Gestión"
                 value={stats.sinGestion}
                 colorClass="text-red-500"
+              />
+              <StatBadge
+                label="De N-P a E"
+                value={headerCounts.deNpAE_total}
+                colorClass="text-purple-600"
               />
             </div>
           </div>
