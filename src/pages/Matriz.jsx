@@ -298,7 +298,8 @@ const AuditRow = React.memo(
           purchaseYear = parseInt(row.fecha_ultima_compra.split("/")[2]);
         } else if (row.fecha_ultima_compra.includes("-")) {
           const parts = row.fecha_ultima_compra.split("-");
-          purchaseYear = parts[0] > 1000 ? parseInt(parts[0]) : parseInt(parts[2]);
+          purchaseYear =
+            parts[0] > 1000 ? parseInt(parts[0]) : parseInt(parts[2]);
         }
       }
 
@@ -306,7 +307,9 @@ const AuditRow = React.memo(
 
       // 2. Dates Check
       const compraSemana = isWithinCurrentWeek(row.fecha_ultima_compra);
-      const cobroSemana = isWithinCurrentWeek(row.fecha_ultimo_cobro || row.ultimo_cobro);
+      const cobroSemana = isWithinCurrentWeek(
+        row.fecha_ultimo_cobro || row.ultimo_cobro,
+      );
       if (compraSemana && cobroSemana) return true;
 
       // 3. Actions Check
@@ -544,10 +547,11 @@ const AuditRow = React.memo(
 
         {/* --- DIFERENCIA COORDENADAS --- */}
         <Td
-          className={`text-center text-xs whitespace-nowrap font-medium ${distanciaTxt !== "-" && esLejos
-            ? "text-red-500 font-bold"
-            : "text-green-600"
-            }`}
+          className={`text-center text-xs whitespace-nowrap font-medium ${
+            distanciaTxt !== "-" && esLejos
+              ? "text-red-500 font-bold"
+              : "text-green-600"
+          }`}
         >
           {distanciaTxt}
         </Td>
@@ -655,7 +659,8 @@ const AuditRow = React.memo(
 
 // --- COMPONENTE PRINCIPAL ---
 const Matriz = () => {
-  const { data, loading, error, handleAuditoriaChange, refresh } = useAuditoria();
+  const { data, loading, error, handleAuditoriaChange, refresh } =
+    useAuditoria();
   const [selectedDay, setSelectedDay] = useState("lunes");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedZonas, setSelectedZonas] = useState([]); // Nuevo estado para filtro de Zonas
@@ -816,14 +821,14 @@ const Matriz = () => {
       // Helpers para saber si hubo gestión real (Obs)
       const log = Array.isArray(row.gestion)
         ? row.gestion.find((g) => {
-          if (!g.dia_semana) return false;
-          return (
-            g.dia_semana
-              .toLowerCase()
-              .normalize("NFD")
-              .replace(/[\u0300-\u036f]/g, "") === dayKey
-          );
-        })
+            if (!g.dia_semana) return false;
+            return (
+              g.dia_semana
+                .toLowerCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "") === dayKey
+            );
+          })
         : null;
 
       // ¿Tiene Observación (Manual del día O Histórica del día)?
@@ -850,7 +855,9 @@ const Matriz = () => {
 
       if (isNP) {
         const compraSemana = isWithinCurrentWeek(row.fecha_ultima_compra);
-        const cobroSemana = isWithinCurrentWeek(row.fecha_ultimo_cobro || row.ultimo_cobro);
+        const cobroSemana = isWithinCurrentWeek(
+          row.fecha_ultimo_cobro || row.ultimo_cobro,
+        );
         if (compraSemana && cobroSemana) counts.deNpAE_total++;
       }
     });
@@ -922,115 +929,119 @@ const Matriz = () => {
 
   return (
     <div className="p-2 min-h-screen bg-white dark:bg-[#191919]">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-gray-200 dark:border-gray-700 pb-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg text-[#1a9888]">
-            <Save size={28} />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-gray-800 dark:text-white">
-              Auditoría de Conversaciones
-            </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Mostrando {filteredData.length} de {data.length} registros
-            </p>
+      {/* --- CONTENEDOR PRINCIPAL DEL HEADER --- */}
+      <div className="bg-white dark:bg-[#1e1e1e] rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-4 p-4">
+        {/* 1. TÍTULO E INFORMACIÓN */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 pb-4 border-b border-gray-100 dark:border-gray-800">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-teal-50 dark:bg-teal-900/20 text-[#1a9888] rounded-xl">
+              <Save size={24} />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-gray-800 dark:text-white leading-tight">
+                Auditoría de Conversaciones
+              </h2>
+              <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                <span>
+                  Total: <b>{data.length}</b>
+                </span>
+                <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
+                <span>
+                  Visibles: <b>{filteredData.length}</b>
+                </span>
+              </div>
+            </div>
           </div>
         </div>
-        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-4">
-          {/* SELECTOR DE DÍA */}
-          <div className="flex bg-gray-100 dark:bg-[#333] p-1 rounded-lg">
-            {["lunes", "martes", "miercoles", "jueves", "viernes"].map(
-              (day) => (
-                <button
-                  key={day}
-                  onClick={() => setSelectedDay(day)}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-md capitalize transition-all ${selectedDay === day
-                    ? "bg-white dark:bg-[#191919] text-[#1a9888] shadow-sm ring-1 ring-gray-200 dark:ring-0"
-                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+
+        {/* 2. BARRA DE HERRAMIENTAS (Filtros & Stats) */}
+        <div className="flex flex-col xl:flex-row justify-between gap-4 items-start xl:items-center">
+          {/* IZQUIERDA: FILTROS (Día, Zona, Búsqueda) */}
+          <div className="flex flex-col sm:flex-row gap-3 w-full xl:w-auto">
+            {/* Selector de Día (Estilo Segmented Control) */}
+            <div className="flex bg-gray-100 dark:bg-[#252525] p-1 rounded-lg shrink-0 overflow-x-auto">
+              {["lunes", "martes", "miercoles", "jueves", "viernes"].map(
+                (day) => (
+                  <button
+                    key={day}
+                    onClick={() => setSelectedDay(day)}
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-md capitalize whitespace-nowrap transition-all ${
+                      selectedDay === day
+                        ? "bg-white dark:bg-[#1a9888] text-[#1a9888] dark:text-white shadow-sm ring-1 ring-black/5 dark:ring-0"
+                        : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                     }`}
-                >
-                  {day}
-                </button>
-              ),
-            )}
-          </div>
-
-          {/* FILTRO DE ZONA */}
-          <FilterMultiSelect
-            label="Zonas"
-            options={uniqueZonas}
-            selected={selectedZonas}
-            onChange={setSelectedZonas}
-          />
-
-          <div className="flex items-center bg-gray-50 dark:bg-[#202020] border border-gray-300 dark:border-gray-600 rounded-lg p-1 shadow-sm">
-            <div className="relative border-r border-gray-200 dark:border-gray-700 pr-1">
-              <input
-                type="text"
-                placeholder="Buscar cliente..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 pr-4 py-1.5 w-48 text-sm bg-transparent outline-none dark:text-white transition-all"
-              />
-              <Search
-                className="absolute left-3 top-2 text-gray-400"
-                size={16}
-              />
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm("")}
-                  className="absolute right-3 top-2 text-gray-400 hover:text-red-500"
-                >
-                  <XCircle size={16} />
-                </button>
+                  >
+                    {day}
+                  </button>
+                ),
               )}
             </div>
-            <div className="flex items-center h-full py-1">
-              <StatBadge
-                label="Efectivas"
-                value={stats.efectivas}
-                colorClass="text-green-600"
-              />
-              <StatBadge
-                label="Venta (P)"
-                value={stats.ventaProceso}
-                colorClass="text-orange-500"
-              />
-              <StatBadge
-                label="Cobro (P)"
-                value={stats.cobranzaProceso}
-                colorClass="text-blue-600"
-              />
-              <StatBadge
-                label="Sin Gestión"
-                value={stats.sinGestion}
-                colorClass="text-red-500"
-              />
-              <StatBadge
-                label="De N-P a E"
-                value={headerCounts.deNpAE_total}
-                colorClass="text-purple-600"
-              />
+
+            {/* Grupo Zona y Buscador */}
+            <div className="flex gap-2 w-full sm:w-auto">
+              <div className="shrink-0">
+                <FilterMultiSelect
+                  label="Zonas"
+                  options={uniqueZonas}
+                  selected={selectedZonas}
+                  onChange={setSelectedZonas}
+                />
+              </div>
+
+              <div className="relative flex-1 sm:w-56 group">
+                <input
+                  type="text"
+                  placeholder="Buscar cliente..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-9 pr-8 py-2 text-xs bg-gray-50 dark:bg-[#252525] border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#1a9888] focus:border-transparent outline-none dark:text-white transition-all group-hover:bg-white dark:group-hover:bg-[#2a2a2a]"
+                />
+                <Search
+                  className="absolute left-3 top-2.5 text-gray-400 group-focus-within:text-[#1a9888]"
+                  size={14}
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm("")}
+                    className="absolute right-2.5 top-2.5 text-gray-400 hover:text-red-500 transition-colors"
+                  >
+                    <XCircle size={14} />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 bg-gray-100 dark:bg-[#202020] p-1 rounded-lg border border-gray-200 dark:border-[#333]">
-              <span className="text-xs font-bold text-gray-500 px-2 uppercase">
-                Día de Auditoría:
-              </span>
-              <select
-                value={selectedDay}
-                onChange={(e) => setSelectedDay(e.target.value)}
-                className="bg-white dark:bg-[#333] text-gray-700 dark:text-gray-200 text-sm font-medium px-3 py-1.5 rounded-md border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-[#1a9888]"
-              >
-                <option value="lunes">Lunes</option>
-                <option value="martes">Martes</option>
-                <option value="miercoles">Miércoles</option>
-                <option value="jueves">Jueves</option>
-                <option value="viernes">Viernes</option>
-                <option value="sabado">Sábado</option>
-              </select>
-            </div>
+
+          {/* DERECHA: INDICADORES (KPIs) */}
+          <div className="flex flex-wrap gap-2 items-center justify-end w-full xl:w-auto border-t xl:border-t-0 border-gray-100 dark:border-gray-800 pt-3 xl:pt-0">
+            <StatBadge
+              label="Efectivas"
+              value={stats.efectivas}
+              colorClass="text-green-600 bg-green-50 dark:bg-green-900/20 border-green-100 dark:border-green-800"
+            />
+            <StatBadge
+              label="Venta (P)"
+              value={stats.ventaProceso}
+              colorClass="text-orange-600 bg-orange-50 dark:bg-orange-900/20 border-orange-100 dark:border-orange-800"
+            />
+            <StatBadge
+              label="Cobro (P)"
+              value={stats.cobranzaProceso}
+              colorClass="text-blue-600 bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800"
+            />
+
+            <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1 hidden sm:block"></div>
+
+            <StatBadge
+              label="Sin Gestión"
+              value={stats.sinGestion}
+              colorClass="text-red-600 bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-800"
+            />
+            <StatBadge
+              label="Recuperados"
+              value={headerCounts.deNpAE_total}
+              colorClass="text-purple-600 bg-purple-50 dark:bg-purple-900/20 border-purple-100 dark:border-purple-800"
+            />
           </div>
         </div>
       </div>
@@ -1074,15 +1085,15 @@ const Matriz = () => {
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="bg-white border-l border-gray-200"
+                  className="bg-white border-l dark:border-gray-600 dark:bg-gray-900 border-gray-200"
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="bg-white border-l border-gray-200"
+                  className="bg-white border-l dark:border-gray-600 dark:bg-gray-900 border-gray-200"
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="bg-white border-l border-gray-200"
+                  className="bg-white border-l dark:border-gray-600 dark:bg-gray-900 border-gray-200"
                 ></Th>
               </Tr>
               {/* Nivel 2 Header */}
@@ -1133,15 +1144,15 @@ const Matriz = () => {
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="bg-white border-l border-gray-200"
+                  className="bg-white border-l dark:border-gray-600 dark:bg-gray-900 border-gray-200"
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="bg-white border-l border-gray-200"
+                  className="bg-white border-l dark:border-gray-600 dark:bg-gray-900 border-gray-200"
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="bg-white border-l border-gray-200"
+                  className="bg-white border-l dark:border-gray-600 dark:bg-gray-900 border-gray-200"
                 ></Th>
               </Tr>
               {/* Nivel 3 Header */}
@@ -1204,15 +1215,15 @@ const Matriz = () => {
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="bg-white border-l border-gray-200"
+                  className="bg-white border-l dark:border-gray-600 dark:bg-gray-900 border-gray-200"
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="bg-white border-l border-gray-200"
+                  className="bg-white border-l dark:border-gray-600 dark:bg-gray-900 border-gray-200"
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="bg-white border-l border-gray-200"
+                  className="bg-white border-l dark:border-gray-600 dark:bg-gray-900 border-gray-200"
                 ></Th>
               </Tr>
 
@@ -1303,13 +1314,13 @@ const Matriz = () => {
                 >
                   Observación
                 </Th>
-                <Th className="bg-white border-l border-gray-200 text-[10px] uppercase font-bold text-center">
+                <Th className="bg-white border-l dark:border-gray-600 dark:bg-gray-900 border-gray-200 text-[10px] uppercase font-bold text-center">
                   Guardar
                 </Th>
-                <Th className="bg-white border-l border-gray-200 text-[10px] uppercase font-bold text-center">
+                <Th className="bg-white border-l dark:border-gray-600 dark:bg-gray-900 border-gray-200 text-[10px] uppercase font-bold text-center">
                   De N-P a E
                 </Th>
-                <Th className="bg-white border-l border-gray-200 text-[10px] uppercase font-bold text-center text-purple-700">
+                <Th className="bg-white border-l dark:border-gray-600 dark:bg-gray-900 border-gray-200 text-[10px] uppercase font-bold text-center text-purple-700">
                   CON GESTIÓN
                 </Th>
               </Tr>
@@ -1362,11 +1373,15 @@ const Matriz = () => {
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="bg-white border-r border-gray-200"
+                  className="bg-white border-r dark:border-gray-600 dark:bg-gray-900 border-gray-200"
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="bg-white border-r border-gray-200"
+                  className="bg-white border-r dark:border-gray-600 dark:bg-gray-900 border-gray-200"
+                ></Th>
+                <Th
+                  colSpan={1}
+                  className="bg-white border-r dark:border-gray-600 dark:bg-gray-900 border-gray-200"
                 ></Th>
               </Tr>
               <Tr>
@@ -1424,11 +1439,15 @@ const Matriz = () => {
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="bg-white border-r border-gray-200"
+                  className="bg-white border-r dark:border-gray-600 dark:bg-gray-900 border-gray-200"
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="bg-white border-r border-gray-200"
+                  className="bg-white border-r dark:border-gray-600 dark:bg-gray-900 border-gray-200"
+                ></Th>
+                <Th
+                  colSpan={1}
+                  className="bg-white border-r dark:border-gray-600 dark:bg-gray-900 border-gray-200"
                 ></Th>
               </Tr>
               <Tr>
@@ -1594,13 +1613,13 @@ const Matriz = () => {
                 <Th className="text-center text-[10px] uppercase bg-pink-200 dark:bg-pink-900 dark:text-pink-200 border-r border-pink-200 text-pink-700">
                   Observaciones
                 </Th>
-                <Th className="bg-white border-l border-gray-200 text-xs text-center uppercase font-bold">
+                <Th className="bg-white border-l dark:border-gray-600 dark:bg-gray-900 border-gray-200 text-xs text-center uppercase font-bold">
                   Guardar
                 </Th>
-                <Th className="bg-white border-l border-gray-200 text-[10px] text-center uppercase font-bold">
+                <Th className="bg-white border-l dark:border-gray-600 dark:bg-gray-900 border-gray-200 text-[10px] text-center uppercase font-bold">
                   De N-P a E
                 </Th>
-                <Th className="bg-white border-l border-gray-200 text-[10px] text-center uppercase font-bold text-purple-700">
+                <Th className="bg-white border-l dark:border-gray-600 dark:bg-gray-900 border-gray-200 text-[10px] text-center uppercase font-bold text-purple-700">
                   CON GESTIÓN
                 </Th>
               </Tr>
@@ -1624,17 +1643,15 @@ const Matriz = () => {
                   <Td colSpan={41} className="text-center py-8 text-gray-500">
                     No se encontraron resultados para "{searchTerm}"
                   </Td>
-
                 </Tr>
               )}
             </Tbody>
           </Table>
-        )
-        }
-      </TableContainer >
+        )}
+      </TableContainer>
 
       {/* --- PAGINACIÓN --- */}
-      < div className="flex flex-col sm:flex-row items-center justify-between border-t border-gray-200 dark:border-gray-700 pt-4 mt-2 gap-4" >
+      <div className="flex flex-col sm:flex-row items-center justify-between border-t border-gray-200 dark:border-gray-700 pt-4 mt-2 gap-4">
         <div className="flex items-center gap-2">
           <button
             onClick={() => goToPage(1)}
@@ -1698,8 +1715,8 @@ const Matriz = () => {
             IR
           </button>
         </form>
-      </div >
-    </div >
+      </div>
+    </div>
   );
 };
 

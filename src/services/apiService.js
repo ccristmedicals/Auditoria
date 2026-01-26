@@ -1,5 +1,5 @@
-const BASE_URL = "http://192.168.4.69:8001/api";
-const BASE_AUTH_URL = "http://192.168.4.69:8001/api/usuarios";
+const BASE_URL = "http://192.168.4.23:3000/api";
+const BASE_AUTH_URL = "http://192.168.4.23:3000/api/usuarios";
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem("authToken");
@@ -12,7 +12,10 @@ const getAuthHeaders = () => {
 async function fetchJson(url, options = {}) {
   const headers = { ...getAuthHeaders(), ...options.headers };
 
-  console.log(`[API Request] ${options.method || "GET"} ${url}`, options.body ? JSON.parse(options.body) : "");
+  console.log(
+    `[API Request] ${options.method || "GET"} ${url}`,
+    options.body ? JSON.parse(options.body) : "",
+  );
   const response = await fetch(url, { ...options, headers });
 
   if (!response.ok) {
