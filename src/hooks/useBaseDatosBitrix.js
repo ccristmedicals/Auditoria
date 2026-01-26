@@ -83,10 +83,22 @@ export const useBaseDatosBitrix = () => {
     const userSegmentos = user?.segmentos || [];
 
     try {
-      // Llamada al backend para traer TODO
-      const response = await apiService.getAllCompanies(userSegmentos);
+      // Llamada al backend para traer TODO (Companies + Matrix Data)
+      const [companiesResponse, matrixResponse] = await Promise.all([
+        apiService.getAllCompanies(userSegmentos),
+        apiService.getMatrix(),
+      ]);
 
-      const rawList = response.data || [];
+      const rawList = companiesResponse.data || [];
+      const matrixList = matrixResponse.data || [];
+
+      // Crear Mapa de Matrix para búsqueda rápida por ID
+      const matrixMap = {};
+      matrixList.forEach((m) => {
+        if (m.id_bitrix) {
+          matrixMap[m.id_bitrix] = m;
+        }
+      });
 
       const formattedData = rawList.map((item, index) => {
         const b = item.bitrix || {};
@@ -96,7 +108,22 @@ export const useBaseDatosBitrix = () => {
         const gList = Array.isArray(item.gestion) ? item.gestion : [];
 
         // 2. TAREAS (Editable): Viene en el objeto 'semana' desde tu backend actualizado
-        const semanaData = item.semana || {};
+        // --- MERGE CON DATOS GUARDADOS (MATRIX) ---
+        // Buscamos si existe data guardada para este id_bitrix
+        // La data de matrix viene como array en responseMatrix.data
+        // Pero para eficiencia, lo ideal sería tener un Map fuera del loop.
+        // (Lo haremos justo antes del map)
+
+        const savedData = matrixMap[b.ID];
+
+        // Prioridad: 
+        // 1. Data guardada en Matrix (savedData)
+        // 2. Data que venga en el endpoint 'companies' (item.semana, item.bitacora...)
+        // 3. Valor por defecto ("")
+
+        const semanaData = savedData?.semana || item.semana || {};
+        const bitacora = savedData?.bitacora || item.bitacora || "";
+        const obs_ejecutiva = savedData?.obs_ejecutiva || item.obs_ejecutiva || "";
 
         // --- HELPER: Extraer info histórica del Array ---
         const extractHistoryData = (dayName) => {
@@ -175,8 +202,8 @@ export const useBaseDatosBitrix = () => {
           gestion: gList,
 
           // --- CAMPOS MANUALES (EDITABLES) ---
-          bitacora: item.bitacora || "",
-          obs_ejecutiva: item.obs_ejecutiva || "",
+          bitacora: bitacora,
+          obs_ejecutiva: obs_ejecutiva,
 
           // --- AGENDA SEMANAL ---
           lunes_accion: lunesHist.accion,
@@ -243,6 +270,13 @@ export const useBaseDatosBitrix = () => {
     setFilterZona,
     onlyVencidos,
     setOnlyVencidos,
+    // --- DATA CALCULADA ---
+    uniqueSegments: useMemo(() => {
+      const segments = allCompanies
+        .map((c) => c.segmento)
+        .filter((s) => s && s.trim() !== "");
+      return [...new Set(segments)].sort();
+    }, [allCompanies]),
     refresh
   };
 };
