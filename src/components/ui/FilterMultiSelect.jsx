@@ -37,26 +37,26 @@ export const FilterMultiSelect = ({ label, options, selected, onChange }) => {
                         className="fixed inset-0 z-10"
                         onClick={() => setIsOpen(false)}
                     />
-                    <div className="absolute z-50 mt-2 w-80 bg-white dark:bg-[#1e1e1e] border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl p-2 animate-in fade-in zoom-in-95 duration-100 left-0">
-                        <div className="text-xs font-bold text-gray-400 mb-2 px-2 uppercase tracking-wider">
+                    <div className="absolute z-50 mt-2 w-80 bg-white dark:bg-[#111827] border border-gray-200 dark:border-white/10 rounded-2xl shadow-2xl p-2 animate-in fade-in zoom-in-95 duration-200 left-0">
+                        <div className="text-[10px] font-black text-slate-400 mb-2 px-3 pt-2 uppercase tracking-[0.2em]">
                             Seleccionar {label}
                         </div>
-                        <div className="max-h-60 overflow-y-auto space-y-1 custom-scrollbar">
+                        <div className="max-h-60 overflow-y-auto space-y-1 custom-scrollbar p-1">
                             {options.map((opt) => {
                                 const isSelected = selected.includes(opt);
                                 return (
                                     <div
                                         key={opt}
                                         onClick={() => toggleOption(opt)}
-                                        className={`flex items-start gap-3 px-3 py-2 rounded-lg cursor-pointer text-sm transition-all ${isSelected
-                                            ? "bg-teal-50 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300 font-medium"
-                                            : "hover:bg-gray-100 dark:hover:bg-[#333] text-gray-600 dark:text-gray-400"
+                                        className={`flex items-start gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm transition-all duration-300 ${isSelected
+                                            ? "bg-teal-50 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300 font-bold"
+                                            : "hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-400"
                                             }`}
                                     >
                                         <div
-                                            className={`w-5 h-5 min-w-[1.25rem] border rounded flex items-center justify-center transition-colors mt-0.5 ${isSelected
-                                                ? "bg-[#1a9888] border-[#1a9888]"
-                                                : "border-gray-400 dark:border-gray-600"
+                                            className={`w-5 h-5 min-w-[1.25rem] border-2 rounded-md flex items-center justify-center transition-all duration-300 mt-0.5 ${isSelected
+                                                ? "bg-[#1a9888] border-[#1a9888] shadow-lg shadow-teal-500/20"
+                                                : "border-slate-300 dark:border-slate-600"
                                                 }`}
                                         >
                                             {isSelected ? (

@@ -6,7 +6,7 @@ export default function Navbar({ nombreNegocio = "CristMedicals Auditoria" }) {
   const { user, logout } = useAuth();
 
   return (
-    <header className="bg-white dark:bg-[#191919] shadow-xl py-2 px-6 sm:px-8 flex items-center justify-between border-b border-gray-200 dark:border-[#464646] sticky top-0 z-50 rounded-b-xl">
+    <header className="bg-white/80 dark:bg-[#0b1120]/80 backdrop-blur-xl shadow-2xl py-4 px-6 sm:px-10 flex items-center justify-between border-b border-gray-200 dark:border-white/10 sticky top-0 z-50 rounded-b-[2rem] transition-all duration-500 mx-4 mt-2">
       <div className="flex-1 min-w-[50px]"></div>
 
       <div className="flex items-center gap-3 flex-grow justify-center">
@@ -18,9 +18,9 @@ export default function Navbar({ nombreNegocio = "CristMedicals Auditoria" }) {
 
       {user ? (
         <div className="flex items-center gap-4 sm:gap-6 flex-1 justify-end">
-          <div className="flex items-center gap-2 bg-teal-50 dark:bg-teal-200 p-3 rounded-full shadow-inner">
-            <CircleUserRound className="text-[#1a9888] text-xl sm:text-2xl" />
-            <span className="text-[#191919] font-semibold text-xs sm:text-base">
+          <div className="flex items-center gap-2 bg-teal-50 dark:bg-teal-900/30 border border-transparent dark:border-teal-500/20 p-2 sm:p-3 rounded-full shadow-inner transition-colors">
+            <CircleUserRound className="text-[#1a9888] dark:text-teal-400 text-xl sm:text-2xl" />
+            <span className="text-[#191919] dark:text-teal-50 font-bold text-xs sm:text-base">
               {user.nombre || user.usuario || "Usuario"}
             </span>
           </div>

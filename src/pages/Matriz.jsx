@@ -585,11 +585,10 @@ const AuditRow = React.memo(
 
         {/* --- DIFERENCIA COORDENADAS --- */}
         <Td
-          className={`text-center text-xs whitespace-nowrap font-medium ${
-            distanciaTxt !== "-" && esLejos
+          className={`text-center text-xs whitespace-nowrap font-medium ${distanciaTxt !== "-" && esLejos
               ? "text-red-500 font-bold"
               : "text-green-600"
-          }`}
+            }`}
         >
           {distanciaTxt}
         </Td>
@@ -867,14 +866,14 @@ const Matriz = () => {
       // Helpers para saber si hubo gestión real (Obs)
       const log = Array.isArray(row.gestion)
         ? row.gestion.find((g) => {
-            if (!g.dia_semana) return false;
-            return (
-              g.dia_semana
-                .toLowerCase()
-                .normalize("NFD")
-                .replace(/[\u0300-\u036f]/g, "") === dayKey
-            );
-          })
+          if (!g.dia_semana) return false;
+          return (
+            g.dia_semana
+              .toLowerCase()
+              .normalize("NFD")
+              .replace(/[\u0300-\u036f]/g, "") === dayKey
+          );
+        })
         : null;
 
       // ¿Tiene Observación (Manual del día O Histórica del día)?
@@ -1011,11 +1010,10 @@ const Matriz = () => {
                   <button
                     key={day}
                     onClick={() => setSelectedDay(day)}
-                    className={`px-3 py-1.5 text-xs font-semibold rounded-md capitalize whitespace-nowrap transition-all ${
-                      selectedDay === day
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-md capitalize whitespace-nowrap transition-all ${selectedDay === day
                         ? "bg-white dark:bg-[#1a9888] text-[#1a9888] dark:text-white shadow-sm ring-1 ring-black/5 dark:ring-0"
                         : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-                    }`}
+                      }`}
                   >
                     {day}
                   </button>

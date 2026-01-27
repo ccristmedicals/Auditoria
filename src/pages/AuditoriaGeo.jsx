@@ -38,7 +38,7 @@ const getRowColor = (status) => {
     case "MISSING_BITRIX":
       return "bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30";
     default:
-      return "bg-white hover:bg-gray-50 dark:bg-[#191919] dark:hover:bg-[#202020]";
+      return "bg-white hover:bg-slate-50 dark:bg-[#111827] dark:hover:bg-white/5";
   }
 };
 
@@ -135,18 +135,18 @@ const AuditoriaGeo = () => {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 min-h-screen bg-white dark:bg-[#191919]">
+    <div className="p-4 sm:p-6 lg:p-8 min-h-screen bg-white dark:bg-[#0b1120]">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-gray-200 dark:border-gray-700 pb-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg text-[#1a9888]">
-            <MapPin size={28} />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8 border-b border-gray-200 dark:border-white/5 pb-6">
+        <div className="flex items-center gap-4">
+          <div className="bg-teal-50 dark:bg-teal-900/20 p-3 rounded-2xl">
+            <MapPin size={32} className="text-[#1a9888] dark:text-teal-400" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-[#191919] dark:text-white">
-              Auditoría de Coordenadas
+            <h2 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">
+              Auditoría de <span className="text-[#1a9888] dark:text-teal-400">Coordenadas</span>
             </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
               Total Registros: {totalRecords} | Páginas: {totalPages}
             </p>
           </div>
@@ -259,50 +259,49 @@ const AuditoriaGeo = () => {
               {auditData.map((row) => (
                 <Tr key={row.id_interno} className={getRowColor(row.status)}>
                   {/* Sticky Columns */}
-                  <Td className="bg-gray-50 dark:bg-[#202020] text-xs font-mono font-bold text-gray-700 dark:text-gray-300 z-10">
+                  <Td className="bg-slate-50/50 dark:bg-[#0b1120] text-xs font-mono font-bold text-slate-700 dark:text-slate-300 z-10 transition-colors">
                     {row.codigo_profit}
                   </Td>
-                  <Td className="text-left font-semibold bg-white dark:bg-[#191919] border-r shadow-md text-xs z-10">
+                  <Td className="text-left font-semibold bg-white dark:bg-[#111827] border-r dark:border-white/5 shadow-md text-xs z-10 transition-colors">
                     <div className="truncate max-w-[250px]" title={row.nombre}>
                       {row.nombre}
                     </div>
                   </Td>
 
                   {/* Location */}
-                  <Td className="text-xs">{row.zona}</Td>
-                  <Td>
+                  <Td className="text-xs transition-colors">{row.zona}</Td>
+                  <Td className="transition-colors">
                     <span
-                      className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
-                        row.ruta && row.ruta.includes("CERRADO")
-                          ? "bg-red-100 text-red-600"
-                          : "bg-gray-100 text-gray-600"
-                      }`}
+                      className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${row.ruta && row.ruta.includes("CERRADO")
+                        ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-300"
+                        : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                        }`}
                     >
                       {row.ruta}
                     </span>
                   </Td>
 
                   {/* Profit */}
-                  <Td className="font-mono text-[10px] text-gray-500 bg-green-50 border-l border-gray-200 dark:bg-green-900/10 dark:border-[#333]">
+                  <Td className="font-mono text-[10px] text-slate-500 bg-green-50/30 border-l border-gray-200 dark:bg-green-900/10 dark:border-white/5 transition-colors">
                     {row.coords_profit || "-"}
                   </Td>
 
                   {/* Bitrix */}
-                  <Td className="font-mono text-xs text-blue-600 font-bold bg-blue-50 border-l border-gray-200 dark:bg-blue-900/10 dark:border-[#333]">
+                  <Td className="font-mono text-xs text-blue-600 font-bold bg-blue-50/30 border-l border-gray-200 dark:bg-blue-900/10 dark:border-white/5 transition-colors">
                     {row.id_bitrix}
                   </Td>
-                  <Td className="font-mono text-[10px] text-gray-500 bg-blue-50 dark:bg-blue-900/10">
+                  <Td className="font-mono text-[10px] text-slate-500 bg-blue-50/20 dark:bg-blue-900/5 transition-colors">
                     {row.coords_bitrix || "-"}
                   </Td>
 
                   {/* Auditoría */}
-                  <Td className="flex justify-center border-l border-gray-200 dark:border-[#333]">
+                  <Td className="flex justify-center border-l border-gray-200 dark:border-white/5 transition-colors">
                     <GeoStatusBadge
                       status={row.status}
                       distance={row.distancia}
                     />
                   </Td>
-                  <Td className="bg-white dark:bg-[#191919]">
+                  <Td className="bg-white dark:bg-[#111827] transition-colors">
                     <EditableCell
                       value={row.obs_auditor}
                       onChange={(val) => handleAuditChange(row.id_interno, val)}

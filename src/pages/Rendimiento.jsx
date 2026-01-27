@@ -288,9 +288,9 @@ const Rendimiento = () => {
               const pctEjecutiva =
                 totalGestionesEjecutiva > 0
                   ? (
-                      (row.ejecutiva.efectivos / totalGestionesEjecutiva) *
-                      100
-                    ).toFixed(1)
+                    (row.ejecutiva.efectivos / totalGestionesEjecutiva) *
+                    100
+                  ).toFixed(1)
                   : 0;
 
               const totalGestionesVendedor =
@@ -298,17 +298,17 @@ const Rendimiento = () => {
               const pctVendedor =
                 totalGestionesVendedor > 0
                   ? (
-                      (row.vendedor.efectivos / totalGestionesVendedor) *
-                      100
-                    ).toFixed(1)
+                    (row.vendedor.efectivos / totalGestionesVendedor) *
+                    100
+                  ).toFixed(1)
                   : 0;
 
               const gestionesVerdaderas = row.ejecutiva.efectivos;
               const pctCumplimiento =
                 row.total_clientes > 0
                   ? ((gestionesVerdaderas / row.total_clientes) * 100).toFixed(
-                      1,
-                    )
+                    1,
+                  )
                   : 0;
 
               return (

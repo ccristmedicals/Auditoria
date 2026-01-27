@@ -63,9 +63,8 @@ const MultiSelectCell = ({ value = [], onChange, options, isLoading }) => {
       <div ref={containerRef} className="relative">
         <div
           onClick={() => !isLoading && setIsOpen(!isOpen)}
-          className={`w-full min-w-[200px] min-h-[38px] p-1.5 text-sm bg-gray-50 dark:bg-[#333] border border-gray-300 dark:border-[#555] rounded dark:text-white cursor-pointer flex flex-wrap gap-1 items-center transition-all ${
-            isOpen ? "ring-2 ring-[#1a9888] border-transparent" : ""
-          }`}
+          className={`w-full min-w-[200px] min-h-[38px] p-1.5 text-sm bg-gray-50 dark:bg-[#333] border border-gray-300 dark:border-[#555] rounded dark:text-white cursor-pointer flex flex-wrap gap-1 items-center transition-all ${isOpen ? "ring-2 ring-[#1a9888] border-transparent" : ""
+            }`}
         >
           {isLoading ? (
             <span className="text-gray-400 text-xs px-1">Cargando...</span>
@@ -108,18 +107,16 @@ const MultiSelectCell = ({ value = [], onChange, options, isLoading }) => {
                 <div
                   key={i}
                   onClick={() => toggleOption(opt.value)}
-                  className={`px-3 py-2 cursor-pointer flex items-center gap-2 text-xs transition-colors border-b border-gray-50 dark:border-gray-700/50 last:border-0 ${
-                    isSelected
+                  className={`px-3 py-2 cursor-pointer flex items-center gap-2 text-xs transition-colors border-b border-gray-50 dark:border-gray-700/50 last:border-0 ${isSelected
                       ? "bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-200"
                       : "hover:bg-gray-100 dark:hover:bg-[#333] text-gray-700 dark:text-gray-200"
-                  }`}
+                    }`}
                 >
                   <div
-                    className={`w-4 h-4 border rounded shrink-0 flex items-center justify-center transition-colors ${
-                      isSelected
+                    className={`w-4 h-4 border rounded shrink-0 flex items-center justify-center transition-colors ${isSelected
                         ? "bg-[#1a9888] border-[#1a9888]"
                         : "border-gray-400 dark:border-gray-500"
-                    }`}
+                      }`}
                   >
                     {isSelected && <Check size={12} className="text-white" />}
                   </div>
