@@ -2,7 +2,7 @@ import { Eye, EyeOff, Lock, UserLock, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
-
+import Logo from "../assets/Logo.png";
 const LoginForm = () => {
     const navigate = useNavigate();
     const { login, loading, error } = useAuth();
@@ -42,6 +42,8 @@ const LoginForm = () => {
             onSubmit={handleSubmit}
             className="bg-white dark:bg-[#111827] p-10 rounded-3xl shadow-2xl max-w-md w-full mx-auto border border-gray-100 dark:border-white/5 transition-all duration-500"
         >
+            <img src={Logo} alt="Logo de Auditoria" className="mx-auto h-28 mb-8 hover:scale-105 transition-transform duration-500" />
+
             <h2 className="text-3xl font-black text-center text-slate-800 dark:text-white mb-8 tracking-tight">
                 Ingresar al Sistema de <span className="text-[#1a9888] dark:text-teal-400">Auditoria</span>
             </h2>
@@ -64,7 +66,7 @@ const LoginForm = () => {
                         value={credentials.username}
                         onChange={handleChange}
                         className="w-full pl-12 pr-4 py-3 border border-slate-200 dark:border-slate-700 rounded-2xl focus:outline-none focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 transition-all duration-300 bg-slate-50 dark:bg-[#0b1120] text-slate-800 dark:text-white placeholder-slate-400"
-                        placeholder="Ej: admin_01"
+                        placeholder="Usuario"
                         required
                         disabled={loading}
                     />
