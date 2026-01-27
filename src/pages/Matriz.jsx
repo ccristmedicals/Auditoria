@@ -26,9 +26,11 @@ import {
 } from "../components/ui/Tabla";
 import { FilterMultiSelect } from "../components/ui/FilterMultiSelect";
 
+import { useToast } from "../components/ui/Toast";
+
 // --- COMPONENTES AUXILIARES ---
 const StatBadge = React.memo(({ label, value, colorClass }) => (
-  <div className="flex flex-col items-center px-4 border-r last:border-r-0 border-gray-200 dark:border-gray-700 min-w-[100px]">
+  <div className="flex flex-col items-center px-4 border-r last:border-r-0 border-gray-200 dark:border-slate-800 min-w-[100px]">
     <span className="text-[10px] uppercase font-bold text-gray-400 leading-none mb-1 text-center">
       {label}
     </span>
@@ -109,16 +111,19 @@ const isWithinCurrentWeek = (dateStr) => {
   return date >= startOfWeek && date <= endOfWeek;
 };
 
-const TableCheckbox = React.memo(({ checked, onChange, colorClass }) => (
-  <div className="flex justify-center">
-    <input
-      type="checkbox"
-      checked={!!checked}
-      onChange={(e) => onChange(e.target.checked)}
-      className={`w-4 h-4 rounded border-gray-300 focus:ring-2 cursor-pointer ${colorClass}`}
-    />
-  </div>
-));
+const TableCheckbox = React.memo(
+  ({ checked, onChange, colorClass, onKeyDown }) => (
+    <div className="flex justify-center">
+      <input
+        type="checkbox"
+        checked={!!checked}
+        onChange={(e) => onChange(e.target.checked)}
+        onKeyDown={onKeyDown}
+        className={`w-4 h-4 rounded border-gray-300 focus:ring-2 cursor-pointer ${colorClass}`}
+      />
+    </div>
+  ),
+);
 
 const HeaderCountInput = React.memo(({ value }) => (
   <div>
@@ -131,37 +136,44 @@ const HeaderCountInput = React.memo(({ value }) => (
   </div>
 ));
 
-const EditableCell = React.memo(({ value, onChange, placeholder = "..." }) => {
-  const [localValue, setLocalValue] = useState(value || "");
+const EditableCell = React.memo(
+  ({ value, onChange, placeholder = "...", onEnter }) => {
+    const [localValue, setLocalValue] = useState(value || "");
 
-  useEffect(() => {
-    setLocalValue(value || "");
-  }, [value]);
+    useEffect(() => {
+      setLocalValue(value || "");
+    }, [value]);
 
-  const onBlur = () => {
-    if (localValue !== value) {
-      onChange(localValue);
-    }
-  };
+    const onBlur = () => {
+      if (localValue !== value) {
+        onChange(localValue);
+      }
+    };
 
-  return (
-    <div className="relative w-full">
-      <input
-        type="text"
-        value={localValue}
-        onChange={(e) => setLocalValue(e.target.value)}
-        onBlur={onBlur}
-        onKeyDown={(e) => e.key === "Enter" && onBlur()}
-        placeholder={placeholder}
-        className="w-full min-w-[120px] bg-white dark:bg-[#262626] border border-gray-300 dark:border-gray-600 rounded px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#1a9888] dark:text-gray-200"
-      />
-      <Edit3
-        size={12}
-        className="absolute right-2 top-2.5 text-gray-400 pointer-events-none opacity-50"
-      />
-    </div>
-  );
-});
+    return (
+      <div className="relative w-full">
+        <input
+          type="text"
+          value={localValue}
+          onChange={(e) => setLocalValue(e.target.value)}
+          onBlur={onBlur}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              onBlur();
+              if (onEnter) onEnter(localValue);
+            }
+          }}
+          placeholder={placeholder}
+          className="w-full min-w-[120px] bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#1a9888] dark:text-gray-200"
+        />
+        <Edit3
+          size={12}
+          className="absolute right-2 top-2.5 text-gray-400 pointer-events-none opacity-50"
+        />
+      </div>
+    );
+  },
+);
 
 // --- COMPONENTE FILA ---
 const AuditRow = React.memo(
@@ -179,20 +191,31 @@ const AuditRow = React.memo(
     // Colores dinámicos
     const bgAccionVenta = getDynamicBackground(
       auditData?.accion_venta,
-      "bg-blue-50/20",
+      "bg-blue-50/20 dark:bg-blue-900/5",
     );
     const bgAccionCobranza = getDynamicBackground(
       auditData?.accion_cobranza,
-      "bg-blue-50/20",
+      "bg-blue-50/20 dark:bg-blue-900/5",
     );
     const bgLlamadaVenta = getDynamicBackground(
       auditData?.llamadas_venta,
-      "bg-orange-50/20",
+      "bg-orange-50/20 dark:bg-orange-900/5",
     );
     const bgLlamadaCobranza = getDynamicBackground(
       auditData?.llamadas_cobranza,
-      "bg-orange-50/20",
+      "bg-orange-50/20 dark:bg-orange-900/5",
     );
+
+    const handleEnter = (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        // Disparamos el guardado al presionar Enter
+        // usamos setTimeout para asegurar que el estado checkeado se propague primero si hubo cambio por clic (aunque el onChange es antes)
+        // pero principalmente para dar feedback visual inmediato,
+        // sin embargo el onChange ya actualiza el estado global.
+        handleSaveRow(row);
+      }
+    };
 
     // --- 1. DATOS EXTERNOS ---
     const logDelDia = useMemo(() => {
@@ -326,11 +349,11 @@ const AuditRow = React.memo(
     }, [row, auditData]);
 
     return (
-      <Tr className="hover:bg-gray-50 dark:hover:bg-[#333]">
+      <Tr className="hover:bg-gray-50 dark:hover:bg-slate-800/50">
         {/* BITRIX */}
         <Td
           stickyLeft={false}
-          className="font-bold border-r text-xs max-w-[180px] truncate bg-white dark:bg-[#191919] z-10"
+          className="font-bold border-r text-xs max-w-[180px] truncate bg-white dark:bg-slate-900 z-10"
           title={row.nombre}
         >
           {row.nombre}
@@ -369,12 +392,12 @@ const AuditRow = React.memo(
         <Td className="text-right text-xs font-semibold bg-blue-50/50 dark:bg-blue-900/10">
           {formatCurrency(row.venta_mes_actual)}
         </Td>
-        <Td className="text-right text-xs text-gray-500 border-r border-gray-200">
+        <Td className="text-right text-xs text-gray-500 border-r border-gray-200 dark:border-slate-800">
           {formatCurrency(row.venta_mes_pasado)}
         </Td>
 
         {/* --- CHECKBOXES --- */}
-        <Td className="bg-green-50/20 border-l border-green-100 p-0 text-center">
+        <Td className="bg-green-50/20 dark:bg-emerald-900/10 border-l border-green-100 dark:border-emerald-900/30 p-0 text-center">
           <TableCheckbox
             checked={auditData?.inicio_whatsapp?.e}
             onChange={(val) =>
@@ -383,10 +406,11 @@ const AuditRow = React.memo(
                 "c",
               ])
             }
+            onKeyDown={handleEnter}
             colorClass="text-green-600 focus:ring-green-500"
           />
         </Td>
-        <Td className="bg-green-50/20 border-r border-green-100 p-0 text-center">
+        <Td className="bg-green-50/20 dark:bg-emerald-900/10 border-r border-green-100 dark:border-emerald-900/30 p-0 text-center">
           <TableCheckbox
             checked={auditData?.inicio_whatsapp?.c}
             onChange={(val) =>
@@ -395,17 +419,19 @@ const AuditRow = React.memo(
                 "c",
               ])
             }
+            onKeyDown={handleEnter}
             colorClass="text-green-600 focus:ring-green-500"
           />
         </Td>
         <Td
-          className={`${bgAccionVenta} border-l border-blue-100 p-0 text-center`}
+          className={`${bgAccionVenta} border-l border-blue-100 dark:border-blue-900/30 p-0 text-center`}
         >
           <TableCheckbox
             checked={auditData?.accion_venta?.e}
             onChange={(val) =>
               handleExclusiveChange(row.id, "accion_venta", "e", val)
             }
+            onKeyDown={handleEnter}
             colorClass="text-blue-600 focus:ring-blue-500"
           />
         </Td>
@@ -415,17 +441,19 @@ const AuditRow = React.memo(
             onChange={(val) =>
               handleExclusiveChange(row.id, "accion_venta", "p", val)
             }
+            onKeyDown={handleEnter}
             colorClass="text-blue-600 focus:ring-blue-500"
           />
         </Td>
         <Td
-          className={`${bgAccionVenta} border-r border-blue-100 p-0 text-center`}
+          className={`${bgAccionVenta} border-r border-blue-100 dark:border-blue-900/30 p-0 text-center`}
         >
           <TableCheckbox
             checked={auditData?.accion_venta?.n}
             onChange={(val) =>
               handleExclusiveChange(row.id, "accion_venta", "n", val)
             }
+            onKeyDown={handleEnter}
             colorClass="text-red-600 focus:ring-red-500"
           />
         </Td>
@@ -435,6 +463,7 @@ const AuditRow = React.memo(
             onChange={(val) =>
               handleExclusiveChange(row.id, "accion_cobranza", "e", val)
             }
+            onKeyDown={handleEnter}
             colorClass="text-blue-600 focus:ring-blue-500"
           />
         </Td>
@@ -444,35 +473,39 @@ const AuditRow = React.memo(
             onChange={(val) =>
               handleExclusiveChange(row.id, "accion_cobranza", "p", val)
             }
+            onKeyDown={handleEnter}
             colorClass="text-blue-600 focus:ring-blue-500"
           />
         </Td>
         <Td
-          className={`${bgAccionCobranza} border-r border-blue-100 p-0 text-center`}
+          className={`${bgAccionCobranza} border-r border-blue-100 dark:border-blue-900/30 p-0 text-center`}
         >
           <TableCheckbox
             checked={auditData?.accion_cobranza?.n}
             onChange={(val) =>
               handleExclusiveChange(row.id, "accion_cobranza", "n", val)
             }
+            onKeyDown={handleEnter}
             colorClass="text-red-600 focus:ring-red-500"
           />
         </Td>
-        <Td className="bg-slate-300 dark:bg-slate-800 border-r border-gray-300 p-0 text-center">
+        <Td className="bg-slate-300 dark:bg-slate-800 border-r border-gray-300 dark:border-slate-700 p-0 text-center">
           <TableCheckbox
             checked={auditData?.cp || false}
             onChange={(val) => handleAuditChange(row.id, "cp", val)}
+            onKeyDown={handleEnter}
             colorClass="text-purple-600 focus:ring-purple-500"
           />
         </Td>
         <Td
-          className={`${bgLlamadaVenta} border-l border-orange-100 p-0 text-center`}
+          className={`${bgLlamadaVenta} border-l border-orange-100 dark:border-orange-900/30 p-0 text-center`}
         >
           <TableCheckbox
             checked={auditData?.llamadas_venta?.e}
             onChange={(val) =>
               handleExclusiveChange(row.id, "llamadas_venta", "e", val)
             }
+            onKeyDown={handleEnter}
             colorClass="text-orange-600 focus:ring-orange-500"
           />
         </Td>
@@ -482,17 +515,19 @@ const AuditRow = React.memo(
             onChange={(val) =>
               handleExclusiveChange(row.id, "llamadas_venta", "p", val)
             }
+            onKeyDown={handleEnter}
             colorClass="text-orange-600 focus:ring-orange-500"
           />
         </Td>
         <Td
-          className={`${bgLlamadaVenta} border-r border-orange-100 p-0 text-center`}
+          className={`${bgLlamadaVenta} border-r border-orange-100 dark:border-orange-900/30 p-0 text-center`}
         >
           <TableCheckbox
             checked={auditData?.llamadas_venta?.n}
             onChange={(val) =>
               handleExclusiveChange(row.id, "llamadas_venta", "n", val)
             }
+            onKeyDown={handleEnter}
             colorClass="text-red-600 focus:ring-red-500"
           />
         </Td>
@@ -502,6 +537,7 @@ const AuditRow = React.memo(
             onChange={(val) =>
               handleExclusiveChange(row.id, "llamadas_cobranza", "e", val)
             }
+            onKeyDown={handleEnter}
             colorClass="text-orange-600 focus:ring-orange-500"
           />
         </Td>
@@ -511,23 +547,25 @@ const AuditRow = React.memo(
             onChange={(val) =>
               handleExclusiveChange(row.id, "llamadas_cobranza", "p", val)
             }
+            onKeyDown={handleEnter}
             colorClass="text-orange-600 focus:ring-orange-500"
           />
         </Td>
         <Td
-          className={`${bgLlamadaCobranza} border-r border-orange-100 p-0 text-center`}
+          className={`${bgLlamadaCobranza} border-r border-orange-100 dark:border-orange-900/30 p-0 text-center`}
         >
           <TableCheckbox
             checked={auditData?.llamadas_cobranza?.n}
             onChange={(val) =>
               handleExclusiveChange(row.id, "llamadas_cobranza", "n", val)
             }
+            onKeyDown={handleEnter}
             colorClass="text-red-600 focus:ring-red-500"
           />
         </Td>
 
         {/* --- ICONO PLANIFICACIÓN (Visual) --- */}
-        <Td className="text-center text-xs whitespace-nowrap border-l border-gray-200">
+        <Td className="text-center text-xs whitespace-nowrap border-l border-gray-200 dark:border-slate-800">
           {hasPlanning && (
             <div className="flex justify-center items-center h-full w-full">
               <CheckCircle
@@ -539,7 +577,7 @@ const AuditRow = React.memo(
         </Td>
 
         {/* --- ACCIÓN (TAREA) --- */}
-        <Td className="text-xs text-center p-2 border-r border-gray-200">
+        <Td className="text-xs text-center p-2 border-r border-gray-200 dark:border-slate-800">
           <span className="text-gray-700 dark:text-gray-300 font-medium wrap-break-word leading-tight block max-w-[150px] mx-auto">
             {assignedTask || "-"}
           </span>
@@ -616,10 +654,21 @@ const AuditRow = React.memo(
             value={auditData?.observacion || ""}
             onChange={(val) => handleAuditChange(row.id, "observacion", val)}
             placeholder="Escribe la observación del día..."
+            onEnter={(newValue) => {
+              const updatedRow = { ...row };
+              const updatedAuditoria = { ...updatedRow.auditoria };
+              const updatedDayData = { ...updatedAuditoria[selectedDay] };
+
+              updatedDayData.observacion = newValue;
+              updatedAuditoria[selectedDay] = updatedDayData;
+              updatedRow.auditoria = updatedAuditoria;
+
+              handleSaveRow(updatedRow);
+            }}
           />
         </Td>
         {/* BOTÓN GUARDAR */}
-        <Td className="text-center p-2 border-l border-gray-200 bg-gray-50 dark:bg-gray-800">
+        <Td className="text-center p-2 border-l border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-800">
           <button
             onClick={async () => {
               setIsSaving(true);
@@ -637,17 +686,17 @@ const AuditRow = React.memo(
           </button>
         </Td>
         {/* DE N-P A E */}
-        <Td className="text-center p-2 border-l border-gray-200">
+        <Td className="text-center p-2 border-l border-gray-200 dark:border-slate-800">
           <span
-            className={`font-bold text-xs px-2 py-1 rounded ${deNpAE ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}
+            className={`font-bold text-xs px-2 py-1 rounded ${deNpAE ? "bg-green-100 text-green-700 dark:bg-emerald-900/40 dark:text-emerald-400" : "bg-red-100 text-red-700 dark:bg-rose-900/40 dark:text-rose-400"}`}
           >
             {deNpAE ? "SÍ" : "NO"}
           </span>
         </Td>
         {/* CON GESTION */}
-        <Td className="text-center p-2 border-l border-gray-200">
+        <Td className="text-center p-2 border-l border-gray-200 dark:border-slate-800">
           <span
-            className={`font-bold text-xs px-2 py-1 rounded ${conGestion ? "bg-purple-100 text-purple-700" : "bg-gray-100 text-gray-400"}`}
+            className={`font-bold text-xs px-2 py-1 rounded ${conGestion ? "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400" : "bg-gray-100 text-gray-400 dark:bg-slate-800 dark:text-slate-500"}`}
           >
             {conGestion ? "SÍ" : "NO"}
           </span>
@@ -659,13 +708,13 @@ const AuditRow = React.memo(
 
 // --- COMPONENTE PRINCIPAL ---
 const Matriz = () => {
-  const { data, loading, error, handleAuditoriaChange, refresh } =
-    useAuditoria();
+  const { data, loading, error, handleAuditoriaChange } = useAuditoria();
   const [selectedDay, setSelectedDay] = useState("lunes");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedZonas, setSelectedZonas] = useState([]); // Nuevo estado para filtro de Zonas
   const [page, setPage] = useState(1);
   const ITEMS_PER_PAGE = 25;
+  const { showToast, ToastContainer } = useToast();
 
   // --- FILTRO DE ZONAS (FRONTEND) ---
   // Obtener lista única de zonas basado en la data cargada
@@ -695,24 +744,21 @@ const Matriz = () => {
 
         await apiService.saveMatrix(payload);
 
-        // --- RECARGA AUTOMÁTICA DE DATOS SIN REFRESH DE PÁGINA ---
-        await refresh(false); // false para no mostrar el spinner de carga completa si no quieres, o true para feedback claro
-
-        alert("✅ Guardado correctamente");
+        showToast("Guardado correctamente", "success");
       } catch (err) {
         console.error(err);
-        alert("❌ Error al guardar");
+        showToast("Error al guardar", "error");
       }
     },
-    [refresh],
+    [showToast],
   );
   const getDynamicBackground = useCallback((categoryData, defaultColor) => {
     if (categoryData?.e)
-      return "bg-green-200 dark:bg-green-900/60 transition-colors duration-300";
+      return "bg-green-200 dark:bg-emerald-900/40 transition-colors duration-300";
     if (categoryData?.p)
-      return "bg-orange-200 dark:bg-orange-900/60 transition-colors duration-300";
+      return "bg-orange-200 dark:bg-amber-900/40 transition-colors duration-300";
     if (categoryData?.n)
-      return "bg-red-200 dark:bg-red-900/60 transition-colors duration-300";
+      return "bg-red-200 dark:bg-rose-900/40 transition-colors duration-300";
     return defaultColor;
   }, []);
 
@@ -1060,170 +1106,170 @@ const Matriz = () => {
                 <Th
                   colSpan={5}
                   stickyTop
-                  className="p-0 border-r border-green-200 dark:border-green-600 bg-green-100 dark:bg-green-900 h-1"
+                  className="p-0 border-r border-green-200 dark:border-emerald-800 bg-green-100 dark:bg-emerald-950 h-1"
                 ></Th>
                 <Th
                   colSpan={10}
                   stickyTop
-                  className="p-0 border-r border-blue-200 dark:border-blue-600 bg-blue-100 dark:bg-blue-900 h-1"
+                  className="p-0 border-r border-blue-200 dark:border-blue-800 bg-blue-100 dark:bg-blue-950 h-1"
                 ></Th>
                 <Th
                   colSpan={19}
                   stickyTop
-                  className="bg-purple-100 text-purple-800 text-center border-r border-purple-200 z-20 dark:bg-purple-900 dark:text-purple-200"
+                  className="bg-purple-100 text-purple-800 text-center border-r border-purple-200 z-20 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-900"
                 >
                   GESTIÓN DIARIA:{" "}
                   <span className="uppercase font-bold">{selectedDay}</span>
                 </Th>
                 <Th
                   colSpan={4}
-                  className="p-0 border-r border-gray-200 dark:border-gray-600 bg-gray-200 dark:bg-gray-900 h-1"
+                  className="p-0 border-r border-gray-200 dark:border-slate-800 bg-gray-200 dark:bg-slate-900 h-1"
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="p-0 border-r border-pink-200 dark:border-pink-600 bg-pink-200 dark:bg-pink-900 h-1"
+                  className="p-0 border-r border-pink-200 dark:border-rose-900 bg-pink-200 dark:bg-rose-950 h-1"
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="bg-white border-l dark:border-gray-600 dark:bg-gray-900 border-gray-200"
+                  className="bg-white border-l dark:border-slate-800 dark:bg-slate-900 border-gray-200"
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="bg-white border-l dark:border-gray-600 dark:bg-gray-900 border-gray-200"
+                  className="bg-white border-l dark:border-slate-800 dark:bg-slate-900 border-gray-200"
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="bg-white border-l dark:border-gray-600 dark:bg-gray-900 border-gray-200"
+                  className="bg-white border-l dark:border-slate-800 dark:bg-slate-950 border-gray-200"
                 ></Th>
               </Tr>
               {/* Nivel 2 Header */}
               <Tr>
                 <Th
                   colSpan={5}
-                  className="p-0 border-r border-green-200 dark:border-green-600 bg-green-100 dark:bg-green-900 h-1"
+                  className="p-0 border-r border-green-200 dark:border-emerald-800 bg-green-100 dark:bg-emerald-950 h-1"
                 ></Th>
                 <Th
                   colSpan={10}
-                  className="p-0 border-r border-blue-200 dark:border-blue-600 bg-blue-100 dark:bg-blue-900 h-1"
+                  className="p-0 border-r border-blue-200 dark:border-blue-800 bg-blue-100 dark:bg-blue-950 h-1"
                 ></Th>
                 <Th
                   colSpan={2}
-                  className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-yellow-900 border-r border-yellow-200 dark:border-yellow-600 text-gray-500"
+                  className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-amber-950/30 border-r border-yellow-200 dark:border-amber-900 text-gray-500 dark:text-amber-300"
                 >
                   Inicios
                 </Th>
                 <Th
                   colSpan={6}
-                  className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-yellow-900 border-r border-yellow-200 dark:border-yellow-600 text-gray-500"
+                  className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-amber-950/30 border-r border-yellow-200 dark:border-amber-900 text-gray-500 dark:text-amber-300"
                 >
                   Acción Realizada
                 </Th>
                 <Th
                   colSpan={1}
-                  className="p-0 border-r border-green-300 dark:border-green-600 bg-slate-300 dark:bg-slate-900 h-1"
+                  className="p-0 border-r border-green-300 dark:border-slate-700 bg-slate-300 dark:bg-slate-800 h-1"
                 ></Th>
                 <Th
                   colSpan={6}
-                  className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-yellow-900 border-r border-yellow-200 dark:border-yellow-600 text-gray-500"
+                  className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-amber-950/30 border-r border-yellow-200 dark:border-amber-900 text-gray-500 dark:text-amber-300"
                 >
                   Llamadas
                 </Th>
                 <Th
                   colSpan={4}
-                  className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-yellow-900 border-r border-yellow-200 dark:border-yellow-600 text-gray-500"
+                  className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-amber-950/30 border-r border-yellow-200 dark:border-amber-900 text-gray-500 dark:text-amber-300"
                 >
                   Visitas Asesor de Venta
                 </Th>
                 <Th
                   colSpan={4}
-                  className="p-0 border-r border-gray-200 dark:border-gray-600 bg-gray-200 dark:bg-gray-900 h-1"
+                  className="p-0 border-r border-gray-200 dark:border-slate-800 bg-gray-200 dark:bg-slate-900 h-1"
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="p-0 border-r border-pink-200 dark:border-pink-600 bg-pink-200 dark:bg-pink-900 h-1"
+                  className="p-0 border-r border-pink-200 dark:border-rose-900 bg-pink-200 dark:bg-rose-950 h-1"
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="bg-white border-l dark:border-gray-600 dark:bg-gray-900 border-gray-200"
+                  className="bg-white border-l dark:border-slate-800 dark:bg-slate-900 border-gray-200"
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="bg-white border-l dark:border-gray-600 dark:bg-gray-900 border-gray-200"
+                  className="bg-white border-l dark:border-slate-800 dark:bg-slate-900 border-gray-200"
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="bg-white border-l dark:border-gray-600 dark:bg-gray-900 border-gray-200"
+                  className="bg-white border-l dark:border-slate-800 dark:bg-slate-900 border-gray-200"
                 ></Th>
               </Tr>
               {/* Nivel 3 Header */}
               <Tr>
                 <Th
                   colSpan={5}
-                  className="p-0 border-r border-green-200 dark:border-green-600 bg-green-100 dark:bg-green-900 h-1"
+                  className="p-0 border-r border-green-200 dark:border-emerald-800 bg-green-100 dark:bg-emerald-950 h-1"
                 ></Th>
                 <Th
                   colSpan={10}
-                  className="p-0 border-r border-blue-200 dark:border-blue-600 bg-blue-100 dark:bg-blue-900 h-1"
+                  className="p-0 border-r border-blue-200 dark:border-blue-800 bg-blue-100 dark:bg-blue-950 h-1"
                 ></Th>
                 <Th
                   colSpan={2}
-                  className="p-0 border-r border-yellow-200 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-900 h-1"
+                  className="p-0 border-r border-yellow-200 dark:border-amber-900 bg-yellow-50 dark:bg-amber-950/20 h-1"
                 ></Th>
                 <Th
                   colSpan={6}
-                  className="p-0 border-r border-yellow-200 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-900 h-1"
+                  className="p-0 border-r border-yellow-200 dark:border-amber-900 bg-yellow-50 dark:bg-amber-950/20 h-1"
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="p-0 border-r border-green-300 dark:border-green-600 bg-slate-300 dark:bg-slate-900 h-1"
+                  className="p-0 border-r border-green-300 dark:border-slate-700 bg-slate-300 dark:bg-slate-800 h-1"
                 ></Th>
                 <Th
                   colSpan={6}
-                  className="p-0 border-r border-yellow-200 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-900 h-1"
+                  className="p-0 border-r border-yellow-200 dark:border-amber-900 bg-yellow-50 dark:bg-amber-950/20 h-1"
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="p-0 border-r border-yellow-200 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-900 h-1"
+                  className="p-0 border-r border-yellow-200 dark:border-amber-900 bg-yellow-50 dark:bg-amber-950/20 h-1"
                 >
                   Puestas
                 </Th>
                 <Th
                   colSpan={1}
-                  className="p-0 border-r border-yellow-200 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-900 h-1"
+                  className="p-0 border-r border-yellow-200 dark:border-amber-900 bg-yellow-50 dark:bg-amber-950/20 h-1"
                 >
                   Cumplidos
                 </Th>
                 <Th
                   colSpan={1}
-                  className="p-0 border-r border-yellow-200 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-900 h-1"
+                  className="p-0 border-r border-yellow-200 dark:border-amber-900 bg-yellow-50 dark:bg-amber-950/20 h-1"
                 >
                   Visitas del dia
                 </Th>
                 <Th
                   colSpan={1}
-                  className="p-0 border-r border-yellow-200 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-900 h-1"
+                  className="p-0 border-r border-yellow-200 dark:border-amber-900 bg-yellow-50 dark:bg-amber-950/20 h-1"
                 >
                   % de Planificación
                 </Th>
                 <Th
                   colSpan={4}
-                  className="p-0 border-r border-gray-200 dark:border-gray-600 bg-gray-200 dark:bg-gray-900 h-1"
+                  className="p-0 border-r border-gray-200 dark:border-slate-800 bg-gray-200 dark:bg-slate-900 h-1"
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="p-0 border-r border-pink-200 dark:border-pink-600 bg-pink-200 dark:bg-pink-900 h-1"
+                  className="p-0 border-r border-pink-200 dark:border-rose-900 bg-pink-200 dark:bg-rose-950 h-1"
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="bg-white border-l dark:border-gray-600 dark:bg-gray-900 border-gray-200"
+                  className="bg-white border-l dark:border-slate-800 dark:bg-slate-900 border-gray-200"
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="bg-white border-l dark:border-gray-600 dark:bg-gray-900 border-gray-200"
+                  className="bg-white border-l dark:border-slate-800 dark:bg-slate-900 border-gray-200"
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="bg-white border-l dark:border-gray-600 dark:bg-gray-900 border-gray-200"
+                  className="bg-white border-l dark:border-slate-800 dark:bg-slate-900 border-gray-200"
                 ></Th>
               </Tr>
 
@@ -1231,96 +1277,96 @@ const Matriz = () => {
               <Tr>
                 <Th
                   colSpan={5}
-                  className=" bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-center border-r border-green-200 z-20 text-[15px]"
+                  className=" bg-green-100 text-green-800 dark:bg-emerald-950 dark:text-emerald-300 text-center border-r border-green-200 dark:border-emerald-900 z-20 text-[15px]"
                 >
                   DATOS DEL CLIENTE (BITRIX)
                 </Th>
                 <Th
                   colSpan={10}
-                  className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-center border-r border-blue-200 dark:border-blue-600 z-20 text-[15px]"
+                  className="bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 text-center border-r border-blue-200 dark:border-blue-900 z-20 text-[15px]"
                 >
                   DATOS FINANCIEROS (PROFIT)
                 </Th>
-                <Th className="min-w-[30px] bg-white p-0 border-l border-white">
+                <Th className="min-w-[30px] bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
                   <HeaderCountInput value={headerCounts.inicio_whatsapp.e} />
                 </Th>
-                <Th className="min-w-[30px] bg-white p-0 border-l border-white">
+                <Th className="min-w-[30px] bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
                   <HeaderCountInput value={headerCounts.inicio_whatsapp.c} />
                 </Th>
-                <Th className="min-w-[30px] bg-white p-0 border-l border-white">
+                <Th className="min-w-[30px] bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
                   <HeaderCountInput value={headerCounts.accion_venta.e} />
                 </Th>
-                <Th className="min-w-[30px] bg-white p-0 border-l border-white">
+                <Th className="min-w-[30px] bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
                   <HeaderCountInput value={headerCounts.accion_venta.p} />
                 </Th>
-                <Th className="min-w-[30px] bg-white p-0 border-l border-white">
+                <Th className="min-w-[30px] bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
                   <HeaderCountInput value={headerCounts.accion_venta.n} />
                 </Th>
-                <Th className="min-w-[30px] bg-white p-0 border-l border-white">
+                <Th className="min-w-[30px] bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
                   <HeaderCountInput value={headerCounts.accion_cobranza.e} />
                 </Th>
-                <Th className="min-w-[30px] bg-white p-0 border-l border-white">
+                <Th className="min-w-[30px] bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
                   <HeaderCountInput value={headerCounts.accion_cobranza.p} />
                 </Th>
-                <Th className="min-w-[30px] bg-white p-0 border-l border-white">
+                <Th className="min-w-[30px] bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
                   <HeaderCountInput value={headerCounts.accion_cobranza.n} />
                 </Th>
                 <Th
                   colSpan={1}
-                  className="p-0 border-r border-green-300 dark:border-green-600 bg-slate-300 dark:bg-slate-900 h-1"
+                  className="p-0 border-r border-green-300 dark:border-emerald-800 bg-slate-300 dark:bg-slate-800 h-1"
                 ></Th>
-                <Th className="min-w-[30px] bg-white p-0 border-l border-white">
+                <Th className="min-w-[30px] bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
                   <HeaderCountInput value={headerCounts.llamadas_venta.e} />
                 </Th>
-                <Th className="min-w-[30px] bg-white p-0 border-l border-white">
+                <Th className="min-w-[30px] bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
                   <HeaderCountInput value={headerCounts.llamadas_venta.p} />
                 </Th>
-                <Th className="min-w-[30px] bg-white p-0 border-l border-white">
+                <Th className="min-w-[30px] bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
                   <HeaderCountInput value={headerCounts.llamadas_venta.n} />
                 </Th>
-                <Th className="min-w-[30px] bg-white p-0 border-l border-white">
+                <Th className="min-w-[30px] bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
                   <HeaderCountInput value={headerCounts.llamadas_cobranza.e} />
                 </Th>
-                <Th className="min-w-[30px] bg-white p-0 border-l border-white">
+                <Th className="min-w-[30px] bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
                   <HeaderCountInput value={headerCounts.llamadas_cobranza.p} />
                 </Th>
-                <Th className="min-w-[30px] bg-white p-0 border-l border-white">
+                <Th className="min-w-[30px] bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
                   <HeaderCountInput value={headerCounts.llamadas_cobranza.n} />
                 </Th>
 
                 {/* --- 4 CELDAS DE TOTALES (Reemplazan a las de llamadas repetidas) --- */}
-                <Th className="min-w-[30px] bg-white p-0 border-l border-white">
+                <Th className="min-w-[30px] bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
                   <HeaderCountInput value={headerCounts.puestas_total} />
                 </Th>
-                <Th className="min-w-[30px] bg-white p-0 border-l border-white">
+                <Th className="min-w-[30px] bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
                   <HeaderCountInput value={headerCounts.cumplidos_total} />
                 </Th>
-                <Th className="min-w-[30px] bg-white p-0 border-l border-white">
+                <Th className="min-w-[30px] bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
                   <HeaderCountInput value={headerCounts.visitas_dia_total} />
                 </Th>
-                <Th className="min-w-[30px] bg-white p-0 border-l border-white">
+                <Th className="min-w-[30px] bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
                   <HeaderCountInput value={`${headerCounts.percent_avg}%`} />
                 </Th>
 
                 <Th
                   colSpan={4}
-                  className="text-center text-[15px] uppercase bg-gray-200 dark:bg-gray-900 border-r dark:border-gray-600 border-gray-200 text-gray-700 dark:text-gray-200"
+                  className="text-center text-[15px] uppercase bg-gray-200 dark:bg-slate-900 border-r dark:border-slate-800 border-gray-200 text-gray-700 dark:text-slate-200"
                 >
                   Vendedores
                 </Th>
                 <Th
                   colSpan={1}
-                  className="text-center text-[10px] uppercase bg-pink-200 dark:bg-pink-900 border-r dark:border-pink-600 border-pink-200 text-pink-700 dark:text-pink-200"
+                  className="text-center text-[10px] uppercase bg-pink-200 dark:bg-rose-950 border-r dark:border-rose-900 border-pink-200 text-pink-700 dark:text-rose-200"
                 >
                   Observación
                 </Th>
-                <Th className="bg-white border-l dark:border-gray-600 dark:bg-gray-900 border-gray-200 text-[10px] uppercase font-bold text-center">
+                <Th className="bg-white dark:bg-slate-900 border-l dark:border-slate-800 border-gray-200 text-[10px] uppercase font-bold text-center dark:text-slate-300">
                   Guardar
                 </Th>
-                <Th className="bg-white border-l dark:border-gray-600 dark:bg-gray-900 border-gray-200 text-[10px] uppercase font-bold text-center">
+                <Th className="bg-white dark:bg-slate-900 border-l dark:border-slate-800 border-gray-200 text-[10px] uppercase font-bold text-center dark:text-slate-300">
                   De N-P a E
                 </Th>
-                <Th className="bg-white border-l dark:border-gray-600 dark:bg-gray-900 border-gray-200 text-[10px] uppercase font-bold text-center text-purple-700">
+                <Th className="bg-white dark:bg-slate-900 border-l dark:border-slate-800 border-gray-200 text-[10px] uppercase font-bold text-center text-purple-700 dark:text-purple-300">
                   CON GESTIÓN
                 </Th>
               </Tr>
@@ -1329,297 +1375,301 @@ const Matriz = () => {
               <Tr>
                 <Th
                   colSpan={5}
-                  className="p-0 border-r border-green-200 dark:border-green-600 bg-green-100 dark:bg-green-900 h-1"
+                  className="p-0 border-r border-green-200 dark:border-emerald-800 bg-green-100 dark:bg-emerald-950 h-1"
                 ></Th>
                 <Th
                   colSpan={10}
-                  className="p-0 border-r border-blue-200 dark:border-blue-600 bg-blue-100 dark:bg-blue-900 h-1"
+                  className="p-0 border-r border-blue-200 dark:border-blue-800 bg-blue-100 dark:bg-blue-950 h-1"
                 ></Th>
                 <Th
                   colSpan={2}
-                  className="text-center text-[10px] uppercase bg-green-50 dark:bg-green-900 border-r dark:border-green-600 border-green-200 text-green-700 dark:text-green-200"
+                  className="text-center text-[10px] uppercase bg-green-50 dark:bg-emerald-950 border-r dark:border-emerald-900 border-green-200 text-green-700 dark:text-emerald-300"
                 >
                   Inicio WhatsApp
                 </Th>
                 <Th
                   colSpan={6}
-                  className="text-center text-[10px] uppercase bg-blue-50 dark:bg-blue-900 border-r dark:border-blue-600 border-blue-200 text-blue-700 dark:text-blue-200"
+                  className="text-center text-[10px] uppercase bg-blue-50 dark:bg-blue-950 border-r dark:border-blue-900 border-blue-200 text-blue-700 dark:text-blue-300"
                 >
                   Acción Realizada
                 </Th>
                 <Th
                   colSpan={1}
-                  className="p-0 border-r border-green-300 dark:border-green-600 bg-slate-300 dark:bg-slate-900 h-1"
+                  className="p-0 border-r border-green-300 dark:border-emerald-800 bg-slate-300 dark:bg-slate-800 h-1"
                 ></Th>
                 <Th
                   colSpan={6}
-                  className="text-center text-[10px] uppercase bg-teal-50 dark:bg-teal-900 border-r dark:border-teal-600 border-teal-200 text-teal-700 dark:text-teal-200"
+                  className="text-center text-[10px] uppercase bg-teal-50 dark:bg-teal-950 border-r dark:border-teal-900 border-teal-200 text-teal-700 dark:text-teal-300"
                 >
                   Llamadas
                 </Th>
                 <Th
                   colSpan={4}
-                  className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-yellow-900 border-r dark:border-yellow-600 border-yellow-200 text-yellow-700 dark:text-yellow-200"
+                  className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-amber-950/30 border-r dark:border-amber-900 border-yellow-200 text-yellow-700 dark:text-amber-300"
                 >
                   Visitas Asesor de Venta
                 </Th>
                 <Th
                   colSpan={4}
-                  className="p-0 border-r border-gray-200 dark:border-gray-600 bg-gray-200 dark:bg-gray-900 h-1"
+                  className="p-0 border-r border-gray-200 dark:border-slate-800 bg-gray-200 dark:bg-slate-900 h-1"
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="p-0 border-r border-pink-200 dark:border-pink-600 bg-pink-200 dark:bg-pink-900 h-1"
+                  className="p-0 border-r border-pink-200 dark:border-rose-900 bg-pink-200 dark:bg-rose-950 h-1"
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="bg-white border-r dark:border-gray-600 dark:bg-gray-900 border-gray-200"
+                  className="bg-white border-r dark:border-slate-800 dark:bg-slate-900 border-gray-200"
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="bg-white border-r dark:border-gray-600 dark:bg-gray-900 border-gray-200"
+                  className="bg-white border-r dark:border-slate-800 dark:bg-slate-900 border-gray-200"
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="bg-white border-r dark:border-gray-600 dark:bg-gray-900 border-gray-200"
+                  className="bg-white border-r dark:border-slate-800 dark:bg-slate-900 border-gray-200"
                 ></Th>
               </Tr>
               <Tr>
                 <Th
                   colSpan={5}
-                  className="p-0 border-r border-green-200 dark:border-green-600 bg-green-100 dark:bg-green-900 h-1"
+                  className="p-0 border-r border-green-200 dark:border-emerald-800 bg-green-100 dark:bg-emerald-950 h-1"
                 ></Th>
                 <Th
                   colSpan={10}
-                  className="p-0 border-r border-blue-200 dark:border-blue-600 bg-blue-100 dark:bg-blue-900 h-1"
+                  className="p-0 border-r border-blue-200 dark:border-blue-800 bg-blue-100 dark:bg-blue-950 h-1"
                 ></Th>
                 <Th
                   colSpan={2}
-                  className="p-0 border-r border-green-200 dark:border-green-600 bg-green-50 dark:bg-green-900 h-1"
+                  className="p-0 border-r border-green-200 dark:border-emerald-800 bg-green-50 dark:bg-emerald-950 h-1"
                 ></Th>
                 <Th
                   colSpan={3}
-                  className="text-center text-[10px] uppercase bg-blue-50 dark:bg-blue-900 border-r dark:border-blue-600 border-blue-200 text-blue-700 dark:text-blue-200"
+                  className="text-center text-[10px] uppercase bg-blue-50 dark:bg-blue-950/40 border-r border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300"
                 >
                   Venta
                 </Th>
                 <Th
                   colSpan={3}
-                  className="text-center text-[10px] uppercase bg-blue-50 dark:bg-blue-900 border-r dark:border-blue-600 border-blue-200 text-blue-700 dark:text-blue-200"
+                  className="text-center text-[10px] uppercase bg-blue-50 dark:bg-blue-950/40 border-r border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300"
                 >
                   Cobranza
                 </Th>
                 <Th
                   colSpan={1}
-                  className="p-0 border-r border-green-300 dark:border-green-600 bg-slate-300 dark:bg-slate-900 h-1"
+                  className="p-0 border-r border-green-300 dark:border-emerald-800 bg-slate-300 dark:bg-slate-800 h-1"
                 ></Th>
                 <Th
                   colSpan={3}
-                  className="text-center text-[10px] uppercase bg-teal-50 dark:bg-teal-900 border-r dark:border-teal-600 border-teal-200 text-teal-700 dark:text-teal-200"
+                  className="text-center text-[10px] uppercase bg-teal-50 dark:bg-teal-950/40 border-r border-teal-200 dark:border-teal-800 text-teal-700 dark:text-teal-300"
                 >
                   Venta
                 </Th>
                 <Th
                   colSpan={3}
-                  className="text-center text-[10px] uppercase bg-teal-50 dark:bg-teal-900 border-r dark:border-teal-600 border-teal-200 text-teal-700 dark:text-teal-200"
+                  className="text-center text-[10px] uppercase bg-teal-50 dark:bg-teal-950/40 border-r border-teal-200 dark:border-teal-800 text-teal-700 dark:text-teal-300"
                 >
                   Cobranza
                 </Th>
                 <Th
                   colSpan={4}
-                  className="p-0 border-r border-yellow-200 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-900 h-1"
+                  className="p-0 border-r border-yellow-200 dark:border-amber-900 bg-yellow-50 dark:bg-amber-950/20 h-1"
                 ></Th>
                 <Th
                   colSpan={4}
-                  className="p-0 border-r border-gray-200 dark:border-gray-600 bg-gray-200 dark:bg-gray-900 h-1"
+                  className="p-0 border-r border-gray-200 dark:border-slate-800 bg-gray-200 dark:bg-slate-900 h-1"
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="p-0 border-r border-pink-200 dark:border-pink-600 bg-pink-200 dark:bg-pink-900 h-1"
+                  className="p-0 border-r border-pink-200 dark:border-rose-900 bg-pink-200 dark:bg-rose-950 h-1"
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="bg-white border-r dark:border-gray-600 dark:bg-gray-900 border-gray-200"
+                  className="bg-white border-r dark:border-slate-800 dark:bg-slate-900 border-gray-200"
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="bg-white border-r dark:border-gray-600 dark:bg-gray-900 border-gray-200"
+                  className="bg-white border-r dark:border-slate-800 dark:bg-slate-900 border-gray-200"
                 ></Th>
                 <Th
                   colSpan={1}
-                  className="bg-white border-r dark:border-gray-600 dark:bg-gray-900 border-gray-200"
+                  className="bg-white border-r dark:border-slate-800 dark:bg-slate-900 border-gray-200"
                 ></Th>
               </Tr>
               <Tr>
                 <Th
                   stickyLeft={false}
-                  className="min-w-[180px] w-[180px] bg-white dark:bg-[#1e1e1e] z-20 shadow-md border-t"
+                  className="min-w-[180px] w-[180px] bg-white dark:bg-slate-900 z-20 shadow-md border-t dark:border-slate-800 dark:text-slate-200"
                 >
                   Cliente
                 </Th>
-                <Th className="min-w-[60px] bg-white dark:bg-[#1e1e1e] text-xs border-t">
+                <Th className="min-w-[60px] bg-white dark:bg-slate-900 text-xs border-t dark:border-slate-800 dark:text-slate-200">
                   Compañia ID
                 </Th>
-                <Th className="min-w-[80px] bg-white dark:bg-[#1e1e1e] text-xs border-t">
+                <Th className="min-w-[80px] bg-white dark:bg-slate-900 text-xs border-t dark:border-slate-800 dark:text-slate-200">
                   Código
                 </Th>
-                <Th className="min-w-[120px] bg-white dark:bg-[#1e1e1e] text-xs border-t">
+                <Th className="min-w-[120px] bg-white dark:bg-slate-900 text-xs border-t dark:border-slate-800 dark:text-slate-200">
                   Zona
                 </Th>
-                <Th className="min-w-[120px] bg-white dark:bg-[#1e1e1e] text-xs border-t">
+                <Th className="min-w-[120px] bg-white dark:bg-slate-900 text-xs border-t dark:border-slate-800 dark:text-slate-200">
                   Días
                 </Th>
-                <Th className="min-w-[100px] text-xs border-t">Límite Créd.</Th>
-                <Th className="min-w-[100px] text-xs border-t">
+                <Th className="min-w-[100px] text-xs border-t dark:border-slate-800 dark:text-slate-200 dark:bg-slate-900">
+                  Límite Créd.
+                </Th>
+                <Th className="min-w-[100px] text-xs border-t dark:border-slate-800 dark:text-slate-200 dark:bg-slate-900">
                   Saldo Tránsito
                 </Th>
-                <Th className="min-w-[100px] text-xs border-t">
+                <Th className="min-w-[100px] text-xs border-t dark:border-slate-800 dark:text-slate-200 dark:bg-slate-900">
                   Saldo Vencido
                 </Th>
-                <Th className="min-w-[90px] text-xs border-t">
+                <Th className="min-w-[90px] text-xs border-t dark:border-slate-800 dark:text-slate-200 dark:bg-slate-900">
                   Fecha Últ. Compra
                 </Th>
-                <Th className="min-w-[110px] text-xs border-t">
+                <Th className="min-w-[110px] text-xs border-t dark:border-slate-800 dark:text-slate-200 dark:bg-slate-900">
                   Fact. Mayor Morosidad
                 </Th>
-                <Th className="min-w-[90px] text-xs border-t">
+                <Th className="min-w-[90px] text-xs border-t dark:border-slate-800 dark:text-slate-200 dark:bg-slate-900">
                   Fecha Últ. Cobro
                 </Th>
-                <Th className="min-w-[70px] text-xs border-t">Clasif.</Th>
-                <Th className="min-w-[80px] text-xs border-t">
+                <Th className="min-w-[70px] text-xs border-t dark:border-slate-800 dark:text-slate-200 dark:bg-slate-900">
+                  Clasif.
+                </Th>
+                <Th className="min-w-[80px] text-xs border-t dark:border-slate-800 dark:text-slate-200 dark:bg-slate-900">
                   Posee Convenio
                 </Th>
-                <Th className="min-w-[100px] text-xs border-t">
+                <Th className="min-w-[100px] text-xs border-t dark:border-slate-800 dark:text-slate-200 dark:bg-slate-900">
                   Venta Mes Actual
                 </Th>
-                <Th className="min-w-[100px] text-xs border-t">
+                <Th className="min-w-[100px] text-xs border-t dark:border-slate-800 dark:text-slate-200 dark:bg-slate-900">
                   Venta Mes Anterior
                 </Th>
 
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-green-50 dark:bg-green-900 dark:text-green-200 text-[10px] border-l border-green-200"
+                  className="min-w-[30px] font-bold text-center bg-green-50 dark:bg-emerald-950 dark:text-emerald-300 text-[10px] border-l border-green-200 dark:border-emerald-800"
                   title="Enviado"
                 >
                   EJECUTIVA
                 </Th>
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-green-50 dark:bg-green-900 dark:text-green-200 text-[10px] border-r border-green-200"
+                  className="min-w-[30px] font-bold text-center bg-green-50 dark:bg-emerald-950 dark:text-emerald-300 text-[10px] border-r border-green-200 dark:border-emerald-800"
                   title="Contestado"
                 >
                   CLIENTE
                 </Th>
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-blue-50 dark:bg-blue-900 dark:text-blue-200 text-[10px] border-l border-blue-200"
+                  className="min-w-[30px] font-bold text-center bg-blue-50 dark:bg-blue-950 dark:text-blue-300 text-[10px] border-l border-blue-200 dark:border-blue-900"
                   title="Venta Enviado"
                 >
                   E
                 </Th>
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-blue-50 dark:bg-blue-900 dark:text-blue-200 text-[10px]"
+                  className="min-w-[30px] font-bold text-center bg-blue-50 dark:bg-blue-950 dark:text-blue-300 text-[10px] dark:border-blue-900"
                   title="Venta Pendiente"
                 >
                   P
                 </Th>
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-blue-50 dark:bg-blue-900 dark:text-blue-200 text-[10px] border-r border-blue-200"
+                  className="min-w-[30px] font-bold text-center bg-blue-50 dark:bg-blue-950 dark:text-blue-300 text-[10px] border-r border-blue-200 dark:border-blue-900"
                   title="Venta Negada"
                 >
                   N
                 </Th>
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-blue-50 dark:bg-blue-900 dark:text-blue-200 text-[10px]"
+                  className="min-w-[30px] font-bold text-center bg-blue-50 dark:bg-blue-950 dark:text-blue-300 text-[10px] dark:border-blue-900"
                   title="Cobranza Enviado"
                 >
                   E
                 </Th>
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-blue-50 dark:bg-blue-900 dark:text-blue-200 text-[10px]"
+                  className="min-w-[30px] font-bold text-center bg-blue-50 dark:bg-blue-950 dark:text-blue-300 text-[10px] dark:border-blue-900"
                   title="Cobranza Pendiente"
                 >
                   P
                 </Th>
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-blue-50 dark:bg-blue-900 dark:text-blue-200 text-[10px] border-r border-blue-200"
+                  className="min-w-[30px] font-bold text-center bg-blue-50 dark:bg-blue-950 dark:text-blue-300 text-[10px] border-r border-blue-200 dark:border-blue-900"
                   title="Cobranza Negada"
                 >
                   N
                 </Th>
                 <Th
                   colSpan={1}
-                  className="p-0 border-r border-green-300 dark:border-green-600 bg-slate-300 dark:bg-slate-900 h-1"
+                  className="p-0 border-r border-green-300 dark:border-emerald-800 bg-slate-300 dark:bg-slate-800 h-1"
                 >
                   CP
                 </Th>
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-teal-50 dark:bg-teal-900 dark:text-teal-200 text-[10px] border-l border-teal-200"
+                  className="min-w-[30px] font-bold text-center bg-teal-50 dark:bg-teal-950 dark:text-teal-300 text-[10px] border-l border-teal-200 dark:border-teal-900"
                   title="Llamada Venta E"
                 >
                   E
                 </Th>
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-teal-50 dark:bg-teal-900 dark:text-teal-200 text-[10px]"
+                  className="min-w-[30px] font-bold text-center bg-teal-50 dark:bg-teal-950 dark:text-teal-300 text-[10px] dark:border-teal-900"
                   title="Llamada Venta P"
                 >
                   P
                 </Th>
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-teal-50 dark:bg-teal-900 dark:text-teal-200 text-[10px] border-r border-teal-200"
+                  className="min-w-[30px] font-bold text-center bg-teal-50 dark:bg-teal-950 dark:text-teal-300 text-[10px] border-r border-teal-200 dark:border-teal-900"
                   title="Llamada Venta N"
                 >
                   N
                 </Th>
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-teal-50 dark:bg-teal-900 dark:text-teal-200 text-[10px]"
+                  className="min-w-[30px] font-bold text-center bg-teal-50 dark:bg-teal-950 dark:text-teal-300 text-[10px] dark:border-teal-900"
                   title="Llamada Cobranza E"
                 >
                   E
                 </Th>
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-teal-50 dark:bg-teal-900 dark:text-teal-200 text-[10px]"
+                  className="min-w-[30px] font-bold text-center bg-teal-50 dark:bg-teal-950 dark:text-teal-300 text-[10px] dark:border-teal-900"
                   title="Llamada Cobranza P"
                 >
                   P
                 </Th>
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-teal-50 dark:bg-teal-900 dark:text-teal-200 text-[10px]"
+                  className="min-w-[30px] font-bold text-center bg-teal-50 dark:bg-teal-950 dark:text-teal-300 text-[10px] dark:border-teal-900"
                   title="Llamada Cobranza N"
                 >
                   N
                 </Th>
-                <Th className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-yellow-900 dark:text-yellow-200 border-r border-yellow-200 text-yellow-700">
+                <Th className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-amber-950/20 border-r border-yellow-200 dark:border-amber-900 text-yellow-700 dark:text-amber-300">
                   Planificación
                 </Th>
-                <Th className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-yellow-900 dark:text-yellow-200 border-r border-yellow-200 text-yellow-700">
+                <Th className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-amber-950/20 border-r border-yellow-200 dark:border-amber-900 text-yellow-700 dark:text-amber-300">
                   Acción del Dia
                 </Th>
-                <Th className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-yellow-900 dark:text-yellow-200 border-r border-yellow-200 text-yellow-700">
+                <Th className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-amber-950/20 border-r border-yellow-200 dark:border-amber-900 text-yellow-700 dark:text-amber-300">
                   Diferencia de Coordenadas
                 </Th>
-                <Th className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-yellow-900 dark:text-yellow-200 border-r border-yellow-200 text-yellow-700">
+                <Th className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-amber-950/20 border-r border-yellow-200 dark:border-amber-900 text-yellow-700 dark:text-amber-300">
                   Observación del vendedor
                 </Th>
-                <Th className="text-center text-[10px] uppercase bg-gray-200 dark:bg-gray-900 dark:text-gray-200 border-r border-gray-200 text-gray-700">
+                <Th className="text-center text-[10px] uppercase bg-gray-200 dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 text-gray-700 dark:text-slate-300">
                   Fecha de Registro
                 </Th>
-                <Th className="text-center text-[10px] uppercase bg-gray-200 dark:bg-gray-900 dark:text-gray-200 border-r border-gray-200 text-gray-700">
+                <Th className="text-center text-[10px] uppercase bg-gray-200 dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 text-gray-700 dark:text-slate-300">
                   Tipo de gestión de ventas
                 </Th>
-                <Th className="text-center text-[10px] uppercase bg-gray-200 dark:bg-gray-900 dark:text-gray-200 border-r border-gray-200 text-gray-700">
+                <Th className="text-center text-[10px] uppercase bg-gray-200 dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 text-gray-700 dark:text-slate-300">
                   Tipo de gestión de cobranza
                 </Th>
-                <Th className="text-center text-[10px] uppercase bg-gray-200 dark:bg-gray-900 dark:text-gray-200 border-r border-gray-200 text-gray-700">
+                <Th className="text-center text-[10px] uppercase bg-gray-200 dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 text-gray-700 dark:text-slate-300">
                   Descripción de ambos conceptos
                 </Th>
-                <Th className="text-center text-[10px] uppercase bg-pink-200 dark:bg-pink-900 dark:text-pink-200 border-r border-pink-200 text-pink-700">
+                <Th className="text-center text-[10px] uppercase bg-pink-200 dark:bg-rose-950 border-r border-pink-200 dark:border-rose-900 text-pink-700 dark:text-rose-200">
                   Observaciones
                 </Th>
-                <Th className="bg-white border-l dark:border-gray-600 dark:bg-gray-900 border-gray-200 text-xs text-center uppercase font-bold">
+                <Th className="bg-white dark:bg-slate-900 border-l dark:border-slate-800 border-gray-200 text-[10px] text-center uppercase font-bold dark:text-slate-300">
                   Guardar
                 </Th>
-                <Th className="bg-white border-l dark:border-gray-600 dark:bg-gray-900 border-gray-200 text-[10px] text-center uppercase font-bold">
+                <Th className="bg-white dark:bg-slate-900 border-l dark:border-slate-800 border-gray-200 text-[10px] text-center uppercase font-bold dark:text-slate-300">
                   De N-P a E
                 </Th>
-                <Th className="bg-white border-l dark:border-gray-600 dark:bg-gray-900 border-gray-200 text-[10px] text-center uppercase font-bold text-purple-700">
+                <Th className="bg-white dark:bg-slate-900 border-l dark:border-slate-800 border-gray-200 text-[10px] text-center uppercase font-bold text-purple-700 dark:text-purple-300">
                   CON GESTIÓN
                 </Th>
               </Tr>
@@ -1716,6 +1766,7 @@ const Matriz = () => {
           </button>
         </form>
       </div>
+      <ToastContainer />
     </div>
   );
 };

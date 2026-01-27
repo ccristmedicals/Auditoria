@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/immutability */
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { TrendingUp, RefreshCw, Download } from "lucide-react";
 import {
   TableContainer,
@@ -127,29 +127,37 @@ const Rendimiento = () => {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-white dark:bg-[#191919]">
-        <div className="text-[#1a9888] flex flex-col items-center">
-          <RefreshCw className="animate-spin w-10 h-10 mb-3" />
-          <span className="font-semibold text-lg">Calculando métricas...</span>
+      <div className="flex h-screen items-center justify-center bg-white dark:bg-[#0b1120]">
+        <div className="flex flex-col items-center gap-4">
+          <RefreshCw className="w-12 h-12 text-[#1a9888] animate-spin" />
+          <p className="text-slate-600 dark:text-slate-300 font-medium animate-pulse">
+            Analizando datos de rendimiento...
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 min-h-screen bg-white dark:bg-[#191919]">
+    <div className="p-4 sm:p-6 lg:p-8 min-h-screen bg-white dark:bg-[#0b1120]">
       {/* HEADER */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-gray-200 dark:border-gray-700 pb-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg text-[#1a9888]">
-            <TrendingUp size={28} />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8 border-b border-gray-200 dark:border-white/5 pb-6">
+        <div className="flex items-center gap-4">
+          <div className="bg-teal-50 dark:bg-teal-900/20 p-3 rounded-2xl">
+            <TrendingUp
+              size={32}
+              className="text-[#1a9888] dark:text-teal-400"
+            />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-[#191919] dark:text-white">
-              Tablero de Rendimiento
+            <h2 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">
+              Panel de{" "}
+              <span className="text-[#1a9888] dark:text-teal-400">
+                Rendimiento
+              </span>
             </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Métricas de efectividad por ruta
+            <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
+              Métricas de efectividad por ruta y canal
             </p>
           </div>
         </div>
@@ -178,14 +186,14 @@ const Rendimiento = () => {
               <Th
                 rowSpan={2}
                 stickyTop
-                className="z-30 bg-gray-100 dark:bg-[#2a2a2a] border-r border-b min-w-[180px] text-xs uppercase"
+                className="z-30 bg-slate-100 dark:bg-[#1a2333] border-r border-b dark:border-white/5 min-w-[180px] text-xs uppercase"
               >
                 Compañía, Segmento (Profit)
               </Th>
               <Th
                 rowSpan={2}
                 stickyTop
-                className="z-30 bg-blue-50 dark:bg-blue-900 text-blue-800 dark:text-blue-200 border-r border-b text-center text-xs uppercase w-[100px]"
+                className="z-30 bg-blue-50 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 border-r border-b dark:border-white/5 text-center text-xs uppercase w-[100px]"
               >
                 Cantidad Clientes dentro Política
               </Th>
@@ -308,10 +316,10 @@ const Rendimiento = () => {
                   key={row.id}
                   className="hover:bg-gray-50 dark:hover:bg-[#2a2a2a]"
                 >
-                  <Td className="font-semibold text-gray-700 dark:text-gray-300 border-r bg-white dark:bg-[#1e1e1e] p-2 text-xs">
+                  <Td className="font-semibold text-slate-700 dark:text-slate-200 border-r bg-white dark:bg-[#111827] p-3 text-xs">
                     {row.segmento}
                   </Td>
-                  <Td className="text-center font-bold border-r bg-blue-50/30 text-blue-700 dark:text-blue-300 p-2 text-xs">
+                  <Td className="text-center font-bold border-r bg-blue-50/20 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 p-3 text-xs">
                     {row.total_clientes}
                   </Td>
 
@@ -342,11 +350,11 @@ const Rendimiento = () => {
             })}
 
             {/* FILA DE TOTALES */}
-            <Tr className="bg-gray-100 dark:bg-[#333] border-t-2 border-gray-300 dark:border-gray-500 font-bold text-xs">
-              <Td className="text-right uppercase p-3 border-r">
+            <Tr className="bg-slate-100 dark:bg-[#1a2333] border-t-2 border-slate-300 dark:border-white/10 font-black text-xs">
+              <Td className="text-right uppercase p-4 border-r dark:border-white/5">
                 TOTAL GENERAL:
               </Td>
-              <Td className="text-center text-blue-800 border-r">
+              <Td className="text-center text-blue-800 dark:text-blue-400 border-r dark:border-white/5">
                 {totals.total_clientes}
               </Td>
 

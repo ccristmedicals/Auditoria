@@ -1,5 +1,11 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import { useBaseDatosBitrix } from "../hooks/useBaseDatosBitrix";
 import {
   TableContainer,
@@ -27,20 +33,10 @@ import {
   ChevronDown,
   CheckSquare,
   Square,
-  Eye,
-  EyeOff,
   Columns,
-
 } from "lucide-react";
 import { apiService } from "../services/apiService";
 import { FilterMultiSelect } from "../components/ui/FilterMultiSelect";
-
-// --- CONSTANTES ---
-// (Removido OPCIONES_SEGMENTOS local en favor de uniqueSegments del hook)
-
-// --- COMPONENTES AUXILIARES ---
-
-
 
 const ErrorAwareCell = React.memo(({ value, isError, icon = false }) => {
   if (isError) {
@@ -159,7 +155,12 @@ const CompanyRow = React.memo(
     };
 
     // Helper para generar celdas de días
-    const renderDayCells = (dayPrefix, bgColorClass, borderClass = "", visibility) => {
+    const renderDayCells = (
+      dayPrefix,
+      bgColorClass,
+      borderClass = "",
+      visibility,
+    ) => {
       // Si el día está oculto completamente, retornar null
       // La prop visibility viene en row.visibility, pero aquí la recibimos como argumento
       // Sin embargo, en el parent call se pasa row.visibility.
@@ -202,9 +203,15 @@ const CompanyRow = React.memo(
     };
 
     return (
-      <Tr className={isSelected ? "bg-teal-50/30 dark:bg-teal-900/10" : ""}>
+      <Tr
+        className={
+          isSelected
+            ? "bg-teal-50/30 dark:bg-teal-900/10"
+            : "hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+        }
+      >
         {/* Checkbox */}
-        <Td className="bg-white dark:bg-[#191919] border-r dark:border-[#333] text-center">
+        <Td className="bg-white dark:bg-[#111827] border-r dark:border-white/5 text-center transition-colors">
           <input
             type="checkbox"
             className="w-4 h-4 accent-[#1a9888] cursor-pointer"
@@ -214,10 +221,10 @@ const CompanyRow = React.memo(
         </Td>
 
         {/* Datos Básicos */}
-        <Td className="bg-gray-50 dark:bg-[#202020] text-xs font-mono">
+        <Td className="bg-slate-50/50 dark:bg-[#0b1120] text-xs font-mono transition-colors">
           {row.id}
         </Td>
-        <Td className="text-left font-semibold bg-white dark:bg-[#191919] border-r shadow-md">
+        <Td className="text-left font-semibold bg-white dark:bg-[#111827] border-r dark:border-white/5 shadow-md">
           <div
             className="flex items-center gap-2 truncate max-w-[280px]"
             title={row.nombre}
@@ -253,7 +260,10 @@ const CompanyRow = React.memo(
           </Td>
         )}
         {row.visibility?.dias_visita && (
-          <Td className="text-xs truncate max-w-[140px]" title={row.dias_visita}>
+          <Td
+            className="text-xs truncate max-w-[140px]"
+            title={row.dias_visita}
+          >
             {row.dias_visita || "-"}
           </Td>
         )}
@@ -272,13 +282,16 @@ const CompanyRow = React.memo(
         {row.visibility?.vencido && (
           <Td
             align="right"
-            className={`font-mono text-xs font-bold ${row.saldo_vencido > 0 ? "text-red-600" : "text-green-600"
-              }`}
+            className={`font-mono text-xs font-bold ${
+              row.saldo_vencido > 0 ? "text-red-600" : "text-green-600"
+            }`}
           >
             {formatCurrency(row.saldo_vencido)}
           </Td>
         )}
-        {row.visibility?.fecha_compra && <Td className="text-xs">{row.fecha_compra}</Td>}
+        {row.visibility?.fecha_compra && (
+          <Td className="text-xs">{row.fecha_compra}</Td>
+        )}
         {row.visibility?.morosidad && (
           <Td
             className="text-xs text-red-500 truncate max-w-[120px]"
@@ -341,21 +354,41 @@ const CompanyRow = React.memo(
         )}
 
         {/* --- AGENDA SEMANAL --- */}
-        {renderDayCells("lunes", "bg-indigo-50 dark:bg-indigo-900/20", "", row.visibility)}
-        {renderDayCells("martes", "bg-white dark:bg-[#1e1e1e]", "", row.visibility)}
-        {renderDayCells("miercoles", "bg-indigo-50 dark:bg-indigo-900/20", "", row.visibility)}
-        {renderDayCells("jueves", "bg-white dark:bg-[#1e1e1e]", "", row.visibility)}
+        {renderDayCells(
+          "lunes",
+          "bg-indigo-50 dark:bg-indigo-900/20",
+          "",
+          row.visibility,
+        )}
+        {renderDayCells(
+          "martes",
+          "bg-white dark:bg-[#1e1e1e]",
+          "",
+          row.visibility,
+        )}
+        {renderDayCells(
+          "miercoles",
+          "bg-indigo-50 dark:bg-indigo-900/20",
+          "",
+          row.visibility,
+        )}
+        {renderDayCells(
+          "jueves",
+          "bg-white dark:bg-[#1e1e1e]",
+          "",
+          row.visibility,
+        )}
         {renderDayCells(
           "viernes",
           "bg-indigo-50 dark:bg-indigo-900/20",
           "border-r border-gray-200 dark:border-[#333]",
-          row.visibility
+          row.visibility,
         )}
 
         {/* Guardar */}
         <Td
           stickyRight
-          className="bg-white dark:bg-[#191919] border-l shadow-[-4px_0_5px_-2px_rgba(0,0,0,0.1)]"
+          className="bg-white dark:bg-[#111827] border-l dark:border-white/5 shadow-[-4px_0_10px_-2px_rgba(0,0,0,0.1)] transition-colors"
         >
           <div className="flex justify-center">
             <button
@@ -437,7 +470,10 @@ const BaseDatosBitrix = () => {
   // Close menu on click outside
   useEffect(() => {
     function handleClickOutside(event) {
-      if (columnMenuRef.current && !columnMenuRef.current.contains(event.target)) {
+      if (
+        columnMenuRef.current &&
+        !columnMenuRef.current.contains(event.target)
+      ) {
         setShowColumnMenu(false);
       }
     }
@@ -455,9 +491,15 @@ const BaseDatosBitrix = () => {
   };
 
   // Agenda: cada día tiene 3 columnas fijas. Si el día está visible, colSpan 3, sino 0.
-  const getDayColSpan = (dayKey) => columnVisibility[dayKey] ? 3 : 0;
+  const getDayColSpan = (dayKey) => (columnVisibility[dayKey] ? 3 : 0);
   const getAgendaTotalColSpan = () => {
-    return getDayColSpan('lunes') + getDayColSpan('martes') + getDayColSpan('miercoles') + getDayColSpan('jueves') + getDayColSpan('viernes');
+    return (
+      getDayColSpan("lunes") +
+      getDayColSpan("martes") +
+      getDayColSpan("miercoles") +
+      getDayColSpan("jueves") +
+      getDayColSpan("viernes")
+    );
   };
 
   const toggleSelect = useCallback((id_interno) => {
@@ -508,59 +550,64 @@ const BaseDatosBitrix = () => {
     }).format(amount || 0);
   }, []);
 
-  const handleSave = useCallback(async (companyData) => {
-    const payload = {
-      id_bitrix: companyData.id,
-      codigo_profit: companyData.codigo_profit,
-      gestion: {
-        bitacora: companyData.bitacora,
-        obs_ejecutiva: companyData.obs_ejecutiva,
-        semana: {
-          lunes: {
-            accion: companyData.lunes_accion,
-            observacion: companyData.lunes_observacion,
-            tarea: companyData.lunes_tarea,
-          },
-          martes: {
-            accion: companyData.martes_accion,
-            observacion: companyData.martes_observacion,
-            tarea: companyData.martes_tarea,
-          },
-          miercoles: {
-            accion: companyData.miercoles_accion,
-            observacion: companyData.miercoles_observacion,
-            tarea: companyData.miercoles_tarea,
-          },
-          jueves: {
-            accion: companyData.jueves_accion,
-            observacion: companyData.jueves_observacion,
-            tarea: companyData.jueves_tarea,
-          },
-          viernes: {
-            accion: companyData.viernes_accion,
-            observacion: companyData.viernes_observacion,
-            tarea: companyData.viernes_tarea,
+  const handleSave = useCallback(
+    async (companyData) => {
+      const payload = {
+        id_bitrix: companyData.id,
+        codigo_profit: companyData.codigo_profit,
+        gestion: {
+          bitacora: companyData.bitacora,
+          obs_ejecutiva: companyData.obs_ejecutiva,
+          semana: {
+            lunes: {
+              accion: companyData.lunes_accion,
+              observacion: companyData.lunes_observacion,
+              tarea: companyData.lunes_tarea,
+            },
+            martes: {
+              accion: companyData.martes_accion,
+              observacion: companyData.martes_observacion,
+              tarea: companyData.martes_tarea,
+            },
+            miercoles: {
+              accion: companyData.miercoles_accion,
+              observacion: companyData.miercoles_observacion,
+              tarea: companyData.miercoles_tarea,
+            },
+            jueves: {
+              accion: companyData.jueves_accion,
+              observacion: companyData.jueves_observacion,
+              tarea: companyData.jueves_tarea,
+            },
+            viernes: {
+              accion: companyData.viernes_accion,
+              observacion: companyData.viernes_observacion,
+              tarea: companyData.viernes_tarea,
+            },
           },
         },
-      },
-      full_data: companyData,
-    };
-    console.log(
-      "📦 PAYLOAD QUE SE ENVÍA AL BACKEND:",
-      JSON.stringify(payload, null, 2),
-    );
-    try {
-      // Usamos saveMatrix o saveConfig dependiendo de tu API
-      const response = await apiService.saveMatrix(payload);
-      if (response) {
-        alert(`✅ Gestión de "${companyData.nombre}" guardada correctamente.`);
-        await refresh();
+        full_data: companyData,
+      };
+      console.log(
+        "📦 PAYLOAD QUE SE ENVÍA AL BACKEND:",
+        JSON.stringify(payload, null, 2),
+      );
+      try {
+        // Usamos saveMatrix o saveConfig dependiendo de tu API
+        const response = await apiService.saveMatrix(payload);
+        if (response) {
+          alert(
+            `✅ Gestión de "${companyData.nombre}" guardada correctamente.`,
+          );
+          await refresh();
+        }
+      } catch (error) {
+        console.error("❌ Error al guardar:", error);
+        alert(`⚠️ Error al guardar datos de ${companyData.nombre}.`);
       }
-    } catch (error) {
-      console.error("❌ Error al guardar:", error);
-      alert(`⚠️ Error al guardar datos de ${companyData.nombre}.`);
-    }
-  }, [refresh]);
+    },
+    [refresh],
+  );
 
   const handleJumpSubmit = (e) => {
     e.preventDefault();
@@ -574,18 +621,19 @@ const BaseDatosBitrix = () => {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 min-h-screen bg-white dark:bg-[#191919]">
+    <div className="p-4 sm:p-6 lg:p-8 min-h-screen bg-white dark:bg-[#0b1120]">
       {/* --- HEADER Y BARRA DE FILTROS --- */}
-      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mb-6 border-b border-gray-200 dark:border-gray-700 pb-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg text-[#1a9888]">
-            <Database size={28} />
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 mb-8 border-b border-gray-200 dark:border-white/5 pb-6">
+        <div className="flex items-center gap-4">
+          <div className="bg-teal-50 dark:bg-teal-900/20 p-3 rounded-2xl">
+            <Database size={32} className="text-[#1a9888] dark:text-teal-400" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-[#191919] dark:text-white">
-              Auditoría de Clientes
+            <h2 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">
+              Base de Datos{" "}
+              <span className="text-[#1a9888] dark:text-teal-400">Bitrix</span>
             </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
               Total: {totalRecords} | Visibles: {displayedCompanies.length} |
               Seleccionados: {selectedIds.length}
             </p>
@@ -627,10 +675,11 @@ const BaseDatosBitrix = () => {
           {/* 3. TOGGLE VENCIDOS (Filtro Hook) */}
           <button
             onClick={() => setOnlyVencidos(!onlyVencidos)}
-            className={`flex items-center gap-2 px-3 py-2 text-sm border rounded-lg transition-all shadow-sm ${onlyVencidos
-              ? "bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300 ring-1 ring-red-200"
-              : "bg-white border-gray-300 text-gray-700 dark:bg-[#262626] dark:border-gray-600 dark:text-gray-300 hover:bg-gray-50"
-              }`}
+            className={`flex items-center gap-2 px-3 py-2 text-sm border rounded-lg transition-all shadow-sm ${
+              onlyVencidos
+                ? "bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300 ring-1 ring-red-200"
+                : "bg-white border-gray-300 text-gray-700 dark:bg-[#262626] dark:border-gray-600 dark:text-gray-300 hover:bg-gray-50"
+            }`}
           >
             {onlyVencidos ? <CheckSquare size={16} /> : <Square size={16} />}
             <span>Solo Vencidos</span>
@@ -658,10 +707,11 @@ const BaseDatosBitrix = () => {
           {/* FILTRO VER SELECCIONADOS */}
           <button
             onClick={() => setShowOnlySelected(!showOnlySelected)}
-            className={`px-3 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 shadow-sm ${showOnlySelected
-              ? "bg-[#1a9888] text-white border-[#1a9888]"
-              : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-[#1a9888]"
-              }`}
+            className={`px-3 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 shadow-sm ${
+              showOnlySelected
+                ? "bg-[#1a9888] text-white border-[#1a9888]"
+                : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-[#1a9888]"
+            }`}
           >
             <Filter size={16} />
             {showOnlySelected ? "Ver Todos" : "Ver Selec."}
@@ -682,55 +732,138 @@ const BaseDatosBitrix = () => {
               <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-[#202020] border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 p-3 max-h-[80vh] overflow-y-auto">
                 <div className="space-y-4">
                   <div>
-                    <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">Datos Bitrix</h4>
+                    <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">
+                      Datos Bitrix
+                    </h4>
                     <div className="space-y-1">
-                      {['codigo_profit', 'ciudad', 'segmento', 'coordenadas', 'dias_visita', 'convenio'].map(key => (
-                        <label key={key} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 p-1 rounded">
-                          <input type="checkbox" checked={columnVisibility[key]} onChange={() => toggleColumn(key)} className="rounded text-[#1a9888]" />
-                          <span className="capitalize">{key.replace('_', ' ')}</span>
+                      {[
+                        "codigo_profit",
+                        "ciudad",
+                        "segmento",
+                        "coordenadas",
+                        "dias_visita",
+                        "convenio",
+                      ].map((key) => (
+                        <label
+                          key={key}
+                          className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 p-1 rounded"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={columnVisibility[key]}
+                            onChange={() => toggleColumn(key)}
+                            className="rounded text-[#1a9888]"
+                          />
+                          <span className="capitalize">
+                            {key.replace("_", " ")}
+                          </span>
                         </label>
                       ))}
                     </div>
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">Datos Profit</h4>
+                    <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">
+                      Datos Profit
+                    </h4>
                     <div className="space-y-1">
-                      {['limite', 'transito', 'vencido', 'fecha_compra', 'morosidad'].map(key => (
-                        <label key={key} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 p-1 rounded">
-                          <input type="checkbox" checked={columnVisibility[key]} onChange={() => toggleColumn(key)} className="rounded text-[#1a9888]" />
-                          <span className="capitalize">{key.replace('_', ' ')}</span>
+                      {[
+                        "limite",
+                        "transito",
+                        "vencido",
+                        "fecha_compra",
+                        "morosidad",
+                      ].map((key) => (
+                        <label
+                          key={key}
+                          className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 p-1 rounded"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={columnVisibility[key]}
+                            onChange={() => toggleColumn(key)}
+                            className="rounded text-[#1a9888]"
+                          />
+                          <span className="capitalize">
+                            {key.replace("_", " ")}
+                          </span>
                         </label>
                       ))}
                     </div>
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">Ventas</h4>
+                    <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">
+                      Ventas
+                    </h4>
                     <div className="space-y-1">
-                      {['ultimo_cobro', 'sku', 'clasif', 'actual', 'anterior'].map(key => (
-                        <label key={key} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 p-1 rounded">
-                          <input type="checkbox" checked={columnVisibility[key]} onChange={() => toggleColumn(key)} className="rounded text-[#1a9888]" />
-                          <span className="capitalize">{key.replace('_', ' ')}</span>
+                      {[
+                        "ultimo_cobro",
+                        "sku",
+                        "clasif",
+                        "actual",
+                        "anterior",
+                      ].map((key) => (
+                        <label
+                          key={key}
+                          className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 p-1 rounded"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={columnVisibility[key]}
+                            onChange={() => toggleColumn(key)}
+                            className="rounded text-[#1a9888]"
+                          />
+                          <span className="capitalize">
+                            {key.replace("_", " ")}
+                          </span>
                         </label>
                       ))}
                     </div>
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">Gestión</h4>
+                    <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">
+                      Gestión
+                    </h4>
                     <div className="space-y-1">
-                      {['bitacora', 'obs_ejecutiva'].map(key => (
-                        <label key={key} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 p-1 rounded">
-                          <input type="checkbox" checked={columnVisibility[key]} onChange={() => toggleColumn(key)} className="rounded text-[#1a9888]" />
-                          <span className="capitalize">{key.replace('_', ' ')}</span>
+                      {["bitacora", "obs_ejecutiva"].map((key) => (
+                        <label
+                          key={key}
+                          className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 p-1 rounded"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={columnVisibility[key]}
+                            onChange={() => toggleColumn(key)}
+                            className="rounded text-[#1a9888]"
+                          />
+                          <span className="capitalize">
+                            {key.replace("_", " ")}
+                          </span>
                         </label>
                       ))}
                     </div>
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">Agenda Semanal</h4>
+                    <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">
+                      Agenda Semanal
+                    </h4>
                     <div className="space-y-1">
-                      {['lunes', 'martes', 'miercoles', 'jueves', 'viernes'].map(key => (
-                        <label key={key} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 p-1 rounded">
-                          <input type="checkbox" checked={columnVisibility[key]} onChange={() => toggleColumn(key)} className="rounded text-[#1a9888]" />
+                      {[
+                        "lunes",
+                        "martes",
+                        "miercoles",
+                        "jueves",
+                        "viernes",
+                      ].map((key) => (
+                        <label
+                          key={key}
+                          className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 p-1 rounded"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={columnVisibility[key]}
+                            onChange={() => toggleColumn(key)}
+                            className="rounded text-[#1a9888]"
+                          />
                           <span className="capitalize">{key}</span>
                         </label>
                       ))}
@@ -765,8 +898,8 @@ const BaseDatosBitrix = () => {
           <Table>
             <Thead>
               {/* Nivel 1 Header */}
-              <Tr className="bg-gray-50 dark:bg-[#1e1e1e] border-b-0">
-                <Th className="bg-white dark:bg-[#191919] w-12 text-center border-r dark:border-[#333]">
+              <Tr className="bg-slate-50 dark:bg-[#0b1120] border-b-0">
+                <Th className="bg-white dark:bg-[#111827] w-12 text-center border-r dark:border-white/5">
                   <input
                     type="checkbox"
                     className="w-4 h-4 accent-[#1a9888] cursor-pointer"
@@ -779,37 +912,75 @@ const BaseDatosBitrix = () => {
                 </Th>
                 <Th
                   colSpan={2}
-                  className="border-b border-r border-gray-200 dark:border-[#333] text-[#1a9888] bg-white dark:bg-[#1e1e1e]"
+                  className="border-b border-r border-gray-200 dark:border-white/5 text-[#1a9888] bg-white dark:bg-[#111827]"
                 >
                   Empresa
                 </Th>
-                {getGroupColSpan(['codigo_profit', 'ciudad', 'segmento', 'coordenadas', 'dias_visita', 'convenio']) > 0 && (
+                {getGroupColSpan([
+                  "codigo_profit",
+                  "ciudad",
+                  "segmento",
+                  "coordenadas",
+                  "dias_visita",
+                  "convenio",
+                ]) > 0 && (
                   <Th
-                    colSpan={getGroupColSpan(['codigo_profit', 'ciudad', 'segmento', 'coordenadas', 'dias_visita', 'convenio'])}
+                    colSpan={getGroupColSpan([
+                      "codigo_profit",
+                      "ciudad",
+                      "segmento",
+                      "coordenadas",
+                      "dias_visita",
+                      "convenio",
+                    ])}
                     className="border-b border-r border-gray-200 dark:border-[#333] bg-blue-50 dark:bg-blue-900 text-blue-600 text-center"
                   >
                     Datos Bitrix
                   </Th>
                 )}
-                {getGroupColSpan(['limite', 'transito', 'vencido', 'fecha_compra', 'morosidad']) > 0 && (
+                {getGroupColSpan([
+                  "limite",
+                  "transito",
+                  "vencido",
+                  "fecha_compra",
+                  "morosidad",
+                ]) > 0 && (
                   <Th
-                    colSpan={getGroupColSpan(['limite', 'transito', 'vencido', 'fecha_compra', 'morosidad'])}
+                    colSpan={getGroupColSpan([
+                      "limite",
+                      "transito",
+                      "vencido",
+                      "fecha_compra",
+                      "morosidad",
+                    ])}
                     className="border-b border-r border-gray-200 dark:border-[#333] bg-green-50 dark:bg-green-900 text-green-600 text-center"
                   >
                     Datos Profit
                   </Th>
                 )}
-                {getGroupColSpan(['ultimo_cobro', 'sku', 'clasif', 'actual', 'anterior']) > 0 && (
+                {getGroupColSpan([
+                  "ultimo_cobro",
+                  "sku",
+                  "clasif",
+                  "actual",
+                  "anterior",
+                ]) > 0 && (
                   <Th
-                    colSpan={getGroupColSpan(['ultimo_cobro', 'sku', 'clasif', 'actual', 'anterior'])}
+                    colSpan={getGroupColSpan([
+                      "ultimo_cobro",
+                      "sku",
+                      "clasif",
+                      "actual",
+                      "anterior",
+                    ])}
                     className="border-b border-r border-gray-200 dark:border-[#333] text-purple-600 text-center bg-indigo-200 dark:bg-indigo-800"
                   >
                     Ventas
                   </Th>
                 )}
-                {getGroupColSpan(['bitacora', 'obs_ejecutiva']) > 0 && (
+                {getGroupColSpan(["bitacora", "obs_ejecutiva"]) > 0 && (
                   <Th
-                    colSpan={getGroupColSpan(['bitacora', 'obs_ejecutiva'])}
+                    colSpan={getGroupColSpan(["bitacora", "obs_ejecutiva"])}
                     className="border-b border-r border-orange-300 dark:border-[#333] text-orange-600 font-bold bg-orange-200 dark:bg-orange-800 text-center"
                   >
                     Gestión
@@ -823,14 +994,17 @@ const BaseDatosBitrix = () => {
                     Agenda Semanal (Tarea / Acción / Obs)
                   </Th>
                 )}
-                <Th className="bg-white dark:bg-[#191919] border-l border-gray-200 dark:border-[#333]"></Th>
+                <Th
+                  stickyRight
+                  className="bg-white dark:bg-[#191919] border-l border-gray-200 dark:border-[#333]"
+                ></Th>
               </Tr>
 
               {/* Nivel 2 Header */}
               <Tr>
-                <Th className="bg-white dark:bg-[#191919] border-r dark:border-[#333]"></Th>
-                <Th className="min-w-[60px] bg-white dark:bg-[#191919]">ID</Th>
-                <Th className="min-w-[200px] text-left bg-white dark:bg-[#191919] shadow-md">
+                <Th className="bg-white dark:bg-[#111827] border-r dark:border-white/5"></Th>
+                <Th className="min-w-[60px] bg-white dark:bg-[#111827]">ID</Th>
+                <Th className="min-w-[200px] text-left bg-white dark:bg-[#111827] shadow-md">
                   Nombre
                 </Th>
                 <Th className="min-w-[120px] bg-blue-50 dark:bg-blue-800 font-bold">
@@ -971,7 +1145,10 @@ const BaseDatosBitrix = () => {
                   </>
                 )}
 
-                <Th stickyRight className="min-w-[80px] bg-white dark:bg-[#191919] border-l shadow-[-4px_0_5px_-2px_rgba(0,0,0,0.1)] text-center">
+                <Th
+                  stickyRight
+                  className="min-w-[80px] bg-white dark:bg-[#191919] border-l shadow-[-4px_0_5px_-2px_rgba(0,0,0,0.1)] text-center"
+                >
                   Guardar
                 </Th>
               </Tr>
@@ -1056,7 +1233,7 @@ const BaseDatosBitrix = () => {
           </button>
         </form>
       </div>
-    </div >
+    </div>
   );
 };
 

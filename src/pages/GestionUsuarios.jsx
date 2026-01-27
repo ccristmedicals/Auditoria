@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useGestionUsuarios } from "../hooks/useGestionUsuarios";
 import { apiService } from "../services/apiService";
 import {
@@ -115,7 +115,7 @@ const MultiSelectCell = ({ value = [], onChange, options, isLoading }) => {
                   }`}
                 >
                   <div
-                    className={`w-4 h-4 border rounded flex-shrink-0 flex items-center justify-center transition-colors ${
+                    className={`w-4 h-4 border rounded shrink-0 flex items-center justify-center transition-colors ${
                       isSelected
                         ? "bg-[#1a9888] border-[#1a9888]"
                         : "border-gray-400 dark:border-gray-500"
@@ -234,24 +234,36 @@ const GestionUsuarios = () => {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-white dark:bg-[#191919]">
-        <div className="text-[#1a9888] flex flex-col items-center">
-          <RefreshCw className="animate-spin w-10 h-10 mb-3" />
-          <span className="font-semibold text-lg">Cargando usuarios...</span>
+      <div className="flex h-screen items-center justify-center bg-white dark:bg-[#0b1120]">
+        <div className="flex flex-col items-center gap-4">
+          <RefreshCw className="w-12 h-12 text-[#1a9888] animate-spin" />
+          <p className="text-slate-600 dark:text-slate-300 font-medium animate-pulse">
+            Cargando usuarios...
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 min-h-screen bg-white dark:bg-[#191919]">
-      <div className="flex items-center gap-3 mb-6 border-b border-gray-200 dark:border-gray-700 pb-4">
-        <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg text-[#1a9888]">
-          <UserCog size={28} />
+    <div className="p-4 sm:p-6 lg:p-8 min-h-screen bg-white dark:bg-[#0b1120]">
+      <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="bg-teal-50 dark:bg-teal-900/20 p-3 rounded-2xl">
+            <UserCog size={32} className="text-[#1a9888] dark:text-teal-400" />
+          </div>
+          <div>
+            <h2 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">
+              Gestión de{" "}
+              <span className="text-[#1a9888] dark:text-teal-400">
+                Usuarios
+              </span>
+            </h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
+              Administra los accesos y permisos del personal
+            </p>
+          </div>
         </div>
-        <h2 className="text-2xl font-bold text-[#191919] dark:text-white">
-          Gestión de Usuarios
-        </h2>
       </div>
 
       <TableContainer className="overflow-visible">
