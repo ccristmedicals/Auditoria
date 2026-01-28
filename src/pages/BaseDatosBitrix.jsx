@@ -34,9 +34,15 @@ import {
   CheckSquare,
   Square,
   Columns,
+  FileText,
+  Loader,
 } from "lucide-react";
 import { apiService } from "../services/apiService";
 import { FilterMultiSelect } from "../components/ui/FilterMultiSelect";
+import { FilterSingleSelect } from "../components/ui/FilterSingleSelect";
+import { generateVendorPDF } from "../utils/pdfGenerator";
+import { useToast } from "../components/ui/Toast";
+import { ConfirmModal } from "../components/ui/ConfirmModal";
 
 const ErrorAwareCell = React.memo(({ value, isError, icon = false }) => {
   if (isError) {
@@ -385,19 +391,7 @@ const CompanyRow = React.memo(
         )}
 
         {/* Guardar */}
-        <Td
-          stickyRight
-          className="bg-white dark:bg-[#111827] border-l dark:border-white/5 shadow-[-4px_0_10px_-2px_rgba(0,0,0,0.1)] transition-colors"
-        >
-          <div className="flex justify-center">
-            <button
-              onClick={() => handleSave(row)}
-              className="p-2 text-white bg-[#1a9888] hover:bg-[#137a6d] rounded-lg transition shadow-sm"
-            >
-              <Save size={16} />
-            </button>
-          </div>
-        </Td>
+
       </Tr>
     );
   },
@@ -407,10 +401,14 @@ const CompanyRow = React.memo(
 const BaseDatosBitrix = () => {
   const {
     companies,
+    allCompanies,
     loading,
     // Filtros del Hook
     selectedSegments,
     setSelectedSegments,
+    selectedVendedor,
+    setSelectedVendedor,
+    vendedores,
     filterZona,
     setFilterZona,
     onlyVencidos,
@@ -423,13 +421,20 @@ const BaseDatosBitrix = () => {
     // Acciones
     handleCompanyChange,
     refresh,
-    uniqueSegments, // Nuevo: Segmentos dinámicos
+    uniqueSegments,
   } = useBaseDatosBitrix();
+
+  const { showToast, ToastContainer } = useToast();
 
   const [jumpPage, setJumpPage] = useState("");
   const [selectedIds, setSelectedIds] = useState([]);
   const [showOnlySelected, setShowOnlySelected] = useState(false);
-  const [localSearchTerm, setLocalSearchTerm] = useState(""); // Búsqueda por Nombre/ID en resultados
+  const [localSearchTerm, setLocalSearchTerm] = useState("");
+  const [isBulkSaving, setIsBulkSaving] = useState(false);
+
+  // --- MODAL DE CONFIRMACIÓN ---
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [confirmData, setConfirmData] = useState({ title: "", message: "", onConfirm: () => { } });
 
   // --- COLUMN VISIBILITY STATE ---
   const [columnVisibility, setColumnVisibility] = useState({
@@ -549,64 +554,138 @@ const BaseDatosBitrix = () => {
     }).format(amount || 0);
   }, []);
 
-  const handleSave = useCallback(
-    async (companyData) => {
-      const payload = {
-        id_bitrix: companyData.id,
-        codigo_profit: companyData.codigo_profit,
-        gestion: {
-          bitacora: companyData.bitacora,
-          obs_ejecutiva: companyData.obs_ejecutiva,
-          semana: {
-            lunes: {
-              accion: companyData.lunes_accion,
-              observacion: companyData.lunes_observacion,
-              tarea: companyData.lunes_tarea,
-            },
-            martes: {
-              accion: companyData.martes_accion,
-              observacion: companyData.martes_observacion,
-              tarea: companyData.martes_tarea,
-            },
-            miercoles: {
-              accion: companyData.miercoles_accion,
-              observacion: companyData.miercoles_observacion,
-              tarea: companyData.miercoles_tarea,
-            },
-            jueves: {
-              accion: companyData.jueves_accion,
-              observacion: companyData.jueves_observacion,
-              tarea: companyData.jueves_tarea,
-            },
-            viernes: {
-              accion: companyData.viernes_accion,
-              observacion: companyData.viernes_observacion,
-              tarea: companyData.viernes_tarea,
-            },
+  // Helper para preparar el payload de un cliente
+  const preparePayload = (companyData) => {
+    return {
+      id_bitrix: companyData.id,
+      codigo_profit: companyData.codigo_profit,
+      gestion: {
+        bitacora: companyData.bitacora,
+        obs_ejecutiva: companyData.obs_ejecutiva,
+        semana: {
+          lunes: {
+            accion: companyData.lunes_accion,
+            observacion: companyData.lunes_observacion,
+            tarea: companyData.lunes_tarea,
+          },
+          martes: {
+            accion: companyData.martes_accion,
+            observacion: companyData.martes_observacion,
+            tarea: companyData.martes_tarea,
+          },
+          miercoles: {
+            accion: companyData.miercoles_accion,
+            observacion: companyData.miercoles_observacion,
+            tarea: companyData.miercoles_tarea,
+          },
+          jueves: {
+            accion: companyData.jueves_accion,
+            observacion: companyData.jueves_observacion,
+            tarea: companyData.jueves_tarea,
+          },
+          viernes: {
+            accion: companyData.viernes_accion,
+            observacion: companyData.viernes_observacion,
+            tarea: companyData.viernes_tarea,
           },
         },
-        full_data: companyData,
-      };
+      },
+      full_data: companyData,
+    };
+  };
+
+  const handleSave = useCallback(
+    async (companyData) => {
+      const payload = preparePayload(companyData);
       console.log(
-        "📦 PAYLOAD QUE SE ENVÍA AL BACKEND:",
+        "📦 PAYLOAD INDIVIDUAL:",
         JSON.stringify(payload, null, 2),
       );
       try {
-        // Usamos saveMatrix o saveConfig dependiendo de tu API
         const response = await apiService.saveMatrix(payload);
         if (response) {
-          alert(
-            `✅ Gestión de "${companyData.nombre}" guardada correctamente.`,
-          );
-          await refresh();
+          console.log(`✅ Gestión de "${companyData.nombre}" guardada.`);
+          return true;
         }
       } catch (error) {
         console.error("❌ Error al guardar:", error);
-        alert(`⚠️ Error al guardar datos de ${companyData.nombre}.`);
+        return false;
       }
     },
     [refresh],
   );
+
+  const executeBulkSave = async (selectedEntities, vendor) => {
+    setIsBulkSaving(true);
+    setShowConfirm(false);
+    try {
+      console.log("🚀 Iniciando guardado masivo (Payload Array) para:", vendor.label);
+
+      // Construir array de payloads
+      const bulkPayload = selectedEntities.map((entity) => preparePayload(entity));
+
+      console.log("📦 PAYLOAD MASIVO:", JSON.stringify(bulkPayload, null, 2));
+
+      // Enviar una sola petición con el array
+      await apiService.saveMatrix(bulkPayload);
+
+      console.log(`✅ Guardado masivo exitoso. ${selectedEntities.length} registros procesados.`);
+
+      console.log("📄 Generando PDF...");
+      generateVendorPDF(vendor.label, selectedEntities);
+
+      showToast(`✅ Proceso completado. ${selectedEntities.length} clientes guardados y PDF generado.`);
+
+      // --- LIMPIEZA DE FILTROS Y SELECCIÓN ---
+      setSelectedIds([]);
+      setSelectedVendedor(null);
+      setLocalSearchTerm("");
+      setFilterZona("");
+      setSelectedSegments([]);
+      setShowOnlySelected(false);
+
+      // await refresh(); // Opcional: si quieres recargar la data del backend
+    } catch (error) {
+      console.error("❌ Error en proceso masivo:", error);
+      showToast(`Ocurrió un error durante el guardado masivo: ${error.message}`, "error");
+    } finally {
+      setIsBulkSaving(false);
+    }
+  };
+
+  const handleBulkSaveAndPDF = async () => {
+    if (selectedIds.length === 0) {
+      alert("Por favor, selecciona al menos un cliente.");
+      return;
+    }
+    if (!selectedVendedor) {
+      alert("Por favor, selecciona un vendedor para generar el PDF.");
+      return;
+    }
+
+    const selectedEntities = allCompanies.filter((c) =>
+      selectedIds.includes(c.id_interno),
+    );
+    const vendor = vendedores.find((v) => v.value === selectedVendedor);
+
+    if (!vendor) {
+      console.error("❌ Vendedor no encontrado:", {
+        selectedVendedor,
+        vendedoresCount: vendedores.length,
+      });
+      alert(
+        "Error: No se pudo encontrar la información del vendedor seleccionado.",
+      );
+      return;
+    }
+
+    setConfirmData({
+      title: "Confirmar Solicitud",
+      message: `¿Deseas guardar los cambios de ${selectedEntities.length} clientes y generar el PDF para "${vendor.label}"?`,
+      onConfirm: () => executeBulkSave(selectedEntities, vendor)
+    });
+    setShowConfirm(true);
+  };
 
   const handleJumpSubmit = (e) => {
     e.preventDefault();
@@ -640,6 +719,25 @@ const BaseDatosBitrix = () => {
         </div>
 
         <div className="flex flex-col sm:flex-row flex-wrap gap-3 items-start sm:items-center">
+          {/* BOTÓN GUARDAR Y GENERAR PDF */}
+          <button
+            onClick={handleBulkSaveAndPDF}
+            disabled={isBulkSaving || selectedIds.length === 0 || !selectedVendedor}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-lg transition-all shadow-md ${isBulkSaving || selectedIds.length === 0 || !selectedVendedor
+              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+              : "bg-teal-600 text-white hover:bg-teal-700 active:scale-95"
+              }`}
+          >
+            {isBulkSaving ? (
+              <Loader size={18} className="animate-spin" />
+            ) : (
+              <FileText size={18} />
+            )}
+            <span>Guardar y Generar PDF</span>
+          </button>
+
+          <div className="h-8 w-[1px] bg-gray-200 dark:bg-gray-700 mx-2 hidden sm:block" />
+
           {/* 1. INPUT ZONA (Filtro del Hook) */}
           <div className="relative w-full sm:w-48 group">
             <input
@@ -671,12 +769,20 @@ const BaseDatosBitrix = () => {
             onChange={setSelectedSegments}
           />
 
-          {/* 3. TOGGLE VENCIDOS (Filtro Hook) */}
+          {/* 3. SELECTOR VENDEDOR (Single Select) */}
+          <FilterSingleSelect
+            label="Asignar Vendedor"
+            options={vendedores}
+            selected={selectedVendedor}
+            onChange={setSelectedVendedor}
+          />
+
+          {/* 4. TOGGLE VENCIDOS (Filtro Hook) */}
           <button
             onClick={() => setOnlyVencidos(!onlyVencidos)}
             className={`flex items-center gap-2 px-3 py-2 text-sm border rounded-lg transition-all shadow-sm ${onlyVencidos
-                ? "bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300 ring-1 ring-red-200"
-                : "bg-white border-gray-300 text-gray-700 dark:bg-[#262626] dark:border-gray-600 dark:text-gray-300 hover:bg-gray-50"
+              ? "bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300 ring-1 ring-red-200"
+              : "bg-white border-gray-300 text-gray-700 dark:bg-[#262626] dark:border-gray-600 dark:text-gray-300 hover:bg-gray-50"
               }`}
           >
             {onlyVencidos ? <CheckSquare size={16} /> : <Square size={16} />}
@@ -706,8 +812,8 @@ const BaseDatosBitrix = () => {
           <button
             onClick={() => setShowOnlySelected(!showOnlySelected)}
             className={`px-3 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 shadow-sm ${showOnlySelected
-                ? "bg-[#1a9888] text-white border-[#1a9888]"
-                : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-[#1a9888]"
+              ? "bg-[#1a9888] text-white border-[#1a9888]"
+              : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-[#1a9888]"
               }`}
           >
             <Filter size={16} />
@@ -1142,12 +1248,7 @@ const BaseDatosBitrix = () => {
                   </>
                 )}
 
-                <Th
-                  stickyRight
-                  className="min-w-[80px] bg-white dark:bg-[#191919] border-l shadow-[-4px_0_5px_-2px_rgba(0,0,0,0.1)] text-center"
-                >
-                  Guardar
-                </Th>
+
               </Tr>
             </Thead>
 
@@ -1230,6 +1331,18 @@ const BaseDatosBitrix = () => {
           </button>
         </form>
       </div>
+
+      <ConfirmModal
+        isOpen={showConfirm}
+        title={confirmData.title}
+        message={confirmData.message}
+        onConfirm={confirmData.onConfirm}
+        onCancel={() => setShowConfirm(false)}
+        confirmLabel="Confirmar"
+        cancelLabel="Cancelar"
+      />
+
+      <ToastContainer />
     </div>
   );
 };

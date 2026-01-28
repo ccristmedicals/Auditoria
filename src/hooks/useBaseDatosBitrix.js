@@ -10,8 +10,12 @@ export const useBaseDatosBitrix = () => {
 
   // --- FILTROS ---
   const [selectedSegments, setSelectedSegments] = useState([]);
+  const [selectedVendedor, setSelectedVendedor] = useState(null);
   const [filterZona, setFilterZona] = useState("");
   const [onlyVencidos, setOnlyVencidos] = useState(false);
+
+  // --- CATALOGOS ---
+  const [vendedores, setVendedores] = useState([]);
 
   // --- PAGINACIÓN ---
   const [page, setPage] = useState(1);
@@ -19,14 +23,31 @@ export const useBaseDatosBitrix = () => {
   const [totalRecords, setTotalRecords] = useState(0);
 
   useEffect(() => {
-    fetchCompanies();
-  }, []); // Solo al montar
+    fetchInitialData();
+  }, []);
+
+  const fetchInitialData = async () => {
+    setLoading(true);
+    try {
+      const vendRes = await apiService.getVendedoresApp();
+      if (vendRes && vendRes.data) {
+        setVendedores(vendRes.data.map(v => ({
+          label: v.nombre,
+          value: v.co_ven
+        })));
+      }
+      await fetchCompanies();
+    } catch (err) {
+      console.error("Error loading initial data:", err);
+      setLoading(false);
+    }
+  };
 
   // --- FILTRADO LOCAL ---
   const filteredCompanies = useMemo(() => {
+    console.log("🔍 Filtrando empresas - Total en crudo:", allCompanies.length);
     let result = allCompanies;
 
-    // 1. Filtro por Zona (Texto libre en Ciudad o Segmento)
     if (filterZona) {
       const z = filterZona.toLowerCase();
       result = result.filter(
@@ -36,41 +57,29 @@ export const useBaseDatosBitrix = () => {
       );
     }
 
-    // 2. Filtro por Segmentos Seleccionados (MultiSelect)
     if (selectedSegments.length > 0) {
       result = result.filter(
         (c) => c.segmento && selectedSegments.includes(c.segmento)
       );
     }
 
-    // 3. Solo Vencidos
     if (onlyVencidos) {
       result = result.filter((c) => c.saldo_vencido > 0);
     }
 
+    console.log("🔍 Resultado filtrado:", result.length);
     return result;
   }, [allCompanies, filterZona, selectedSegments, onlyVencidos]);
 
-  // Actualizar totalRecords basado en el filtrado
   useEffect(() => {
-    // Si estamos filtrando localmente, el total de registros cambia
-    // Nota: Si el backend devuelve TODO, entonces 'totalRecords' original era el total global.
-    // Pero para la paginación local, necesitamos el length de filteredCompanies.
     setTotalRecords(filteredCompanies.length);
-    // Resetear página si cambia el filtro
     setPage(1);
-  }, [filteredCompanies.length]); // filterZona, selectedSegments, onlyVencidos implícitos en length change a menudo, pero mejor length.
-  // Pero cuidado, esto puede causar loops si no estamos atentos.
-  // Mejor: calcular totalPages basado en filteredCompanies.
+  }, [filteredCompanies.length]);
 
   const totalPages = Math.ceil(filteredCompanies.length / ITEMS_PER_PAGE);
 
-  // --- DERIVAR DATA PARA LA PAGINA ACTUAL ---
   const companies = useMemo(() => {
-    // Si no hay datos filtrados, retornar vacio
     if (filteredCompanies.length === 0) return [];
-
-    // Asegurar que la pagina es valida
     const safePage = Math.min(page, Math.max(1, totalPages));
     const start = (safePage - 1) * ITEMS_PER_PAGE;
     return filteredCompanies.slice(start, start + ITEMS_PER_PAGE);
@@ -83,7 +92,6 @@ export const useBaseDatosBitrix = () => {
     const userSegmentos = user?.segmentos || [];
 
     try {
-      // Llamada al backend para traer TODO (Companies + Matrix Data)
       const [companiesResponse, matrixResponse] = await Promise.all([
         apiService.getAllCompanies(userSegmentos),
         apiService.getMatrix(),
@@ -92,7 +100,6 @@ export const useBaseDatosBitrix = () => {
       const rawList = companiesResponse.data || [];
       const matrixList = matrixResponse.data || [];
 
-      // Crear Mapa de Matrix para búsqueda rápida por ID
       const matrixMap = {};
       matrixList.forEach((m) => {
         if (m.id_bitrix) {
@@ -103,59 +110,27 @@ export const useBaseDatosBitrix = () => {
       const formattedData = rawList.map((item, index) => {
         const b = item.bitrix || {};
         const p = item.profit || {};
-
-        // 1. HISTORIAL (Solo lectura): Viene en el array 'gestion'
         const gList = Array.isArray(item.gestion) ? item.gestion : [];
-
-        // 2. TAREAS (Editable): Viene en el objeto 'semana' desde tu backend actualizado
-        // --- MERGE CON DATOS GUARDADOS (MATRIX) ---
-        // Buscamos si existe data guardada para este id_bitrix
-        // La data de matrix viene como array en responseMatrix.data
-        // Pero para eficiencia, lo ideal sería tener un Map fuera del loop.
-        // (Lo haremos justo antes del map)
-
         const savedData = matrixMap[b.ID];
-
-        // Prioridad: 
-        // 1. Data guardada en Matrix (savedData)
-        // 2. Data que venga en el endpoint 'companies' (item.semana, item.bitacora...)
-        // 3. Valor por defecto ("")
 
         const semanaData = savedData?.semana || item.semana || {};
         const bitacora = savedData?.bitacora || item.bitacora || "";
         const obs_ejecutiva = savedData?.obs_ejecutiva || item.obs_ejecutiva || "";
 
-        // --- HELPER: Extraer info histórica del Array ---
         const extractHistoryData = (dayName) => {
-          const target = dayName
-            .toLowerCase()
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "");
-
+          const target = dayName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
           const log = gList.find((g) => {
             if (!g.dia_semana) return false;
-            return (
-              g.dia_semana
-                .toLowerCase()
-                .normalize("NFD")
-                .replace(/[\u0300-\u036f]/g, "") === target
-            );
+            return g.dia_semana.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") === target;
           });
 
           if (log) {
-            // Unir Tipo de Gestión
             let accionParts = [];
-            if (log.venta_tipoGestion)
-              accionParts.push(`V: ${log.venta_tipoGestion}`);
-            if (log.cobranza_tipoGestion)
-              accionParts.push(`C: ${log.cobranza_tipoGestion}`);
-
-            // Unir Descripciones
+            if (log.venta_tipoGestion) accionParts.push(`V: ${log.venta_tipoGestion}`);
+            if (log.cobranza_tipoGestion) accionParts.push(`C: ${log.cobranza_tipoGestion}`);
             let obsParts = [];
-            if (log.venta_descripcion)
-              obsParts.push(`V: ${log.venta_descripcion}`);
-            if (log.cobranza_descripcion)
-              obsParts.push(`C: ${log.cobranza_descripcion}`);
+            if (log.venta_descripcion) obsParts.push(`V: ${log.venta_descripcion}`);
+            if (log.cobranza_descripcion) obsParts.push(`C: ${log.cobranza_descripcion}`);
 
             return {
               accion: accionParts.join(" / ") || "",
@@ -165,27 +140,17 @@ export const useBaseDatosBitrix = () => {
           return { accion: "", observacion: "" };
         };
 
-        const lunesHist = extractHistoryData("lunes");
-        const martesHist = extractHistoryData("martes");
-        const miercolesHist = extractHistoryData("miercoles");
-        const juevesHist = extractHistoryData("jueves");
-        const viernesHist = extractHistoryData("viernes");
-
         return {
-          id_interno: `idx-${index}`,
-
-          // --- DATOS BITRIX ---
-          id: b.ID || "",
+          id_interno: b.ID ? `bx-${b.ID}` : `idx-${index}-${Date.now()}`,
+          id: b.ID || "0",
           nombre: b.TITLE || "Sin Nombre",
           codigo_profit: b.UF_CRM_1634787828 || "",
           ciudad: b.UF_CRM_1635903069 || "",
           segmento: b.UF_CRM_1638457710 || "",
           coordenadas: b.UF_CRM_1651251237102 || "",
-          dias_visita: Array.isArray(b.UF_CRM_1686015739936)
-            ? b.UF_CRM_1686015739936.join(", ")
-            : b.UF_CRM_1686015739936 || "",
+          dias_visita: Array.isArray(b.UF_CRM_1686015739936) ? b.UF_CRM_1686015739936.join(", ") : b.UF_CRM_1686015739936 || "",
+          co_ven: p.co_ven || "",
 
-          // --- DATOS PROFIT ---
           limite_credito: p.login || 0,
           saldo_transito: parseFloat(p.saldo_trancito) || 0,
           saldo_vencido: parseFloat(p.saldo_vencido) || 0,
@@ -198,32 +163,24 @@ export const useBaseDatosBitrix = () => {
           ventas_anterior: parseFloat(p.ventas_mes_pasado) || 0,
           convenio: "N/A",
 
-          // --- DATOS GESTION (Para referencia) ---
           gestion: gList,
-
-          // --- CAMPOS MANUALES (EDITABLES) ---
           bitacora: bitacora,
           obs_ejecutiva: obs_ejecutiva,
 
-          // --- AGENDA SEMANAL ---
-          lunes_accion: lunesHist.accion,
-          lunes_observacion: lunesHist.observacion,
+          lunes_accion: extractHistoryData("lunes").accion,
+          lunes_observacion: extractHistoryData("lunes").observacion,
           lunes_tarea: semanaData.lunes?.tarea || "",
-
-          martes_accion: martesHist.accion,
-          martes_observacion: martesHist.observacion,
+          martes_accion: extractHistoryData("martes").accion,
+          martes_observacion: extractHistoryData("martes").observacion,
           martes_tarea: semanaData.martes?.tarea || "",
-
-          miercoles_accion: miercolesHist.accion,
-          miercoles_observacion: miercolesHist.observacion,
+          miercoles_accion: extractHistoryData("miercoles").accion,
+          miercoles_observacion: extractHistoryData("miercoles").observacion,
           miercoles_tarea: semanaData.miercoles?.tarea || "",
-
-          jueves_accion: juevesHist.accion,
-          jueves_observacion: juevesHist.observacion,
+          jueves_accion: extractHistoryData("jueves").accion,
+          jueves_observacion: extractHistoryData("jueves").observacion,
           jueves_tarea: semanaData.jueves?.tarea || "",
-
-          viernes_accion: viernesHist.accion,
-          viernes_observacion: viernesHist.observacion,
+          viernes_accion: extractHistoryData("viernes").accion,
+          viernes_observacion: extractHistoryData("viernes").observacion,
           viernes_tarea: semanaData.viernes?.tarea || "",
         };
       });
@@ -232,7 +189,6 @@ export const useBaseDatosBitrix = () => {
     } catch (err) {
       console.error("Error fetching companies:", err);
       setError("Error al cargar datos.");
-      setAllCompanies([]);
     } finally {
       setLoading(false);
     }
@@ -256,6 +212,7 @@ export const useBaseDatosBitrix = () => {
 
   return {
     companies,
+    allCompanies,
     loading,
     error,
     handleCompanyChange,
@@ -263,14 +220,15 @@ export const useBaseDatosBitrix = () => {
     totalPages,
     totalRecords: filteredCompanies.length,
     goToPage,
-    // --- NUEVOS RETORNOS ---
     selectedSegments,
     setSelectedSegments,
+    selectedVendedor,
+    setSelectedVendedor,
+    vendedores,
     filterZona,
     setFilterZona,
     onlyVencidos,
     setOnlyVencidos,
-    // --- DATA CALCULADA ---
     uniqueSegments: useMemo(() => {
       const segments = allCompanies
         .map((c) => c.segmento)

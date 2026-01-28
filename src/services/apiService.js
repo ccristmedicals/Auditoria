@@ -102,7 +102,7 @@ export const apiService = {
   // --- MATRIZ Y AUDITORÍA ---
 
   saveMatrix: (payload) => {
-    return fetchJson(`${BASE_URL}/matrix`, {
+    return fetchJson(`${BASE_URL}/matrix/planificacion`, {
       method: "POST",
       body: JSON.stringify(payload),
     });
@@ -121,6 +121,12 @@ export const apiService = {
 
   getMatrix: () => {
     return fetchJson(`${BASE_URL}/matrix`, {
+      method: "GET",
+    });
+  },
+
+  getVendedoresApp: () => {
+    return fetchJson(`${BASE_URL}/usuarios/vendedores-app`, {
       method: "GET",
     });
   },
