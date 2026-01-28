@@ -29,7 +29,7 @@ export const generateVendorPDF = (vendorName, selectedCompanies) => {
     22,
   );
 
-  // --- 2. FILTRAR DÍAS ACTIVOS ---
+  // --- 2. FILTRAR DÍAS ACTIVOS (LÓGICA MEJORADA) ---
   const days = [
     { key: "lunes", label: "Lun" },
     { key: "martes", label: "Mar" },
@@ -39,54 +39,49 @@ export const generateVendorPDF = (vendorName, selectedCompanies) => {
   ];
 
   const activeDays = days.filter((day) => {
-    return selectedCompanies.some(
-      (c) =>
-        (c[`${day.key}_tarea`] && c[`${day.key}_tarea`].trim() !== "") ||
-        (c[`${day.key}_accion`] && c[`${day.key}_accion`].trim() !== ""),
-    );
+    // some() devuelve true si AL MENOS UNA compañía cumple la condición
+    return selectedCompanies.some((c) => {
+      const tarea = c[`${day.key}_tarea`];
+      const accion = c[`${day.key}_accion`];
+
+      // Función auxiliar para saber si hay TEXTO REAL
+      const hasContent = (val) => {
+        if (val === null || val === undefined) return false;
+        const str = String(val).trim(); // Convierte a string y quita espacios
+        // Verifica que no esté vacío y que no sea solo un guión
+        return str.length > 0 && str !== "-" && str !== "—";
+      };
+
+      return hasContent(tarea) || hasContent(accion);
+    });
   });
 
-  // --- 3. DEFINIR COLUMNAS (Ajuste milimétrico para espacio) ---
+  // --- 3. DEFINIR COLUMNAS ---
   const columnsDef = [
-    { title: "Cód.", dataKey: "codigo", width: 14, align: "center" },
-    { title: "Cliente", dataKey: "nombre", width: 40, align: "left" }, // Reducido a 40 para dar espacio
-    { title: "Ciudad", dataKey: "ciudad", width: 20, align: "left" },
-
-    // Financiero (Alineados a la derecha para leer montos mejor)
-    { title: "Límite", dataKey: "limite", width: 18, align: "right" },
-    { title: "Tránsito", dataKey: "transito", width: 18, align: "right" },
-    { title: "Vencido", dataKey: "vencido", width: 18, align: "right" },
-
-    // Fechas (Centradas)
+    { title: "Cód.", dataKey: "codigo", width: 18, align: "center" },
+    { title: "Cliente", dataKey: "nombre", width: 45, align: "center" },
+    { title: "Ciudad", dataKey: "ciudad", width: 28, align: "center" },
+    { title: "Límite", dataKey: "limite", width: 18, align: "center" },
+    { title: "Tránsito", dataKey: "transito", width: 18, align: "center" },
+    { title: "Vencido", dataKey: "vencido", width: 18, align: "center" },
     {
       title: "Últ. Compra",
       dataKey: "fecha_compra",
       width: 18,
       align: "center",
     },
-    {
-      title: "Últ. Cobro",
-      dataKey: "ultimo_cobro",
-      width: 18,
-      align: "center",
-    },
-
-    // Datos Cortos
     { title: "Morosidad", dataKey: "morosidad", width: 16, align: "center" },
-
-    // SKU: Aquí intentamos mapear varias opciones comunes
     { title: "SKU", dataKey: "sku", width: 12, align: "center" },
-
     { title: "Clasif.", dataKey: "clasif", width: 10, align: "center" },
   ];
 
-  // Agregar días dinámicos
+  // Agregar días dinámicos (Solo los que pasaron el filtro estricto)
   activeDays.forEach((day) => {
     columnsDef.push({
       title: day.label,
       dataKey: day.key,
-      width: "auto", // Usa el espacio restante
-      align: "left",
+      width: "auto",
+      align: "center",
     });
   });
 
@@ -96,18 +91,12 @@ export const generateVendorPDF = (vendorName, selectedCompanies) => {
       codigo: item.codigo_profit || item.codigo || "-",
       nombre: item.nombre,
       ciudad: item.zona || item.ciudad || "-",
-
       limite: currency(item.limite_credito),
       transito: currency(item.saldo_transito),
       vencido: currency(item.saldo_vencido),
-      _vencidoRaw: item.saldo_vencido, // Dato crudo para lógica de color
-
+      _vencidoRaw: item.saldo_vencido,
       fecha_compra: item.fecha_ultima_compra || item.fecha_compra || "-",
-      ultimo_cobro: item.fecha_ultimo_cobro || item.ultimo_cobro || "-",
-
-      // INTENTO DE ENCONTRAR EL SKU: Revisa la consola si sigue saliendo "-"
       sku: item.sku_mes || "-",
-
       morosidad: item.factura_morosidad || "-",
       clasif: item.clasificacion || item.horario_caja || "-",
     };
@@ -131,21 +120,17 @@ export const generateVendorPDF = (vendorName, selectedCompanies) => {
   // --- 6. GENERAR PDF ---
   autoTable(doc, {
     startY: 25,
-    // HEAD y BODY mapeados explícitamente para garantizar orden
     head: [columnsDef.map((col) => col.title)],
     body: tableBody.map((row) => columnsDef.map((col) => row[col.dataKey])),
-
     theme: "grid",
-
     styles: {
       fontSize: 7,
-      cellPadding: 1.5, // Padding medio para que no se vea apretado
+      cellPadding: 1.5,
       valign: "middle",
-      overflow: "linebreak", // Permite que el texto baje si es muy largo
+      overflow: "linebreak",
       lineColor: [220, 220, 220],
       lineWidth: 0.1,
     },
-
     headStyles: {
       fillColor: [26, 152, 136],
       textColor: [255, 255, 255],
@@ -154,10 +139,7 @@ export const generateVendorPDF = (vendorName, selectedCompanies) => {
       halign: "center",
       valign: "middle",
     },
-
     columnStyles: dynamicColumnStyles,
-
-    // Lógica para pintar rojo el saldo vencido
     didParseCell: function (data) {
       const vencidoIndex = columnsDef.findIndex((c) => c.dataKey === "vencido");
       if (data.section === "body" && data.column.index === vencidoIndex) {
