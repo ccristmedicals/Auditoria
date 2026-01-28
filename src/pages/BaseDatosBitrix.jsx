@@ -1114,54 +1114,86 @@ const BaseDatosBitrix = () => {
                 <Th className="min-w-[200px] text-left bg-white dark:bg-[#111827] shadow-md">
                   Nombre
                 </Th>
-                <Th className="min-w-[120px] bg-blue-50 dark:bg-blue-800 font-bold">
-                  Cód. Profit
-                </Th>
-                <Th className="min-w-[140px] bg-blue-50 dark:bg-blue-800 font-bold">
-                  Ciudad
-                </Th>
-                <Th className="min-w-[140px] bg-blue-50 dark:bg-blue-800 font-bold">
-                  Segmento
-                </Th>
-                <Th className="min-w-[160px] bg-blue-50 dark:bg-blue-800 font-bold">
-                  Coordenadas
-                </Th>
-                <Th className="min-w-[200px] bg-blue-50 dark:bg-blue-800 font-bold">
-                  Días Visita
-                </Th>
-                <Th className="min-w-[100px] bg-blue-50 dark:bg-blue-800 font-bold">
-                  Convenio
-                </Th>
-                <Th className="min-w-[110px] bg-green-50 dark:bg-green-800 font-bold">
-                  Límite
-                </Th>
-                <Th className="min-w-[110px] bg-green-50 dark:bg-green-800 font-bold">
-                  Tránsito
-                </Th>
-                <Th className="min-w-[110px] bg-green-50 dark:bg-green-800 font-bold">
-                  Vencido
-                </Th>
-                <Th className="min-w-[100px] bg-green-50 dark:bg-green-800 font-bold">
-                  F. Compra
-                </Th>
-                <Th className="min-w-[200px] bg-green-50 dark:bg-green-800 font-bold">
-                  F. Morosidad
-                </Th>
-                <Th className="min-w-[110px] bg-indigo-200 dark:bg-indigo-800 font-bold">
-                  Últ. Cobro
-                </Th>
-                <Th className="min-w-[70px] bg-indigo-200 dark:bg-indigo-800 font-bold">
-                  SKU
-                </Th>
-                <Th className="min-w-[70px] bg-indigo-200 dark:bg-indigo-800 font-bold">
-                  Clasif.
-                </Th>
-                <Th className="min-w-[110px] bg-indigo-200 dark:bg-indigo-800 font-bold">
-                  Actual
-                </Th>
-                <Th className="min-w-[110px] bg-indigo-200 dark:bg-indigo-800 font-bold">
-                  Anterior
-                </Th>
+                {columnVisibility.codigo_profit && (
+                  <Th className="min-w-[120px] bg-blue-50 dark:bg-blue-800 font-bold">
+                    Cód. Profit
+                  </Th>
+                )}
+                {columnVisibility.ciudad && (
+                  <Th className="min-w-[140px] bg-blue-50 dark:bg-blue-800 font-bold">
+                    Ciudad
+                  </Th>
+                )}
+                {columnVisibility.segmento && (
+                  <Th className="min-w-[140px] bg-blue-50 dark:bg-blue-800 font-bold">
+                    Segmento
+                  </Th>
+                )}
+                {columnVisibility.coordenadas && (
+                  <Th className="min-w-[160px] bg-blue-50 dark:bg-blue-800 font-bold">
+                    Coordenadas
+                  </Th>
+                )}
+                {columnVisibility.dias_visita && (
+                  <Th className="min-w-[200px] bg-blue-50 dark:bg-blue-800 font-bold">
+                    Días Visita
+                  </Th>
+                )}
+                {columnVisibility.convenio && (
+                  <Th className="min-w-[100px] bg-blue-50 dark:bg-blue-800 font-bold">
+                    Convenio
+                  </Th>
+                )}
+                {columnVisibility.limite && (
+                  <Th className="min-w-[110px] bg-green-50 dark:bg-green-800 font-bold">
+                    Límite
+                  </Th>
+                )}
+                {columnVisibility.transito && (
+                  <Th className="min-w-[110px] bg-green-50 dark:bg-green-800 font-bold">
+                    Tránsito
+                  </Th>
+                )}
+                {columnVisibility.vencido && (
+                  <Th className="min-w-[110px] bg-green-50 dark:bg-green-800 font-bold">
+                    Vencido
+                  </Th>
+                )}
+                {columnVisibility.fecha_compra && (
+                  <Th className="min-w-[100px] bg-green-50 dark:bg-green-800 font-bold">
+                    F. Compra
+                  </Th>
+                )}
+                {columnVisibility.morosidad && (
+                  <Th className="min-w-[200px] bg-green-50 dark:bg-green-800 font-bold">
+                    F. Morosidad
+                  </Th>
+                )}
+                {columnVisibility.ultimo_cobro && (
+                  <Th className="min-w-[110px] bg-indigo-200 dark:bg-indigo-800 font-bold">
+                    Últ. Cobro
+                  </Th>
+                )}
+                {columnVisibility.sku && (
+                  <Th className="min-w-[70px] bg-indigo-200 dark:bg-indigo-800 font-bold">
+                    SKU
+                  </Th>
+                )}
+                {columnVisibility.clasif && (
+                  <Th className="min-w-[70px] bg-indigo-200 dark:bg-indigo-800 font-bold">
+                    Clasif.
+                  </Th>
+                )}
+                {columnVisibility.actual && (
+                  <Th className="min-w-[110px] bg-indigo-200 dark:bg-indigo-800 font-bold">
+                    Actual
+                  </Th>
+                )}
+                {columnVisibility.anterior && (
+                  <Th className="min-w-[110px] bg-indigo-200 dark:bg-indigo-800 font-bold">
+                    Anterior
+                  </Th>
+                )}
 
                 {/* GESTIÓN */}
                 {/* GESTIÓN */}
