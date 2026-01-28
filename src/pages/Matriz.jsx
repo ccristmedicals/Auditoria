@@ -585,10 +585,11 @@ const AuditRow = React.memo(
 
         {/* --- DIFERENCIA COORDENADAS --- */}
         <Td
-          className={`text-center text-xs whitespace-nowrap font-medium ${distanciaTxt !== "-" && esLejos
+          className={`text-center text-xs whitespace-nowrap font-medium ${
+            distanciaTxt !== "-" && esLejos
               ? "text-red-500 font-bold"
               : "text-green-600"
-            }`}
+          }`}
         >
           {distanciaTxt}
         </Td>
@@ -708,9 +709,22 @@ const AuditRow = React.memo(
 // --- COMPONENTE PRINCIPAL ---
 const Matriz = () => {
   const { data, loading, error, handleAuditoriaChange } = useAuditoria();
-  const [selectedDay, setSelectedDay] = useState("lunes");
+  const [selectedDay, setSelectedDay] = useState(() => {
+    const dayOfWeek = new Date().getDay();
+    const map = {
+      0: "lunes", // Domingo -> Lunes
+      1: "lunes",
+      2: "martes",
+      3: "miercoles",
+      4: "jueves",
+      5: "viernes",
+      6: "lunes", // Sábado -> Lunes
+    };
+    return map[dayOfWeek] || "lunes";
+  });
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedZonas, setSelectedZonas] = useState([]); // Nuevo estado para filtro de Zonas
+  const [selectedRutas, setSelectedRutas] = useState([]); // Nuevo estado para filtro de Rutas
   const [page, setPage] = useState(1);
   const ITEMS_PER_PAGE = 25;
   const { showToast, ToastContainer } = useToast();
@@ -721,6 +735,15 @@ const Matriz = () => {
     if (!data) return [];
     const zonas = data.map((item) => item.zona).filter((z) => z && z !== "—");
     return [...new Set(zonas)].sort();
+  }, [data]);
+
+  // Obtener lista única de Rutas (usando el campo segmento)
+  const uniqueRutas = useMemo(() => {
+    if (!data) return [];
+    const rutas = data
+      .map((item) => item.segmento)
+      .filter((r) => r && r !== "—");
+    return [...new Set(rutas)].sort();
   }, [data]);
 
   // --- FUNCIÓN PARA GUARDAR FILA ---
@@ -802,9 +825,14 @@ const Matriz = () => {
         if (!selectedZonas.includes(item.zona)) return false;
       }
 
+      // 3. Filtro por Ruta (Segmento)
+      if (selectedRutas.length > 0) {
+        if (!selectedRutas.includes(item.segmento)) return false;
+      }
+
       return true;
     });
-  }, [data, searchTerm, selectedZonas]);
+  }, [data, searchTerm, selectedZonas, selectedRutas]);
 
   const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE) || 1;
   const paginatedData = filteredData.slice(
@@ -823,6 +851,7 @@ const Matriz = () => {
       inicio_whatsapp: { e: 0, c: 0 },
       accion_venta: { e: 0, p: 0, n: 0 },
       accion_cobranza: { e: 0, p: 0, n: 0 },
+      cp: 0,
       llamadas_venta: { e: 0, p: 0, n: 0 },
       llamadas_cobranza: { e: 0, p: 0, n: 0 },
 
@@ -854,6 +883,8 @@ const Matriz = () => {
         if (day.llamadas_cobranza?.[f]) counts.llamadas_cobranza[f]++;
       });
 
+      if (day.cp) counts.cp++;
+
       // --- 2. LÓGICA DE TOTALES ESTRICTA POR DÍA ---
 
       // A. PUESTAS: Solo si hay tarea en ESE día específico (dayKey)
@@ -866,14 +897,14 @@ const Matriz = () => {
       // Helpers para saber si hubo gestión real (Obs)
       const log = Array.isArray(row.gestion)
         ? row.gestion.find((g) => {
-          if (!g.dia_semana) return false;
-          return (
-            g.dia_semana
-              .toLowerCase()
-              .normalize("NFD")
-              .replace(/[\u0300-\u036f]/g, "") === dayKey
-          );
-        })
+            if (!g.dia_semana) return false;
+            return (
+              g.dia_semana
+                .toLowerCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "") === dayKey
+            );
+          })
         : null;
 
       // ¿Tiene Observación (Manual del día O Histórica del día)?
@@ -1010,10 +1041,11 @@ const Matriz = () => {
                   <button
                     key={day}
                     onClick={() => setSelectedDay(day)}
-                    className={`px-3 py-1.5 text-xs font-semibold rounded-md capitalize whitespace-nowrap transition-all ${selectedDay === day
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-md capitalize whitespace-nowrap transition-all ${
+                      selectedDay === day
                         ? "bg-white dark:bg-[#1a9888] text-[#1a9888] dark:text-white shadow-sm ring-1 ring-black/5 dark:ring-0"
                         : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-                      }`}
+                    }`}
                   >
                     {day}
                   </button>
@@ -1022,7 +1054,7 @@ const Matriz = () => {
             </div>
 
             {/* Grupo Zona y Buscador */}
-            <div className="flex gap-2 w-full sm:w-auto">
+            <div className="flex gap-2 w-full sm:w-auto items-center">
               <div className="shrink-0">
                 <FilterMultiSelect
                   label="Zonas"
@@ -1032,7 +1064,16 @@ const Matriz = () => {
                 />
               </div>
 
-              <div className="relative flex-1 sm:w-56 group">
+              <div className="shrink-0">
+                <FilterMultiSelect
+                  label="Rutas"
+                  options={uniqueRutas}
+                  selected={selectedRutas}
+                  onChange={setSelectedRutas}
+                />
+              </div>
+
+              <div className="relative w-full sm:w-60 group">
                 <input
                   type="text"
                   placeholder="Buscar cliente..."
@@ -1309,10 +1350,9 @@ const Matriz = () => {
                 <Th className="min-w-[30px] bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
                   <HeaderCountInput value={headerCounts.accion_cobranza.n} />
                 </Th>
-                <Th
-                  colSpan={1}
-                  className="p-0 border-r border-green-300 dark:border-emerald-800 bg-slate-300 dark:bg-slate-800 h-1"
-                ></Th>
+                <Th className="min-w-[30px] bg-slate-300 dark:bg-slate-800 p-0 border-l border-white dark:border-slate-700">
+                  <HeaderCountInput value={headerCounts.cp} />
+                </Th>
                 <Th className="min-w-[30px] bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
                   <HeaderCountInput value={headerCounts.llamadas_venta.e} />
                 </Th>

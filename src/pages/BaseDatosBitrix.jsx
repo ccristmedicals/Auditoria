@@ -1105,10 +1105,6 @@ const BaseDatosBitrix = () => {
                     Agenda Semanal (Tarea / Acción / Obs)
                   </Th>
                 )}
-                <Th
-                  stickyRight
-                  className="bg-white dark:bg-[#191919] border-l border-gray-200 dark:border-[#333]"
-                ></Th>
               </Tr>
 
               {/* Nivel 2 Header */}
