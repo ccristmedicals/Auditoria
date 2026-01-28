@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, {
   useState,
   useEffect,
@@ -22,7 +22,6 @@ import {
   MapPin,
   AlertTriangle,
   Edit3,
-  Save,
   ChevronsLeft,
   ChevronLeft,
   ChevronRight,
@@ -122,14 +121,7 @@ const ClassificationBadge = React.memo(({ value }) => {
 
 // --- COMPONENTE FILA ---
 const CompanyRow = React.memo(
-  ({
-    row,
-    isSelected,
-    toggleSelect,
-    handleCompanyChange,
-    handleSave,
-    formatCurrency,
-  }) => {
+  ({ row, isSelected, toggleSelect, handleCompanyChange, formatCurrency }) => {
     // --- HELPER PARA RENDERIZAR TEXTO CON COLORES ---
     const renderStyledContent = (textString) => {
       if (!textString) return "-";
@@ -277,21 +269,22 @@ const CompanyRow = React.memo(
 
         {row.visibility?.limite && (
           <Td align="right" className="font-mono text-xs">
-            {row.limite_credito}
+            {formatCurrency(row.limite_credito) + "$"}
           </Td>
         )}
         {row.visibility?.transito && (
           <Td align="right" className="font-mono text-xs">
-            {formatCurrency(row.saldo_transito)}
+            {formatCurrency(row.saldo_transito) + "$"}
           </Td>
         )}
         {row.visibility?.vencido && (
           <Td
             align="right"
-            className={`font-mono text-xs font-bold ${row.saldo_vencido > 0 ? "text-red-600" : "text-green-600"
-              }`}
+            className={`font-mono text-xs font-bold ${
+              row.saldo_vencido > 0 ? "text-red-600" : "text-green-600"
+            }`}
           >
-            {formatCurrency(row.saldo_vencido)}
+            {formatCurrency(row.saldo_vencido) + "$"}
           </Td>
         )}
         {row.visibility?.fecha_compra && (
@@ -308,7 +301,7 @@ const CompanyRow = React.memo(
 
         {row.visibility?.ultimo_cobro && (
           <Td align="right" className="font-mono text-xs">
-            {formatCurrency(row.ultimo_cobro)}
+            {formatCurrency(row.ultimo_cobro) + "$"}
           </Td>
         )}
         {row.visibility?.sku && <Td>{row.sku_mes}</Td>}
@@ -322,7 +315,7 @@ const CompanyRow = React.memo(
             align="right"
             className="font-mono text-xs text-blue-600 bg-gray-50 dark:bg-[#202020]"
           >
-            {formatCurrency(row.ventas_actual)}
+            {formatCurrency(row.ventas_actual) + "$"}
           </Td>
         )}
         {row.visibility?.anterior && (
@@ -330,7 +323,7 @@ const CompanyRow = React.memo(
             align="right"
             className="font-mono text-xs text-gray-500 bg-gray-50 dark:bg-[#202020]"
           >
-            {formatCurrency(row.ventas_anterior)}
+            {formatCurrency(row.ventas_anterior) + "$"}
           </Td>
         )}
 
@@ -391,7 +384,6 @@ const CompanyRow = React.memo(
         )}
 
         {/* Guardar */}
-
       </Tr>
     );
   },
@@ -434,7 +426,11 @@ const BaseDatosBitrix = () => {
 
   // --- MODAL DE CONFIRMACIÓN ---
   const [showConfirm, setShowConfirm] = useState(false);
-  const [confirmData, setConfirmData] = useState({ title: "", message: "", onConfirm: () => { } });
+  const [confirmData, setConfirmData] = useState({
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
 
   // --- COLUMN VISIBILITY STATE ---
   const [columnVisibility, setColumnVisibility] = useState({
@@ -597,18 +593,15 @@ const BaseDatosBitrix = () => {
   const handleSave = useCallback(
     async (companyData) => {
       const payload = preparePayload(companyData);
-      console.log(
-        "📦 PAYLOAD INDIVIDUAL:",
-        JSON.stringify(payload, null, 2),
-      );
+      console.log("PAYLOAD INDIVIDUAL:", JSON.stringify(payload, null, 2));
       try {
         const response = await apiService.saveMatrix(payload);
         if (response) {
-          console.log(`✅ Gestión de "${companyData.nombre}" guardada.`);
+          console.log(`Gestión de "${companyData.nombre}" guardada.`);
           return true;
         }
       } catch (error) {
-        console.error("❌ Error al guardar:", error);
+        console.error("Error al guardar:", error);
         return false;
       }
     },
@@ -619,22 +612,31 @@ const BaseDatosBitrix = () => {
     setIsBulkSaving(true);
     setShowConfirm(false);
     try {
-      console.log("🚀 Iniciando guardado masivo (Payload Array) para:", vendor.label);
+      console.log(
+        "Iniciando guardado masivo (Payload Array) para:",
+        vendor.label,
+      );
 
       // Construir array de payloads
-      const bulkPayload = selectedEntities.map((entity) => preparePayload(entity));
+      const bulkPayload = selectedEntities.map((entity) =>
+        preparePayload(entity),
+      );
 
-      console.log("📦 PAYLOAD MASIVO:", JSON.stringify(bulkPayload, null, 2));
+      console.log("PAYLOAD MASIVO:", JSON.stringify(bulkPayload, null, 2));
 
       // Enviar una sola petición con el array
       await apiService.saveMatrix(bulkPayload);
 
-      console.log(`✅ Guardado masivo exitoso. ${selectedEntities.length} registros procesados.`);
+      console.log(
+        `Guardado masivo exitoso. ${selectedEntities.length} registros procesados.`,
+      );
 
-      console.log("📄 Generando PDF...");
+      console.log("Generando PDF...");
       generateVendorPDF(vendor.label, selectedEntities);
 
-      showToast(`✅ Proceso completado. ${selectedEntities.length} clientes guardados y PDF generado.`);
+      showToast(
+        `Proceso completado. ${selectedEntities.length} clientes guardados y PDF generado.`,
+      );
 
       // --- LIMPIEZA DE FILTROS Y SELECCIÓN ---
       setSelectedIds([]);
@@ -643,11 +645,12 @@ const BaseDatosBitrix = () => {
       setFilterZona("");
       setSelectedSegments([]);
       setShowOnlySelected(false);
-
-      // await refresh(); // Opcional: si quieres recargar la data del backend
     } catch (error) {
-      console.error("❌ Error en proceso masivo:", error);
-      showToast(`Ocurrió un error durante el guardado masivo: ${error.message}`, "error");
+      console.error("Error en proceso masivo:", error);
+      showToast(
+        `Ocurrió un error durante el guardado masivo: ${error.message}`,
+        "error",
+      );
     } finally {
       setIsBulkSaving(false);
     }
@@ -682,7 +685,7 @@ const BaseDatosBitrix = () => {
     setConfirmData({
       title: "Confirmar Solicitud",
       message: `¿Deseas guardar los cambios de ${selectedEntities.length} clientes y generar el PDF para "${vendor.label}"?`,
-      onConfirm: () => executeBulkSave(selectedEntities, vendor)
+      onConfirm: () => executeBulkSave(selectedEntities, vendor),
     });
     setShowConfirm(true);
   };
@@ -722,11 +725,14 @@ const BaseDatosBitrix = () => {
           {/* BOTÓN GUARDAR Y GENERAR PDF */}
           <button
             onClick={handleBulkSaveAndPDF}
-            disabled={isBulkSaving || selectedIds.length === 0 || !selectedVendedor}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-lg transition-all shadow-md ${isBulkSaving || selectedIds.length === 0 || !selectedVendedor
-              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-              : "bg-teal-600 text-white hover:bg-teal-700 active:scale-95"
-              }`}
+            disabled={
+              isBulkSaving || selectedIds.length === 0 || !selectedVendedor
+            }
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-lg transition-all shadow-md ${
+              isBulkSaving || selectedIds.length === 0 || !selectedVendedor
+                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                : "bg-teal-600 text-white hover:bg-teal-700 active:scale-95"
+            }`}
           >
             {isBulkSaving ? (
               <Loader size={18} className="animate-spin" />
@@ -736,7 +742,7 @@ const BaseDatosBitrix = () => {
             <span>Guardar y Generar PDF</span>
           </button>
 
-          <div className="h-8 w-[1px] bg-gray-200 dark:bg-gray-700 mx-2 hidden sm:block" />
+          <div className="h-8 w-px bg-gray-200 dark:bg-gray-700 mx-2 hidden sm:block" />
 
           {/* 1. INPUT ZONA (Filtro del Hook) */}
           <div className="relative w-full sm:w-48 group">
@@ -780,10 +786,11 @@ const BaseDatosBitrix = () => {
           {/* 4. TOGGLE VENCIDOS (Filtro Hook) */}
           <button
             onClick={() => setOnlyVencidos(!onlyVencidos)}
-            className={`flex items-center gap-2 px-3 py-2 text-sm border rounded-lg transition-all shadow-sm ${onlyVencidos
-              ? "bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300 ring-1 ring-red-200"
-              : "bg-white border-gray-300 text-gray-700 dark:bg-[#262626] dark:border-gray-600 dark:text-gray-300 hover:bg-gray-50"
-              }`}
+            className={`flex items-center gap-2 px-3 py-2 text-sm border rounded-lg transition-all shadow-sm ${
+              onlyVencidos
+                ? "bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300 ring-1 ring-red-200"
+                : "bg-white border-gray-300 text-gray-700 dark:bg-[#262626] dark:border-gray-600 dark:text-gray-300 hover:bg-gray-50"
+            }`}
           >
             {onlyVencidos ? <CheckSquare size={16} /> : <Square size={16} />}
             <span>Solo Vencidos</span>
@@ -811,10 +818,11 @@ const BaseDatosBitrix = () => {
           {/* FILTRO VER SELECCIONADOS */}
           <button
             onClick={() => setShowOnlySelected(!showOnlySelected)}
-            className={`px-3 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 shadow-sm ${showOnlySelected
-              ? "bg-[#1a9888] text-white border-[#1a9888]"
-              : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-[#1a9888]"
-              }`}
+            className={`px-3 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 shadow-sm ${
+              showOnlySelected
+                ? "bg-[#1a9888] text-white border-[#1a9888]"
+                : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-[#1a9888]"
+            }`}
           >
             <Filter size={16} />
             {showOnlySelected ? "Ver Todos" : "Ver Selec."}
@@ -1027,20 +1035,20 @@ const BaseDatosBitrix = () => {
                   "dias_visita",
                   "convenio",
                 ]) > 0 && (
-                    <Th
-                      colSpan={getGroupColSpan([
-                        "codigo_profit",
-                        "ciudad",
-                        "segmento",
-                        "coordenadas",
-                        "dias_visita",
-                        "convenio",
-                      ])}
-                      className="border-b border-r border-gray-200 dark:border-[#333] bg-blue-50 dark:bg-blue-900 text-blue-600 text-center"
-                    >
-                      Datos Bitrix
-                    </Th>
-                  )}
+                  <Th
+                    colSpan={getGroupColSpan([
+                      "codigo_profit",
+                      "ciudad",
+                      "segmento",
+                      "coordenadas",
+                      "dias_visita",
+                      "convenio",
+                    ])}
+                    className="border-b border-r border-gray-200 dark:border-[#333] bg-blue-50 dark:bg-blue-900 text-blue-600 text-center"
+                  >
+                    Datos Bitrix
+                  </Th>
+                )}
                 {getGroupColSpan([
                   "limite",
                   "transito",
@@ -1048,19 +1056,19 @@ const BaseDatosBitrix = () => {
                   "fecha_compra",
                   "morosidad",
                 ]) > 0 && (
-                    <Th
-                      colSpan={getGroupColSpan([
-                        "limite",
-                        "transito",
-                        "vencido",
-                        "fecha_compra",
-                        "morosidad",
-                      ])}
-                      className="border-b border-r border-gray-200 dark:border-[#333] bg-green-50 dark:bg-green-900 text-green-600 text-center"
-                    >
-                      Datos Profit
-                    </Th>
-                  )}
+                  <Th
+                    colSpan={getGroupColSpan([
+                      "limite",
+                      "transito",
+                      "vencido",
+                      "fecha_compra",
+                      "morosidad",
+                    ])}
+                    className="border-b border-r border-gray-200 dark:border-[#333] bg-green-50 dark:bg-green-900 text-green-600 text-center"
+                  >
+                    Datos Profit
+                  </Th>
+                )}
                 {getGroupColSpan([
                   "ultimo_cobro",
                   "sku",
@@ -1068,19 +1076,19 @@ const BaseDatosBitrix = () => {
                   "actual",
                   "anterior",
                 ]) > 0 && (
-                    <Th
-                      colSpan={getGroupColSpan([
-                        "ultimo_cobro",
-                        "sku",
-                        "clasif",
-                        "actual",
-                        "anterior",
-                      ])}
-                      className="border-b border-r border-gray-200 dark:border-[#333] text-purple-600 text-center bg-indigo-200 dark:bg-indigo-800"
-                    >
-                      Ventas
-                    </Th>
-                  )}
+                  <Th
+                    colSpan={getGroupColSpan([
+                      "ultimo_cobro",
+                      "sku",
+                      "clasif",
+                      "actual",
+                      "anterior",
+                    ])}
+                    className="border-b border-r border-gray-200 dark:border-[#333] text-purple-600 text-center bg-indigo-200 dark:bg-indigo-800"
+                  >
+                    Ventas
+                  </Th>
+                )}
                 {getGroupColSpan(["bitacora", "obs_ejecutiva"]) > 0 && (
                   <Th
                     colSpan={getGroupColSpan(["bitacora", "obs_ejecutiva"])}
@@ -1247,8 +1255,6 @@ const BaseDatosBitrix = () => {
                     </Th>
                   </>
                 )}
-
-
               </Tr>
             </Thead>
 
