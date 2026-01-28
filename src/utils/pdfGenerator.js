@@ -72,7 +72,7 @@ export const generateVendorPDF = (vendorName, selectedCompanies) => {
     },
     { title: "Morosidad", dataKey: "morosidad", width: 16, align: "center" },
     { title: "SKU", dataKey: "sku", width: 12, align: "center" },
-    { title: "Clasif.", dataKey: "clasif", width: 10, align: "center" },
+    { title: "Clasif", dataKey: "clasif", width: 10, align: "center" },
   ];
 
   // Agregar días dinámicos (Solo los que pasaron el filtro estricto)
@@ -113,7 +113,7 @@ export const generateVendorPDF = (vendorName, selectedCompanies) => {
   columnsDef.forEach((col, index) => {
     dynamicColumnStyles[index] = {
       cellWidth: col.width,
-      halign: col.align || "left",
+      halign: col.align || "center",
     };
   });
 
