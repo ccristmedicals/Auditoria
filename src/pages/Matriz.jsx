@@ -14,6 +14,7 @@ import {
   ChevronsRight,
   CheckCircle,
   Loader,
+  Lock,
 } from "lucide-react";
 import {
   TableContainer,
@@ -112,11 +113,12 @@ const isWithinCurrentWeek = (dateStr) => {
 };
 
 const TableCheckbox = React.memo(
-  ({ checked, onChange, colorClass, onKeyDown }) => (
+  ({ checked, onChange, colorClass, onKeyDown, disabled }) => (
     <div className="flex justify-center">
       <input
         type="checkbox"
         checked={!!checked}
+        disabled={disabled}
         onChange={(e) => onChange(e.target.checked)}
         onKeyDown={onKeyDown}
         className={`w-4 h-4 rounded border-gray-300 focus:ring-2 cursor-pointer ${colorClass}`}
@@ -137,7 +139,7 @@ const HeaderCountInput = React.memo(({ value }) => (
 ));
 
 const EditableCell = React.memo(
-  ({ value, onChange, placeholder = "...", onEnter }) => {
+  ({ value, onChange, placeholder = "...", onEnter, disabled }) => {
     const [localValue, setLocalValue] = useState(value || "");
 
     useEffect(() => {
@@ -145,7 +147,7 @@ const EditableCell = React.memo(
     }, [value]);
 
     const onBlur = () => {
-      if (localValue !== value) {
+      if (!disabled && localValue !== value) {
         onChange(localValue);
       }
     };
@@ -155,21 +157,28 @@ const EditableCell = React.memo(
         <input
           type="text"
           value={localValue}
+          readOnly={disabled} // <--- Bloqueo
           onChange={(e) => setLocalValue(e.target.value)}
           onBlur={onBlur}
           onKeyDown={(e) => {
-            if (e.key === "Enter") {
+            if (e.key === "Enter" && !disabled) {
               onBlur();
               if (onEnter) onEnter(localValue);
             }
           }}
-          placeholder={placeholder}
-          className="w-full min-w-[120px] bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#1a9888] dark:text-gray-200"
+          placeholder={disabled ? "" : placeholder}
+          className={`w-full min-w-[120px] bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded px-2 py-1.5 text-sm outline-none ${
+            disabled
+              ? "text-gray-500 cursor-default"
+              : "focus:ring-2 focus:ring-[#1a9888] dark:text-gray-200"
+          }`}
         />
-        <Edit3
-          size={12}
-          className="absolute right-2 top-2.5 text-gray-400 pointer-events-none opacity-50"
-        />
+        {!disabled && (
+          <Edit3
+            size={12}
+            className="absolute right-2 top-2.5 text-gray-400 pointer-events-none opacity-50"
+          />
+        )}
       </div>
     );
   },
@@ -184,6 +193,7 @@ const AuditRow = React.memo(
     handleAuditChange,
     getDynamicBackground,
     handleSaveRow,
+    isEditable,
   }) => {
     const auditData = row.auditoria?.[selectedDay];
     const [isSaving, setIsSaving] = useState(false);
@@ -207,12 +217,8 @@ const AuditRow = React.memo(
     );
 
     const handleEnter = (e) => {
-      if (e.key === "Enter") {
+      if (e.key === "Enter" && isEditable) {
         e.preventDefault();
-        // Disparamos el guardado al presionar Enter
-        // usamos setTimeout para asegurar que el estado checkeado se propague primero si hubo cambio por clic (aunque el onChange es antes)
-        // pero principalmente para dar feedback visual inmediato,
-        // sin embargo el onChange ya actualiza el estado global.
         handleSaveRow(row);
       }
     };
@@ -400,6 +406,7 @@ const AuditRow = React.memo(
         <Td className="bg-green-50/20 dark:bg-emerald-900/10 border-l border-green-100 dark:border-emerald-900/30 p-0 text-center">
           <TableCheckbox
             checked={auditData?.inicio_whatsapp?.e}
+            disabled={!isEditable} // <--- CAMBIO
             onChange={(val) =>
               handleExclusiveChange(row.id, "inicio_whatsapp", "e", val, [
                 "e",
@@ -413,6 +420,7 @@ const AuditRow = React.memo(
         <Td className="bg-green-50/20 dark:bg-emerald-900/10 border-r border-green-100 dark:border-emerald-900/30 p-0 text-center">
           <TableCheckbox
             checked={auditData?.inicio_whatsapp?.c}
+            disabled={!isEditable} // <--- CAMBIO
             onChange={(val) =>
               handleExclusiveChange(row.id, "inicio_whatsapp", "c", val, [
                 "e",
@@ -428,6 +436,7 @@ const AuditRow = React.memo(
         >
           <TableCheckbox
             checked={auditData?.accion_venta?.e}
+            disabled={!isEditable} // <--- CAMBIO
             onChange={(val) =>
               handleExclusiveChange(row.id, "accion_venta", "e", val)
             }
@@ -438,6 +447,7 @@ const AuditRow = React.memo(
         <Td className={`${bgAccionVenta} p-0 text-center`}>
           <TableCheckbox
             checked={auditData?.accion_venta?.p}
+            disabled={!isEditable} // <--- CAMBIO
             onChange={(val) =>
               handleExclusiveChange(row.id, "accion_venta", "p", val)
             }
@@ -450,6 +460,7 @@ const AuditRow = React.memo(
         >
           <TableCheckbox
             checked={auditData?.accion_venta?.n}
+            disabled={!isEditable} // <--- CAMBIO
             onChange={(val) =>
               handleExclusiveChange(row.id, "accion_venta", "n", val)
             }
@@ -460,6 +471,7 @@ const AuditRow = React.memo(
         <Td className={`${bgAccionCobranza} p-0 text-center`}>
           <TableCheckbox
             checked={auditData?.accion_cobranza?.e}
+            disabled={!isEditable} // <--- CAMBIO
             onChange={(val) =>
               handleExclusiveChange(row.id, "accion_cobranza", "e", val)
             }
@@ -470,6 +482,7 @@ const AuditRow = React.memo(
         <Td className={`${bgAccionCobranza} p-0 text-center`}>
           <TableCheckbox
             checked={auditData?.accion_cobranza?.p}
+            disabled={!isEditable} // <--- CAMBIO
             onChange={(val) =>
               handleExclusiveChange(row.id, "accion_cobranza", "p", val)
             }
@@ -482,6 +495,7 @@ const AuditRow = React.memo(
         >
           <TableCheckbox
             checked={auditData?.accion_cobranza?.n}
+            disabled={!isEditable} // <--- CAMBIO
             onChange={(val) =>
               handleExclusiveChange(row.id, "accion_cobranza", "n", val)
             }
@@ -492,6 +506,7 @@ const AuditRow = React.memo(
         <Td className="bg-slate-300 dark:bg-slate-800 border-r border-gray-300 dark:border-slate-700 p-0 text-center">
           <TableCheckbox
             checked={auditData?.cp || false}
+            disabled={!isEditable} // <--- CAMBIO
             onChange={(val) => handleAuditChange(row.id, "cp", val)}
             onKeyDown={handleEnter}
             colorClass="text-purple-600 focus:ring-purple-500"
@@ -502,6 +517,7 @@ const AuditRow = React.memo(
         >
           <TableCheckbox
             checked={auditData?.llamadas_venta?.e}
+            disabled={!isEditable} // <--- CAMBIO
             onChange={(val) =>
               handleExclusiveChange(row.id, "llamadas_venta", "e", val)
             }
@@ -512,6 +528,7 @@ const AuditRow = React.memo(
         <Td className={`${bgLlamadaVenta} p-0 text-center`}>
           <TableCheckbox
             checked={auditData?.llamadas_venta?.p}
+            disabled={!isEditable} // <--- CAMBIO
             onChange={(val) =>
               handleExclusiveChange(row.id, "llamadas_venta", "p", val)
             }
@@ -524,6 +541,7 @@ const AuditRow = React.memo(
         >
           <TableCheckbox
             checked={auditData?.llamadas_venta?.n}
+            disabled={!isEditable} // <--- CAMBIO
             onChange={(val) =>
               handleExclusiveChange(row.id, "llamadas_venta", "n", val)
             }
@@ -534,6 +552,7 @@ const AuditRow = React.memo(
         <Td className={`${bgLlamadaCobranza} p-0 text-center`}>
           <TableCheckbox
             checked={auditData?.llamadas_cobranza?.e}
+            disabled={!isEditable} // <--- CAMBIO
             onChange={(val) =>
               handleExclusiveChange(row.id, "llamadas_cobranza", "e", val)
             }
@@ -544,6 +563,7 @@ const AuditRow = React.memo(
         <Td className={`${bgLlamadaCobranza} p-0 text-center`}>
           <TableCheckbox
             checked={auditData?.llamadas_cobranza?.p}
+            disabled={!isEditable} // <--- CAMBIO
             onChange={(val) =>
               handleExclusiveChange(row.id, "llamadas_cobranza", "p", val)
             }
@@ -556,6 +576,7 @@ const AuditRow = React.memo(
         >
           <TableCheckbox
             checked={auditData?.llamadas_cobranza?.n}
+            disabled={!isEditable} // <--- CAMBIO
             onChange={(val) =>
               handleExclusiveChange(row.id, "llamadas_cobranza", "n", val)
             }
@@ -652,6 +673,7 @@ const AuditRow = React.memo(
         <Td className="min-w-[350px]">
           <EditableCell
             value={auditData?.observacion || ""}
+            disabled={!isEditable} // <--- CAMBIO
             onChange={(val) => handleAuditChange(row.id, "observacion", val)}
             placeholder="Escribe la observación del día..."
             onEnter={(newValue) => {
@@ -675,11 +697,13 @@ const AuditRow = React.memo(
               await handleSaveRow(row);
               setIsSaving(false);
             }}
-            disabled={isSaving}
+            disabled={!isEditable || isSaving}
             className="p-2 rounded-lg bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50 flex mx-auto"
           >
             {isSaving ? (
               <Loader size={16} className="animate-spin" />
+            ) : !isEditable ? (
+              <Lock size={16} /> // <--- CAMBIO: Icono candado si está bloqueado
             ) : (
               <Save size={16} />
             )}
@@ -709,7 +733,7 @@ const AuditRow = React.memo(
 // --- COMPONENTE PRINCIPAL ---
 const Matriz = () => {
   const { data, loading, error, handleAuditoriaChange } = useAuditoria();
-  const [selectedDay, setSelectedDay] = useState(() => {
+  const actualCurrentDay = useMemo(() => {
     const dayOfWeek = new Date().getDay();
     const map = {
       0: "lunes", // Domingo -> Lunes
@@ -721,7 +745,15 @@ const Matriz = () => {
       6: "lunes", // Sábado -> Lunes
     };
     return map[dayOfWeek] || "lunes";
-  });
+  }, []);
+
+  const [selectedDay, setSelectedDay] = useState(actualCurrentDay);
+
+  // --- CAMBIO: Variable para controlar si se puede editar
+  const isEditable = useMemo(
+    () => selectedDay === actualCurrentDay,
+    [selectedDay, actualCurrentDay],
+  );
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedZonas, setSelectedZonas] = useState([]); // Nuevo estado para filtro de Zonas
   const [selectedRutas, setSelectedRutas] = useState([]); // Nuevo estado para filtro de Rutas
@@ -786,6 +818,9 @@ const Matriz = () => {
 
   const handleExclusiveChange = useCallback(
     (rowId, category, field, newValue, customGroup = null) => {
+      // Bloqueo de seguridad adicional en la función lógica
+      if (!isEditable) return;
+
       handleAuditoriaChange(rowId, selectedDay, category, field, newValue);
       if (newValue === true) {
         const siblings = customGroup || ["e", "p", "n"];
@@ -796,14 +831,15 @@ const Matriz = () => {
         });
       }
     },
-    [handleAuditoriaChange, selectedDay],
+    [handleAuditoriaChange, selectedDay, isEditable],
   );
 
   const handleAuditChange = useCallback(
     (rowId, category, newValue) => {
+      if (!isEditable) return; // Bloqueo de seguridad
       handleAuditoriaChange(rowId, selectedDay, category, newValue);
     },
-    [handleAuditoriaChange, selectedDay],
+    [handleAuditoriaChange, selectedDay, isEditable],
   );
 
   useEffect(() => {
@@ -812,24 +848,18 @@ const Matriz = () => {
 
   const filteredData = useMemo(() => {
     return data.filter((item) => {
-      // 1. Filtro por Texto (Nombre/Código)
       if (searchTerm) {
         const term = searchTerm.toLowerCase();
         const nombre = item.nombre?.toLowerCase() || "";
         const codigo = item.codigo?.toString().toLowerCase() || "";
         if (!nombre.includes(term) && !codigo.includes(term)) return false;
       }
-
-      // 2. Filtro por Zona (Multiselect)
       if (selectedZonas.length > 0) {
         if (!selectedZonas.includes(item.zona)) return false;
       }
-
-      // 3. Filtro por Ruta (Segmento)
       if (selectedRutas.length > 0) {
         if (!selectedRutas.includes(item.segmento)) return false;
       }
-
       return true;
     });
   }, [data, searchTerm, selectedZonas, selectedRutas]);
@@ -847,14 +877,12 @@ const Matriz = () => {
   // --- CÁLCULO DE TOTALES PARA EL HEADER (LÓGICA POR DÍA) ---
   const headerCounts = useMemo(() => {
     const counts = {
-      // Totales de checks simples (Colores)
       inicio_whatsapp: { e: 0, c: 0 },
       accion_venta: { e: 0, p: 0, n: 0 },
       accion_cobranza: { e: 0, p: 0, n: 0 },
       cp: 0,
       llamadas_venta: { e: 0, p: 0, n: 0 },
       llamadas_cobranza: { e: 0, p: 0, n: 0 },
-
       puestas_total: 0,
       cumplidos_total: 0,
       visitas_dia_total: 0,
@@ -873,7 +901,6 @@ const Matriz = () => {
       const day = row.auditoria?.[selectedDay];
       if (!day) return;
 
-      // 1. Sumar checks simples de colores (Igual que antes)
       if (day.inicio_whatsapp?.e) counts.inicio_whatsapp.e++;
       if (day.inicio_whatsapp?.c) counts.inicio_whatsapp.c++;
       ["e", "p", "n"].forEach((f) => {
@@ -885,16 +912,12 @@ const Matriz = () => {
 
       if (day.cp) counts.cp++;
 
-      // --- 2. LÓGICA DE TOTALES ESTRICTA POR DÍA ---
-
-      // A. PUESTAS: Solo si hay tarea en ESE día específico (dayKey)
       const s = row.semana || {};
       const dailyTask = s[dayKey]?.tarea;
       const isPuesta = dailyTask && dailyTask.toString().trim().length > 0;
 
       if (isPuesta) counts.puestas_total++;
 
-      // Helpers para saber si hubo gestión real (Obs)
       const log = Array.isArray(row.gestion)
         ? row.gestion.find((g) => {
             if (!g.dia_semana) return false;
@@ -907,18 +930,13 @@ const Matriz = () => {
           })
         : null;
 
-      // ¿Tiene Observación (Manual del día O Histórica del día)?
       const hasObs =
         (day.observacion && day.observacion.toString().trim().length > 0) ||
         (log && (log.venta_descripcion || log.cobranza_descripcion));
 
-      // B. CUMPLIDO (Era Puesta del día Y tuvo Obs)
       if (isPuesta && hasObs) counts.cumplidos_total++;
-
-      // C. VISITA DEL DÍA (Solo tuvo Obs, planificado o no)
       if (hasObs) counts.visitas_dia_total++;
 
-      // D. DE N-P A E (Cálculo inmediato para el total)
       const isNP =
         day.accion_venta?.p ||
         day.accion_venta?.n ||
@@ -938,7 +956,6 @@ const Matriz = () => {
       }
     });
 
-    // E. % TOTAL (Cumplidos / Puestas)
     if (counts.puestas_total > 0) {
       counts.percent_avg = (
         (counts.cumplidos_total / counts.puestas_total) *
@@ -1025,6 +1042,11 @@ const Matriz = () => {
                 <span>
                   Visibles: <b>{filteredData.length}</b>
                 </span>
+                {!isEditable && (
+                  <span className="ml-2 px-2 py-0.5 rounded text-xs font-bold bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300 flex items-center gap-1">
+                    <Lock size={10} /> MODO LECTURA
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -1043,7 +1065,7 @@ const Matriz = () => {
                     onClick={() => setSelectedDay(day)}
                     className={`px-3 py-1.5 text-xs font-semibold rounded-md capitalize whitespace-nowrap transition-all ${
                       selectedDay === day
-                        ? "bg-white dark:bg-[#1a9888] text-[#1a9888] dark:text-white shadow-sm ring-1 ring-black/5 dark:ring-0"
+                        ? "bg-white dark:bg-[#1a9888] text-[#1a9888] dark:text-white shadow-sm ring-1 ring-black/5 dark:ring-0 opacity-100"
                         : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                     }`}
                   >
@@ -1155,10 +1177,11 @@ const Matriz = () => {
                 <Th
                   colSpan={19}
                   stickyTop
-                  className="bg-purple-100 text-purple-800 text-center border-r border-purple-200 z-20 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-900"
+                  className={`text-center border-r z-20 ${isEditable ? "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-900" : "bg-gray-200 text-gray-600 border-gray-300 dark:bg-gray-800 dark:text-gray-400"}`}
                 >
                   GESTIÓN DIARIA:{" "}
                   <span className="uppercase font-bold">{selectedDay}</span>
+                  {!isEditable && " (SOLO LECTURA)"}
                 </Th>
                 <Th
                   colSpan={4}
@@ -1724,6 +1747,7 @@ const Matriz = () => {
                     handleAuditChange={handleAuditChange}
                     getDynamicBackground={getDynamicBackground}
                     handleSaveRow={handleSaveRow}
+                    isEditable={isEditable}
                   />
                 ))
               ) : (

@@ -203,9 +203,11 @@ const CompanyRow = React.memo(
     return (
       <Tr
         className={
-          isSelected
-            ? "bg-teal-50/30 dark:bg-teal-900/10"
-            : "hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+          row.isManagedToday
+            ? "bg-gray-100 dark:bg-gray-800/50 opacity-60"
+            : isSelected
+              ? "bg-teal-50/30 dark:bg-teal-900/10"
+              : "hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
         }
       >
         {/* Checkbox */}
@@ -618,6 +620,22 @@ const BaseDatosBitrix = () => {
         preparePayload(entity),
       );
 
+      console.log("💾 DEBUG - Bulk Save Payload:", {
+        totalEntities: selectedEntities.length,
+        firstPayload: bulkPayload[0],
+        payloadStructure: bulkPayload[0]
+          ? {
+              id_bitrix: bulkPayload[0].id_bitrix,
+              hasGestion: !!bulkPayload[0].gestion,
+              hasSemana: !!bulkPayload[0].gestion?.semana,
+              semanaKeys: bulkPayload[0].gestion?.semana
+                ? Object.keys(bulkPayload[0].gestion.semana)
+                : [],
+              lunesData: bulkPayload[0].gestion?.semana?.lunes,
+            }
+          : null,
+      });
+
       console.log("PAYLOAD MASIVO:", JSON.stringify(bulkPayload, null, 2));
 
       // Enviar una sola petición con el array
@@ -633,6 +651,13 @@ const BaseDatosBitrix = () => {
       showToast(
         `Proceso completado. ${selectedEntities.length} clientes guardados y PDF generado.`,
       );
+
+      // --- ACTUALIZAR LOCALMENTE isManagedToday PARA LOS CLIENTES GUARDADOS ---
+      const savedIds = selectedEntities.map((e) => e.id_interno);
+      handleCompanyChange(null, "bulk_update_managed", savedIds);
+
+      // --- REFRESCAR DATOS PARA ACTUALIZAR isManagedToday ---
+      await refresh();
 
       // --- LIMPIEZA DE FILTROS Y SELECCIÓN ---
       setSelectedIds([]);

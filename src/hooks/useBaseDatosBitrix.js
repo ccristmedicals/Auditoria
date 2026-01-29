@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { apiService } from "../services/apiService";
@@ -22,7 +23,7 @@ export const useBaseDatosBitrix = () => {
   // --- PAGINACIÓN ---
   const [page, setPage] = useState(1);
   const ITEMS_PER_PAGE = 25;
-  const [setTotalRecords] = useState(0);
+  const [totalRecords, setTotalRecords] = useState(0);
 
   useEffect(() => {
     fetchInitialData();
@@ -112,31 +113,66 @@ export const useBaseDatosBitrix = () => {
     const userSegmentos = user?.segmentos || [];
 
     try {
-      const [companiesResponse, matrixResponse] = await Promise.all([
+      const [companiesResponse, planificacionResponse] = await Promise.all([
         apiService.getAllCompanies(userSegmentos),
-        apiService.getMatrix(),
+        apiService.getPlanificacion(),
       ]);
 
-      const rawList = companiesResponse.data || [];
-      const matrixList = matrixResponse.data || [];
+      console.log("📡 DEBUG - Raw API Responses:", {
+        companiesCount: companiesResponse?.data?.length || 0,
+        planificacionCount: planificacionResponse?.data?.length || 0,
+        planificacionResponseSample: planificacionResponse?.data?.[0],
+      });
 
-      const matrixMap = {};
-      matrixList.forEach((m) => {
+      const rawList = companiesResponse.data || [];
+      const planificacionList = planificacionResponse.data || [];
+
+      console.log("🔍 DEBUG - Planificacion Response:", {
+        totalPlanificacionRecords: planificacionList.length,
+        firstPlanificacionRecord: planificacionList[0],
+        planificacionStructure: planificacionList[0]
+          ? Object.keys(planificacionList[0])
+          : [],
+      });
+
+      const planificacionMap = {};
+      planificacionList.forEach((m) => {
         if (m.id_bitrix) {
-          matrixMap[m.id_bitrix] = m;
+          planificacionMap[m.id_bitrix] = m;
         }
+      });
+
+      console.log("🔍 DEBUG - Planificacion Map:", {
+        totalMappedRecords: Object.keys(planificacionMap).length,
+        sampleIds: Object.keys(planificacionMap).slice(0, 5),
+        sampleRecord: planificacionMap[Object.keys(planificacionMap)[0]],
       });
 
       const formattedData = rawList.map((item, index) => {
         const b = item.bitrix || {};
         const p = item.profit || {};
         const gList = Array.isArray(item.gestion) ? item.gestion : [];
-        const savedData = matrixMap[b.ID];
+        const savedData = planificacionMap[b.ID];
 
+        // Para BaseDatosBitrix, los datos vienen en 'semana' directamente
         const semanaData = savedData?.semana || item.semana || {};
         const bitacora = savedData?.bitacora || item.bitacora || "";
         const obs_ejecutiva =
           savedData?.obs_ejecutiva || item.obs_ejecutiva || "";
+
+        // Log detallado para los primeros 3 registros
+        if (index < 3) {
+          console.log(`🔍 DEBUG - Company #${index} (ID: ${b.ID}):`, {
+            bitrixId: b.ID,
+            hasSavedData: !!savedData,
+            savedDataKeys: savedData ? Object.keys(savedData) : [],
+            rawSemana: savedData?.semana,
+            finalSemanaData: semanaData,
+            semanaKeys: Object.keys(semanaData),
+            lunesData: semanaData.lunes,
+            gListLength: gList.length,
+          });
+        }
 
         const extractHistoryData = (dayName) => {
           const target = dayName
@@ -185,15 +221,21 @@ export const useBaseDatosBitrix = () => {
         ];
         const todayIndex = new Date().getDay();
         const todayName = daysMap[todayIndex] || "";
-        // Si es fin de semana, asumimos no managed o false, o lo que el usuario prefiera.
-        // Aunque el sistema parece solo manejar L-V.
 
+        // Verificar en el historial (gList)
         const todayData = extractHistoryData(todayName);
-        // Se considera gestionado si tiene acción u observación HOY
-        // OJO: extractHistoryData busca en gList (historial) Y ademas extraemos weekData.
+        const hasHistoricalData = !!(todayData.accion || todayData.observacion);
 
-        // Verificamos si en gList hay algo de hoy
-        const isManagedToday = !!(todayData.accion || todayData.observacion);
+        // Verificar en la planificación semanal (semana)
+        const todayWeekData = semanaData[todayName];
+        const hasWeekData = !!(
+          todayWeekData?.tarea ||
+          todayWeekData?.accion ||
+          todayWeekData?.observacion
+        );
+
+        // Se considera gestionado si tiene datos en historial O en planificación
+        const isManagedToday = hasHistoricalData || hasWeekData;
 
         return {
           id_interno: b.ID ? `bx-${b.ID}` : `idx-${index}-${Date.now()}`,
@@ -224,20 +266,41 @@ export const useBaseDatosBitrix = () => {
           bitacora: bitacora,
           obs_ejecutiva: obs_ejecutiva,
 
-          lunes_accion: extractHistoryData("lunes").accion,
-          lunes_observacion: extractHistoryData("lunes").observacion,
+          // Para cada día, priorizar datos guardados en semana, luego historial
+          lunes_accion:
+            semanaData.lunes?.accion || extractHistoryData("lunes").accion,
+          lunes_observacion:
+            semanaData.lunes?.observacion ||
+            extractHistoryData("lunes").observacion,
           lunes_tarea: semanaData.lunes?.tarea || "",
-          martes_accion: extractHistoryData("martes").accion,
-          martes_observacion: extractHistoryData("martes").observacion,
+
+          martes_accion:
+            semanaData.martes?.accion || extractHistoryData("martes").accion,
+          martes_observacion:
+            semanaData.martes?.observacion ||
+            extractHistoryData("martes").observacion,
           martes_tarea: semanaData.martes?.tarea || "",
-          miercoles_accion: extractHistoryData("miercoles").accion,
-          miercoles_observacion: extractHistoryData("miercoles").observacion,
+
+          miercoles_accion:
+            semanaData.miercoles?.accion ||
+            extractHistoryData("miercoles").accion,
+          miercoles_observacion:
+            semanaData.miercoles?.observacion ||
+            extractHistoryData("miercoles").observacion,
           miercoles_tarea: semanaData.miercoles?.tarea || "",
-          jueves_accion: extractHistoryData("jueves").accion,
-          jueves_observacion: extractHistoryData("jueves").observacion,
+
+          jueves_accion:
+            semanaData.jueves?.accion || extractHistoryData("jueves").accion,
+          jueves_observacion:
+            semanaData.jueves?.observacion ||
+            extractHistoryData("jueves").observacion,
           jueves_tarea: semanaData.jueves?.tarea || "",
-          viernes_accion: extractHistoryData("viernes").accion,
-          viernes_observacion: extractHistoryData("viernes").observacion,
+
+          viernes_accion:
+            semanaData.viernes?.accion || extractHistoryData("viernes").accion,
+          viernes_observacion:
+            semanaData.viernes?.observacion ||
+            extractHistoryData("viernes").observacion,
           viernes_tarea: semanaData.viernes?.tarea || "",
 
           isManagedToday: isManagedToday,
@@ -260,6 +323,17 @@ export const useBaseDatosBitrix = () => {
   };
 
   const handleCompanyChange = useCallback((id_interno, field, value) => {
+    // Caso especial: actualización masiva de isManagedToday
+    if (field === "bulk_update_managed" && Array.isArray(value)) {
+      setAllCompanies((prev) =>
+        prev.map((c) =>
+          value.includes(c.id_interno) ? { ...c, isManagedToday: true } : c,
+        ),
+      );
+      return;
+    }
+
+    // Caso normal: actualización individual
     setAllCompanies((prev) =>
       prev.map((c) =>
         c.id_interno === id_interno ? { ...c, [field]: value } : c,

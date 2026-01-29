@@ -125,6 +125,12 @@ export const apiService = {
     });
   },
 
+  getPlanificacion: () => {
+    return fetchJson(`${BASE_URL}/planificacion`, {
+      method: "GET",
+    });
+  },
+
   getVendedoresApp: () => {
     return fetchJson(`${BASE_URL}/usuarios/vendedores-app`, {
       method: "GET",

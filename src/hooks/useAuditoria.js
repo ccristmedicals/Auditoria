@@ -67,9 +67,9 @@ const calculateDistance = (coord1, coord2) => {
     const a =
       Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
       Math.cos(phi1) *
-      Math.cos(phi2) *
-      Math.sin(deltaLambda / 2) *
-      Math.sin(deltaLambda / 2);
+        Math.cos(phi2) *
+        Math.sin(deltaLambda / 2) *
+        Math.sin(deltaLambda / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
     const distance = R * c; // en metros
@@ -106,7 +106,7 @@ export const useAuditoria = () => {
       const matrixArray = matrixData?.data || matrixData || [];
 
       if (Array.isArray(matrixArray)) {
-        // El backend devuelve ORDER BY fecha_registro DESC. 
+        // El backend devuelve ORDER BY fecha_registro DESC.
         // Tomamos el primero (más reciente) para cada id_bitrix.
         matrixArray.forEach((item) => {
           if (item.id_bitrix) {
@@ -164,7 +164,8 @@ export const useAuditoria = () => {
 
             // Recuperar datos registrados (vienen como columnas planas del backend)
             bitacora: registered?.bitacora || item.bitacora || "",
-            obs_ejecutiva: registered?.obs_ejecutiva || item.obs_ejecutiva || "",
+            obs_ejecutiva:
+              registered?.obs_ejecutiva || item.obs_ejecutiva || "",
             semana: registered?.semana || item.semana || {},
             auditoria: registered?.auditoria_matriz || {
               lunes: createDailyAudit(),
