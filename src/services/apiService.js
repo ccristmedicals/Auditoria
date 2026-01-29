@@ -53,7 +53,6 @@ export const apiService = {
   // --- USUARIOS ---
 
   registerUser: (userData) => {
-    console.log("[registerUser] Sending data to backend:", userData);
     return fetchJson(`${BASE_URL}/usuarios/crear`, {
       method: "POST",
       body: JSON.stringify(userData),

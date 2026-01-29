@@ -6,9 +6,9 @@ import {
   Sun,
   User,
   Container,
-  TrendingUpDown,
   Menu,
   X as XIcon,
+  LucideShieldEllipsis,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -55,19 +55,31 @@ export default function Sidebar() {
       to: "/base-datos-bitrix",
       label: "Planificación",
       icon: <Database />,
-      permission: (p) => (p?.ver_dashboard && !p?.gestion_matrix) || p?.acceso_total || p?.editar_usuarios,
+      permission: (p) =>
+        (p?.ver_dashboard && !p?.gestion_matrix) ||
+        p?.acceso_total ||
+        p?.editar_usuarios,
     },
     {
       to: "/base-datos-profit",
       label: "Comparativa Profit-Bitrix",
       icon: <DatabaseZap />,
-      permission: (p) => p?.gestion_matrix || p?.acceso_total || p?.editar_usuarios,
+      permission: (p) =>
+        p?.gestion_matrix || p?.acceso_total || p?.editar_usuarios,
     },
     {
       to: "/matriz",
       label: "Matriz",
       icon: <Container />,
-      permission: (p) => p?.gestion_matrix || p?.acceso_total || p?.editar_usuarios,
+      permission: (p) =>
+        p?.gestion_matrix || p?.acceso_total || p?.editar_usuarios,
+    },
+    {
+      to: "/vendedores",
+      label: "Vendedores",
+      icon: <LucideShieldEllipsis />,
+      permission: (p) =>
+        p?.gestion_matrix || p?.acceso_total || p?.editar_usuarios,
     },
   ];
 
@@ -77,7 +89,9 @@ export default function Sidebar() {
   });
 
   return (
-    <aside className={`${isCollapsed ? "w-20" : "w-64"} min-h-screen bg-linear-to-b from-[#1a9888] to-[#023831] text-white py-6 px-4 shadow-2xl sticky top-0 transition-all duration-300 flex flex-col overflow-hidden`}>
+    <aside
+      className={`${isCollapsed ? "w-20" : "w-64"} min-h-screen bg-linear-to-b from-[#1a9888] to-[#023831] text-white py-6 px-4 shadow-2xl sticky top-0 transition-all duration-300 flex flex-col overflow-hidden`}
+    >
       <div className="flex items-center justify-between mb-8 px-2">
         {!isCollapsed && (
           <div className="text-2xl font-bold tracking-wide">Menú</div>
@@ -98,10 +112,11 @@ export default function Sidebar() {
             <Link
               key={`${to}-${index}`}
               to={to}
-              className={`flex items-center rounded-lg transition-all duration-300 group ${isCollapsed ? "justify-center py-3 px-0" : "space-x-3 py-3 px-3"} ${isActive
-                ? "bg-white/15 text-white font-bold border-l-4 border-teal-400 shadow-lg shadow-teal-900/20"
-                : "text-teal-100/70 hover:bg-white/10 hover:text-white border-l-4 border-transparent font-medium"
-                }`}
+              className={`flex items-center rounded-lg transition-all duration-300 group ${isCollapsed ? "justify-center py-3 px-0" : "space-x-3 py-3 px-3"} ${
+                isActive
+                  ? "bg-white/15 text-white font-bold border-l-4 border-teal-400 shadow-lg shadow-teal-900/20"
+                  : "text-teal-100/70 hover:bg-white/10 hover:text-white border-l-4 border-transparent font-medium"
+              }`}
               title={isCollapsed ? label : ""}
             >
               <span
@@ -128,7 +143,11 @@ export default function Sidebar() {
             </span>
           )}
           <span className="text-xl">
-            {isDark ? <Sun size={isCollapsed ? 24 : 20} className="text-amber-400" /> : <Moon size={isCollapsed ? 24 : 20} className="text-blue-300" />}
+            {isDark ? (
+              <Sun size={isCollapsed ? 24 : 20} className="text-amber-400" />
+            ) : (
+              <Moon size={isCollapsed ? 24 : 20} className="text-blue-300" />
+            )}
           </span>
         </button>
       </div>

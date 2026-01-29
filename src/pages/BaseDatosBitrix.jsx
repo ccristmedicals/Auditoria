@@ -35,6 +35,9 @@ import {
   Columns,
   FileText,
   Loader,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { apiService } from "../services/apiService";
 import { FilterMultiSelect } from "../components/ui/FilterMultiSelect";
@@ -80,9 +83,9 @@ const EditableCell = React.memo(({ value, onChange, placeholder = "..." }) => {
         value={localValue}
         onChange={(e) => setLocalValue(e.target.value)}
         onBlur={onBlur}
-        onKeyDown={(e) => e.key === "Enter" && onBlur()}
         placeholder={placeholder}
-        className="w-full bg-white dark:bg-[#262626] border border-gray-300 dark:border-gray-600 rounded px-2 py-1.5 text-sm outline-none transition-all placeholder-gray-400 focus:ring-2 focus:ring-[#1a9888] focus:border-transparent dark:text-gray-200"
+        autoComplete="off"
+        className="w-full bg-white dark:bg-[#262626] border border-gray-300 dark:border-gray-600 rounded px-2 py-1.5 text-sm text-center outline-none transition-all placeholder-gray-400 focus:ring-2 focus:ring-[#1a9888] focus:border-transparent dark:text-gray-200"
       />
       <Edit3
         size={12}
@@ -126,10 +129,11 @@ const CompanyRow = React.memo(
     const renderStyledContent = (textString) => {
       if (!textString) return "-";
 
+      const MAX_LENGTH = 60;
       const parts = textString.split(" / ");
 
       return (
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1 items-center text-center">
           {parts.map((part, index) => {
             let colorClass = "text-gray-600 dark:text-gray-400";
 
@@ -139,12 +143,18 @@ const CompanyRow = React.memo(
               colorClass = "text-blue-700 dark:text-blue-400 font-medium";
             }
 
+            const shouldTruncate = part.length > MAX_LENGTH;
+            const displayPart = shouldTruncate
+              ? part.substring(0, MAX_LENGTH) + "..."
+              : part;
+
             return (
               <span
                 key={index}
-                className={`${colorClass} wrap-break-word whitespace-normal leading-tight text-xs`}
+                title={shouldTruncate ? part : undefined}
+                className={`${colorClass} wrap-break-word whitespace-normal leading-tight text-[10px] cursor-help`}
               >
-                {part}
+                {displayPart}
               </span>
             );
           })}
@@ -172,7 +182,7 @@ const CompanyRow = React.memo(
         <>
           {/* TAREA (Editable) - AHORA PRIMERO */}
           <Td
-            className={`${bgColorClass} ${borderClass} min-w-[150px] align-top`}
+            className={`${bgColorClass} ${borderClass} min-w-[150px] align-middle`}
           >
             <EditableCell
               value={row[`${dayPrefix}_tarea`]}
@@ -184,14 +194,18 @@ const CompanyRow = React.memo(
           </Td>
 
           {/* ACCIÓN (Solo Lectura) */}
-          <Td className={`${bgColorClass} min-w-[150px] align-top`}>
+          <Td
+            className={`${bgColorClass} min-w-[150px] align-middle text-center`}
+          >
             <div className="px-2 py-1.5">
               {renderStyledContent(row[`${dayPrefix}_accion`])}
             </div>
           </Td>
 
           {/* OBSERVACIÓN (Solo Lectura) */}
-          <Td className={`${bgColorClass} min-w-[150px] align-top`}>
+          <Td
+            className={`${bgColorClass} min-w-[150px] align-middle text-center`}
+          >
             <div className="px-2 py-1.5 italic">
               {renderStyledContent(row[`${dayPrefix}_observacion`])}
             </div>
@@ -214,7 +228,7 @@ const CompanyRow = React.memo(
         <Td className="bg-white dark:bg-[#111827] border-r dark:border-white/5 text-center transition-colors">
           <input
             type="checkbox"
-            className="w-4 h-4 accent-[#1a9888] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-4 h-4 accent-[#1a9888] cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
             checked={isSelected}
             disabled={row.isManagedToday}
             onChange={() => toggleSelect(row.id_interno)}
@@ -410,6 +424,10 @@ const BaseDatosBitrix = () => {
     setOnlyVencidos,
     searchTerm,
     setSearchTerm,
+    dayFilter,
+    setDayFilter,
+    sortConfig,
+    setSortConfig,
     // Paginación
     page,
     totalPages,
@@ -531,15 +549,27 @@ const BaseDatosBitrix = () => {
 
   // Filtro para mostrar en la tabla:
   // Si "Ver Selec." está activo, mostramos TODOS los seleccionados (de allCompanies).
-  // Si no, mostramos la página actual (companies) que viene del hook.
-  const tableData = useMemo(() => {
+  // Si no, mostramos la página actual (companies) que viene del hook ya filtrada y ordenada.
+  const displayedCompanies = useMemo(() => {
     if (showOnlySelected) {
-      return allCompanies.filter((c) => selectedIds.includes(c.id_interno));
+      let result = allCompanies.filter((c) =>
+        selectedIds.includes(c.id_interno),
+      );
+      // Opcional: Podríamos ordenar aquí los seleccionados si quisiéramos,
+      // pero por ahora mantenemos la lógica simple.
+      return result;
     }
     return companies;
   }, [showOnlySelected, allCompanies, companies, selectedIds]);
 
-  const displayedCompanies = tableData; // Alias para mantener compatibilidad si se usa para conteos
+  // Helper para cambiar la dirección al hacer click (actualiza el estado del hook)
+  const handleSort = (key) => {
+    let direction = "asc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
+    setSortConfig({ key, direction });
+  };
 
   const formatCurrency = useCallback((amount) => {
     return new Intl.NumberFormat("es-VE", {
@@ -591,11 +621,9 @@ const BaseDatosBitrix = () => {
   const handleSave = useCallback(
     async (companyData) => {
       const payload = preparePayload(companyData);
-      console.log("PAYLOAD INDIVIDUAL:", JSON.stringify(payload, null, 2));
       try {
         const response = await apiService.saveMatrix(payload);
         if (response) {
-          console.log(`Gestión de "${companyData.nombre}" guardada.`);
           return true;
         }
       } catch (error) {
@@ -610,42 +638,14 @@ const BaseDatosBitrix = () => {
     setIsBulkSaving(true);
     setShowConfirm(false);
     try {
-      console.log(
-        "Iniciando guardado masivo (Payload Array) para:",
-        vendor.label,
-      );
-
       // Construir array de payloads
       const bulkPayload = selectedEntities.map((entity) =>
         preparePayload(entity),
       );
 
-      console.log("💾 DEBUG - Bulk Save Payload:", {
-        totalEntities: selectedEntities.length,
-        firstPayload: bulkPayload[0],
-        payloadStructure: bulkPayload[0]
-          ? {
-              id_bitrix: bulkPayload[0].id_bitrix,
-              hasGestion: !!bulkPayload[0].gestion,
-              hasSemana: !!bulkPayload[0].gestion?.semana,
-              semanaKeys: bulkPayload[0].gestion?.semana
-                ? Object.keys(bulkPayload[0].gestion.semana)
-                : [],
-              lunesData: bulkPayload[0].gestion?.semana?.lunes,
-            }
-          : null,
-      });
-
-      console.log("PAYLOAD MASIVO:", JSON.stringify(bulkPayload, null, 2));
-
       // Enviar una sola petición con el array
       await apiService.saveMatrix(bulkPayload);
 
-      console.log(
-        `Guardado masivo exitoso. ${selectedEntities.length} registros procesados.`,
-      );
-
-      console.log("Generando PDF...");
       generateVendorPDF(vendor.label, selectedEntities);
 
       showToast(
@@ -1160,8 +1160,23 @@ const BaseDatosBitrix = () => {
                   </Th>
                 )}
                 {columnVisibility.dias_visita && (
-                  <Th className="min-w-[200px] bg-blue-50 dark:bg-blue-800 font-bold">
-                    Días Visita
+                  <Th className="min-w-[200px] bg-blue-50 dark:bg-blue-800 font-bold align-bottom">
+                    <div className="flex flex-col gap-1 w-full">
+                      <span>Días Visita</span>
+                      <select
+                        className="w-full text-[10px] p-1 rounded border border-blue-200 bg-white text-gray-700 font-normal focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        value={dayFilter}
+                        onChange={(e) => setDayFilter(e.target.value)}
+                        onClick={(e) => e.stopPropagation()} // Evita ordenar si estuviera activo
+                      >
+                        <option value="">-- Todos --</option>
+                        <option value="Lunes">Lunes</option>
+                        <option value="Martes">Martes</option>
+                        <option value="Miércoles">Miércoles</option>
+                        <option value="Jueves">Jueves</option>
+                        <option value="Viernes">Viernes</option>
+                      </select>
+                    </div>
                   </Th>
                 )}
                 {columnVisibility.convenio && (
@@ -1185,8 +1200,26 @@ const BaseDatosBitrix = () => {
                   </Th>
                 )}
                 {columnVisibility.fecha_compra && (
-                  <Th className="min-w-[100px] bg-green-50 dark:bg-green-800 font-bold">
-                    F. Compra
+                  <Th
+                    className="min-w-[120px] bg-green-50 dark:bg-green-800 font-bold cursor-pointer hover:bg-green-100 transition-colors select-none group"
+                    onClick={() => handleSort("fecha_compra")}
+                    title="Click para ordenar"
+                  >
+                    <div className="flex items-center justify-center gap-1">
+                      <span>F. Compra</span>
+                      {sortConfig.key === "fecha_compra" ? (
+                        sortConfig.direction === "asc" ? (
+                          <ArrowUp size={14} className="text-green-700" />
+                        ) : (
+                          <ArrowDown size={14} className="text-green-700" />
+                        )
+                      ) : (
+                        <ArrowUpDown
+                          size={14}
+                          className="text-gray-400 opacity-50 group-hover:opacity-100"
+                        />
+                      )}
+                    </div>
                   </Th>
                 )}
                 {columnVisibility.morosidad && (

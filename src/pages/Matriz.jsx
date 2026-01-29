@@ -121,7 +121,7 @@ const TableCheckbox = React.memo(
         disabled={disabled}
         onChange={(e) => onChange(e.target.checked)}
         onKeyDown={onKeyDown}
-        className={`w-4 h-4 rounded border-gray-300 focus:ring-2 cursor-pointer ${colorClass}`}
+        className={`w-4 h-4 rounded border-gray-300 focus:ring-2 cursor-pointer disabled:cursor-not-allowed ${colorClass}`}
       />
     </div>
   ),
@@ -169,7 +169,7 @@ const EditableCell = React.memo(
           placeholder={disabled ? "" : placeholder}
           className={`w-full min-w-[120px] bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded px-2 py-1.5 text-sm outline-none ${
             disabled
-              ? "text-gray-500 cursor-default"
+              ? "text-gray-500 cursor-not-allowed bg-gray-50/50 dark:bg-slate-900/50"
               : "focus:ring-2 focus:ring-[#1a9888] dark:text-gray-200"
           }`}
         />
@@ -793,8 +793,6 @@ const Matriz = () => {
           },
           full_data: { nombre: row.nombre },
         };
-
-        console.log("📤 ENVIANDO AL BACKEND:", payload);
 
         await apiService.saveMatrix(payload);
 

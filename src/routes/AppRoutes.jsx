@@ -8,6 +8,7 @@ import RegisterPage from "../pages/RegisterPage";
 import AuditoriaGeo from "../pages/AuditoriaGeo";
 import Matriz from "../pages/Matriz";
 import Rendimiento from "../pages/Rendimiento";
+import Vendedores from "../pages/Vendedores";
 
 const AppRoutes = () => {
   return (
@@ -30,6 +31,7 @@ const AppRoutes = () => {
         <Route path="/base-datos-profit" element={<AuditoriaGeo />} />
         <Route path="/matriz" element={<Matriz />} />
         <Route path="/rendimiento" element={<Rendimiento />} />
+        <Route path="/vendedores" element={<Vendedores />} />
       </Route>
 
       {/* Ruta para manejar páginas no encontradas */}

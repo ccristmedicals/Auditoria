@@ -4,6 +4,16 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { apiService } from "../services/apiService";
 import { useAuth } from "./useAuth";
 
+// Helper para normalizar strings (quitar acentos, minúsculas)
+const normalizeString = (str) => {
+  if (!str) return "";
+  return str
+    .toString()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+};
+
 export const useBaseDatosBitrix = () => {
   const { user } = useAuth();
   const [allCompanies, setAllCompanies] = useState([]);
@@ -16,6 +26,8 @@ export const useBaseDatosBitrix = () => {
   const [filterZona, setFilterZona] = useState("");
   const [onlyVencidos, setOnlyVencidos] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [dayFilter, setDayFilter] = useState("");
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
 
   // --- CATALOGOS ---
   const [vendedores, setVendedores] = useState([]);
@@ -50,7 +62,6 @@ export const useBaseDatosBitrix = () => {
 
   // --- FILTRADO LOCAL ---
   const filteredCompanies = useMemo(() => {
-    console.log("🔍 Filtrando empresas - Total en crudo:", allCompanies.length);
     let result = allCompanies;
 
     if (filterZona) {
@@ -82,9 +93,65 @@ export const useBaseDatosBitrix = () => {
       );
     }
 
+    if (dayFilter) {
+      const normFilter = normalizeString(dayFilter);
+
+      result = result.filter((c) => {
+        if (!c.dias_visita) return false;
+
+        const bitrixDaysRaw = c.dias_visita;
+        const normValue = normalizeString(bitrixDaysRaw);
+
+        // Dividimos por comas, punto y coma, o espacios
+        const individualDays = normValue
+          .split(/[,;.\s]+/)
+          .map((d) => d.trim())
+          .filter(Boolean);
+
+        // El usuario quiere que COMIENCE con el día pedido
+        const firstDay = individualDays[0];
+        const isMatch = firstDay === normFilter;
+
+        return isMatch;
+      });
+    }
+
+    if (sortConfig.key) {
+      result = [...result].sort((a, b) => {
+        let aValue = a[sortConfig.key];
+        let bValue = b[sortConfig.key];
+
+        if (sortConfig.key === "fecha_compra") {
+          // Normalizar fechas para ordenamiento
+          const parseDate = (dateStr) => {
+            if (!dateStr || dateStr === "-" || dateStr === "—") return 0;
+            if (dateStr.includes("/")) {
+              const [day, month, year] = dateStr.split("/");
+              return new Date(`${year}-${month}-${day}`).getTime();
+            }
+            return new Date(dateStr).getTime();
+          };
+          aValue = parseDate(aValue);
+          bValue = parseDate(bValue);
+        }
+
+        if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
+        return 0;
+      });
+    }
+
     console.log("🔍 Resultado filtrado:", result.length);
     return result;
-  }, [allCompanies, filterZona, selectedSegments, onlyVencidos, searchTerm]);
+  }, [
+    allCompanies,
+    filterZona,
+    selectedSegments,
+    onlyVencidos,
+    searchTerm,
+    dayFilter,
+    sortConfig,
+  ]);
 
   useEffect(() => {
     setTotalRecords(filteredCompanies.length);
@@ -95,6 +162,8 @@ export const useBaseDatosBitrix = () => {
     selectedSegments,
     onlyVencidos,
     searchTerm,
+    dayFilter,
+    sortConfig,
   ]);
 
   const totalPages = Math.ceil(filteredCompanies.length / ITEMS_PER_PAGE);
@@ -364,6 +433,10 @@ export const useBaseDatosBitrix = () => {
     setOnlyVencidos,
     searchTerm,
     setSearchTerm,
+    dayFilter,
+    setDayFilter,
+    sortConfig,
+    setSortConfig,
     uniqueSegments: useMemo(() => {
       const segments = allCompanies
         .map((c) => c.segmento)
