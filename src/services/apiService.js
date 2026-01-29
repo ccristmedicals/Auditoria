@@ -102,14 +102,7 @@ export const apiService = {
   // --- MATRIZ Y AUDITORÍA ---
 
   saveMatrix: (payload) => {
-    return fetchJson(`${BASE_URL}/matrix/planificacion`, {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
-  },
-
-  saveConfig: (payload) => {
-    return fetchJson(`${BASE_URL}/auditoria`, {
+    return fetchJson(`${BASE_URL}/matrix/matrix`, {
       method: "POST",
       body: JSON.stringify(payload),
     });
