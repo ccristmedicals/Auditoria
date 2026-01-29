@@ -212,8 +212,9 @@ const CompanyRow = React.memo(
         <Td className="bg-white dark:bg-[#111827] border-r dark:border-white/5 text-center transition-colors">
           <input
             type="checkbox"
-            className="w-4 h-4 accent-[#1a9888] cursor-pointer"
+            className="w-4 h-4 accent-[#1a9888] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             checked={isSelected}
+            disabled={row.isManagedToday}
             onChange={() => toggleSelect(row.id_interno)}
           />
         </Td>
@@ -405,6 +406,8 @@ const BaseDatosBitrix = () => {
     setFilterZona,
     onlyVencidos,
     setOnlyVencidos,
+    searchTerm,
+    setSearchTerm,
     // Paginación
     page,
     totalPages,
@@ -421,7 +424,6 @@ const BaseDatosBitrix = () => {
   const [jumpPage, setJumpPage] = useState("");
   const [selectedIds, setSelectedIds] = useState([]);
   const [showOnlySelected, setShowOnlySelected] = useState(false);
-  const [localSearchTerm, setLocalSearchTerm] = useState("");
   const [isBulkSaving, setIsBulkSaving] = useState(false);
 
   // --- MODAL DE CONFIRMACIÓN ---
@@ -513,8 +515,11 @@ const BaseDatosBitrix = () => {
   const toggleSelectAll = useCallback(
     (checked) => {
       if (checked) {
-        const allIds = companies.map((c) => c.id_interno);
-        setSelectedIds(allIds);
+        // Seleccionar solo los que NO están gestionados hoy
+        const availableIds = companies
+          .filter((c) => !c.isManagedToday)
+          .map((c) => c.id_interno);
+        setSelectedIds(availableIds);
       } else {
         setSelectedIds([]);
       }
@@ -522,26 +527,17 @@ const BaseDatosBitrix = () => {
     [companies],
   );
 
-  // Filtro adicional para Nombre/ID dentro de la página actual
-  const displayedCompanies = useMemo(() => {
-    let result = companies;
-
-    // Filtro Local por Nombre/ID
-    if (localSearchTerm) {
-      const term = localSearchTerm.toLowerCase();
-      result = result.filter(
-        (company) =>
-          company.nombre?.toLowerCase().includes(term) ||
-          company.id?.toString().includes(term) ||
-          company.codigo_profit?.toLowerCase().includes(term),
-      );
-    }
-
+  // Filtro para mostrar en la tabla:
+  // Si "Ver Selec." está activo, mostramos TODOS los seleccionados (de allCompanies).
+  // Si no, mostramos la página actual (companies) que viene del hook.
+  const tableData = useMemo(() => {
     if (showOnlySelected) {
-      result = result.filter((c) => selectedIds.includes(c.id_interno));
+      return allCompanies.filter((c) => selectedIds.includes(c.id_interno));
     }
-    return result;
-  }, [companies, localSearchTerm, showOnlySelected, selectedIds]);
+    return companies;
+  }, [showOnlySelected, allCompanies, companies, selectedIds]);
+
+  const displayedCompanies = tableData; // Alias para mantener compatibilidad si se usa para conteos
 
   const formatCurrency = useCallback((amount) => {
     return new Intl.NumberFormat("es-VE", {
@@ -641,7 +637,7 @@ const BaseDatosBitrix = () => {
       // --- LIMPIEZA DE FILTROS Y SELECCIÓN ---
       setSelectedIds([]);
       setSelectedVendedor(null);
-      setLocalSearchTerm("");
+      setSearchTerm("");
       setFilterZona("");
       setSelectedSegments([]);
       setShowOnlySelected(false);
@@ -800,14 +796,18 @@ const BaseDatosBitrix = () => {
           <div className="relative w-full sm:w-48">
             <input
               type="text"
-              placeholder="Buscar por Nombre/ID..."
-              value={localSearchTerm}
-              onChange={(e) => setLocalSearchTerm(e.target.value)}
-              className="w-full pl-3 pr-8 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-gray-400 transition-all"
+              placeholder="Buscar (Nombre/ID/Profit)..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-8 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1a9888]/50 focus:border-[#1a9888] transition-all"
             />
-            {localSearchTerm && (
+            <Search
+              size={16}
+              className="absolute left-3 top-2.5 text-gray-400"
+            />
+            {searchTerm && (
               <button
-                onClick={() => setLocalSearchTerm("")}
+                onClick={() => setSearchTerm("")}
                 className="absolute right-2 top-2.5 text-gray-400 hover:text-red-500"
               >
                 <X size={14} />

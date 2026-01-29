@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { apiService } from "../services/apiService";
 import { useAuth } from "./useAuth";
@@ -13,6 +14,7 @@ export const useBaseDatosBitrix = () => {
   const [selectedVendedor, setSelectedVendedor] = useState(null);
   const [filterZona, setFilterZona] = useState("");
   const [onlyVencidos, setOnlyVencidos] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   // --- CATALOGOS ---
   const [vendedores, setVendedores] = useState([]);
@@ -20,7 +22,7 @@ export const useBaseDatosBitrix = () => {
   // --- PAGINACIÓN ---
   const [page, setPage] = useState(1);
   const ITEMS_PER_PAGE = 25;
-  const [totalRecords, setTotalRecords] = useState(0);
+  const [setTotalRecords] = useState(0);
 
   useEffect(() => {
     fetchInitialData();
@@ -31,10 +33,12 @@ export const useBaseDatosBitrix = () => {
     try {
       const vendRes = await apiService.getVendedoresApp();
       if (vendRes && vendRes.data) {
-        setVendedores(vendRes.data.map(v => ({
-          label: v.nombre,
-          value: v.co_ven
-        })));
+        setVendedores(
+          vendRes.data.map((v) => ({
+            label: v.nombre,
+            value: v.co_ven,
+          })),
+        );
       }
       await fetchCompanies();
     } catch (err) {
@@ -53,13 +57,13 @@ export const useBaseDatosBitrix = () => {
       result = result.filter(
         (c) =>
           (c.ciudad && c.ciudad.toLowerCase().includes(z)) ||
-          (c.segmento && c.segmento.toLowerCase().includes(z))
+          (c.segmento && c.segmento.toLowerCase().includes(z)),
       );
     }
 
     if (selectedSegments.length > 0) {
       result = result.filter(
-        (c) => c.segmento && selectedSegments.includes(c.segmento)
+        (c) => c.segmento && selectedSegments.includes(c.segmento),
       );
     }
 
@@ -67,14 +71,30 @@ export const useBaseDatosBitrix = () => {
       result = result.filter((c) => c.saldo_vencido > 0);
     }
 
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(
+        (c) =>
+          (c.nombre && c.nombre.toLowerCase().includes(term)) ||
+          (c.id && c.id.toString().includes(term)) ||
+          (c.codigo_profit && c.codigo_profit.toLowerCase().includes(term)),
+      );
+    }
+
     console.log("🔍 Resultado filtrado:", result.length);
     return result;
-  }, [allCompanies, filterZona, selectedSegments, onlyVencidos]);
+  }, [allCompanies, filterZona, selectedSegments, onlyVencidos, searchTerm]);
 
   useEffect(() => {
     setTotalRecords(filteredCompanies.length);
     setPage(1);
-  }, [filteredCompanies.length]);
+  }, [
+    filteredCompanies.length,
+    filterZona,
+    selectedSegments,
+    onlyVencidos,
+    searchTerm,
+  ]);
 
   const totalPages = Math.ceil(filteredCompanies.length / ITEMS_PER_PAGE);
 
@@ -115,22 +135,35 @@ export const useBaseDatosBitrix = () => {
 
         const semanaData = savedData?.semana || item.semana || {};
         const bitacora = savedData?.bitacora || item.bitacora || "";
-        const obs_ejecutiva = savedData?.obs_ejecutiva || item.obs_ejecutiva || "";
+        const obs_ejecutiva =
+          savedData?.obs_ejecutiva || item.obs_ejecutiva || "";
 
         const extractHistoryData = (dayName) => {
-          const target = dayName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+          const target = dayName
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "");
           const log = gList.find((g) => {
             if (!g.dia_semana) return false;
-            return g.dia_semana.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") === target;
+            return (
+              g.dia_semana
+                .toLowerCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "") === target
+            );
           });
 
           if (log) {
             let accionParts = [];
-            if (log.venta_tipoGestion) accionParts.push(`V: ${log.venta_tipoGestion}`);
-            if (log.cobranza_tipoGestion) accionParts.push(`C: ${log.cobranza_tipoGestion}`);
+            if (log.venta_tipoGestion)
+              accionParts.push(`V: ${log.venta_tipoGestion}`);
+            if (log.cobranza_tipoGestion)
+              accionParts.push(`C: ${log.cobranza_tipoGestion}`);
             let obsParts = [];
-            if (log.venta_descripcion) obsParts.push(`V: ${log.venta_descripcion}`);
-            if (log.cobranza_descripcion) obsParts.push(`C: ${log.cobranza_descripcion}`);
+            if (log.venta_descripcion)
+              obsParts.push(`V: ${log.venta_descripcion}`);
+            if (log.cobranza_descripcion)
+              obsParts.push(`C: ${log.cobranza_descripcion}`);
 
             return {
               accion: accionParts.join(" / ") || "",
@@ -140,6 +173,28 @@ export const useBaseDatosBitrix = () => {
           return { accion: "", observacion: "" };
         };
 
+        // --- CALCULAR SI ESTÁ GESTIONADO HOY ---
+        const daysMap = [
+          "domingo",
+          "lunes",
+          "martes",
+          "miercoles",
+          "jueves",
+          "viernes",
+          "sabado",
+        ];
+        const todayIndex = new Date().getDay();
+        const todayName = daysMap[todayIndex] || "";
+        // Si es fin de semana, asumimos no managed o false, o lo que el usuario prefiera.
+        // Aunque el sistema parece solo manejar L-V.
+
+        const todayData = extractHistoryData(todayName);
+        // Se considera gestionado si tiene acción u observación HOY
+        // OJO: extractHistoryData busca en gList (historial) Y ademas extraemos weekData.
+
+        // Verificamos si en gList hay algo de hoy
+        const isManagedToday = !!(todayData.accion || todayData.observacion);
+
         return {
           id_interno: b.ID ? `bx-${b.ID}` : `idx-${index}-${Date.now()}`,
           id: b.ID || "0",
@@ -148,7 +203,9 @@ export const useBaseDatosBitrix = () => {
           ciudad: b.UF_CRM_1635903069 || "",
           segmento: b.UF_CRM_1638457710 || "",
           coordenadas: b.UF_CRM_1651251237102 || "",
-          dias_visita: Array.isArray(b.UF_CRM_1686015739936) ? b.UF_CRM_1686015739936.join(", ") : b.UF_CRM_1686015739936 || "",
+          dias_visita: Array.isArray(b.UF_CRM_1686015739936)
+            ? b.UF_CRM_1686015739936.join(", ")
+            : b.UF_CRM_1686015739936 || "",
           co_ven: p.co_ven || "",
 
           limite_credito: p.login || 0,
@@ -182,6 +239,8 @@ export const useBaseDatosBitrix = () => {
           viernes_accion: extractHistoryData("viernes").accion,
           viernes_observacion: extractHistoryData("viernes").observacion,
           viernes_tarea: semanaData.viernes?.tarea || "",
+
+          isManagedToday: isManagedToday,
         };
       });
 
@@ -229,12 +288,14 @@ export const useBaseDatosBitrix = () => {
     setFilterZona,
     onlyVencidos,
     setOnlyVencidos,
+    searchTerm,
+    setSearchTerm,
     uniqueSegments: useMemo(() => {
       const segments = allCompanies
         .map((c) => c.segmento)
         .filter((s) => s && s.trim() !== "");
       return [...new Set(segments)].sort();
     }, [allCompanies]),
-    refresh
+    refresh,
   };
 };

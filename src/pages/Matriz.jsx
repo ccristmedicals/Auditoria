@@ -808,7 +808,7 @@ const Matriz = () => {
 
   useEffect(() => {
     setPage(1);
-  }, [searchTerm]);
+  }, [searchTerm, selectedZonas, selectedRutas]);
 
   const filteredData = useMemo(() => {
     return data.filter((item) => {
