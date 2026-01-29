@@ -1576,34 +1576,34 @@ const Matriz = () => {
                 <Th className="min-w-[120px] bg-white dark:bg-slate-900 text-xs border-t dark:border-slate-800 dark:text-slate-200">
                   Días
                 </Th>
-                <Th className="min-w-[100px] text-xs border-t dark:border-slate-800 dark:text-slate-200 dark:bg-slate-900">
+                <Th className="min-w-[100px] text-xs border-t dark:border-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900">
                   Límite Créd.
                 </Th>
-                <Th className="min-w-[100px] text-xs border-t dark:border-slate-800 dark:text-slate-200 dark:bg-slate-900">
+                <Th className="min-w-[100px] text-xs border-t dark:border-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900">
                   Saldo Tránsito
                 </Th>
-                <Th className="min-w-[100px] text-xs border-t dark:border-slate-800 dark:text-slate-200 dark:bg-slate-900">
+                <Th className="min-w-[100px] text-xs border-t dark:border-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900">
                   Saldo Vencido
                 </Th>
-                <Th className="min-w-[90px] text-xs border-t dark:border-slate-800 dark:text-slate-200 dark:bg-slate-900">
+                <Th className="min-w-[90px] text-xs border-t dark:border-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900">
                   Fecha Últ. Compra
                 </Th>
-                <Th className="min-w-[110px] text-xs border-t dark:border-slate-800 dark:text-slate-200 dark:bg-slate-900">
+                <Th className="min-w-[110px] text-xs border-t dark:border-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900">
                   Fact. Mayor Morosidad
                 </Th>
-                <Th className="min-w-[90px] text-xs border-t dark:border-slate-800 dark:text-slate-200 dark:bg-slate-900">
+                <Th className="min-w-[90px] text-xs border-t dark:border-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900">
                   Fecha Últ. Cobro
                 </Th>
-                <Th className="min-w-[70px] text-xs border-t dark:border-slate-800 dark:text-slate-200 dark:bg-slate-900">
+                <Th className="min-w-[70px] text-xs border-t dark:border-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900">
                   Clasif.
                 </Th>
-                <Th className="min-w-[80px] text-xs border-t dark:border-slate-800 dark:text-slate-200 dark:bg-slate-900">
+                <Th className="min-w-[80px] text-xs border-t dark:border-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900">
                   Posee Convenio
                 </Th>
-                <Th className="min-w-[100px] text-xs border-t dark:border-slate-800 dark:text-slate-200 dark:bg-slate-900">
+                <Th className="min-w-[100px] text-xs border-t dark:border-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900">
                   Venta Mes Actual
                 </Th>
-                <Th className="min-w-[100px] text-xs border-t dark:border-slate-800 dark:text-slate-200 dark:bg-slate-900">
+                <Th className="min-w-[100px] text-xs border-t dark:border-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900">
                   Venta Mes Anterior
                 </Th>
 
