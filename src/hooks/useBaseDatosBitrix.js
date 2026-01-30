@@ -108,9 +108,8 @@ export const useBaseDatosBitrix = () => {
           .map((d) => d.trim())
           .filter(Boolean);
 
-        // El usuario quiere que COMIENCE con el día pedido
-        const firstDay = individualDays[0];
-        const isMatch = firstDay === normFilter;
+        // Verificamos si el día buscado está en cualquier posición de la lista
+        const isMatch = individualDays.includes(normFilter);
 
         return isMatch;
       });

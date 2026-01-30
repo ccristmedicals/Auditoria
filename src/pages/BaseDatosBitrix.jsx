@@ -1170,6 +1170,7 @@ const BaseDatosBitrix = () => {
                         onClick={(e) => e.stopPropagation()} // Evita ordenar si estuviera activo
                       >
                         <option value="">-- Todos --</option>
+                        <option value="Diario">Diario</option>
                         <option value="Lunes">Lunes</option>
                         <option value="Martes">Martes</option>
                         <option value="Miércoles">Miércoles</option>

@@ -22,17 +22,7 @@ const LoginForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const segmentosInciales = [
-        "(FORANEO) LLANO",
-        "Plaza y S/c",
-        "S/C JAIME",
-        "llano",
-      ];
-      const data = await login(
-        credentials.username,
-        credentials.password,
-        segmentosInciales,
-      );
+      const data = await login(credentials.username, credentials.password);
 
       // Redirigir según permisos
       const p = data.user?.permisos || {};
