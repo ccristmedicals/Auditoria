@@ -6,11 +6,11 @@ export default function Navbar({ nombreNegocio = "CristMedicals Auditoria" }) {
   const { user, logout } = useAuth();
 
   return (
-    <header className="bg-white/80 dark:bg-[#0b1120]/80 backdrop-blur-xl shadow-2xl py-4 px-6 sm:px-10 flex items-center justify-between border-b border-gray-200 dark:border-white/10 sticky top-0 z-50 rounded-b-[2rem] transition-all duration-500 mx-4 mt-2">
+    <header className="bg-white dark:bg-[#0b1120] backdrop-blur-xl shadow-sm py-2 px-6 sm:px-10 flex items-center justify-between dark:border-b dark:border-white/10 sticky top-0 z-50 rounded-b-4xl transition-all duration-500">
       <div className="flex-1 min-w-[50px]"></div>
 
-      <div className="flex items-center gap-3 flex-grow justify-center">
-        <img src={Logo} alt="CristMedical Logo" className="h-12" />
+      <div className="flex items-center gap-3 grow justify-center">
+        <img src={Logo} alt="CristMedical Logo" className="h-14" />
         <h1 className="text-xl md:text-2xl font-extrabold text-[#1a9888] dark:text-teal-400">
           {nombreNegocio}
         </h1>

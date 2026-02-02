@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, {
   useState,
@@ -169,14 +170,16 @@ const CompanyRow = React.memo(
       borderClass = "",
       visibility,
     ) => {
-      // Si el día está oculto completamente, retornar null
-      // La prop visibility viene en row.visibility, pero aquí la recibimos como argumento
-      // Sin embargo, en el parent call se pasa row.visibility.
-      // OJO: En la llamada del parent (CompanyRow) se pasa row={{...row, visibility}}.
-      // Así que dentro de CompanyRow, row.visibility es el objeto.
-
       const isVisible = visibility ? visibility[dayPrefix] : true;
       if (!isVisible) return null;
+
+      const onTaskChange = (val) => {
+        // 1. Actualiza estado local
+        handleCompanyChange(row.id_interno, `${dayPrefix}_tarea`, val);
+        // 2. Dispara guardado inmediato para verificar si inhabilita
+        const updatedRow = { ...row, [`${dayPrefix}_tarea`]: val };
+        handleSave(updatedRow);
+      };
 
       return (
         <>
@@ -186,9 +189,7 @@ const CompanyRow = React.memo(
           >
             <EditableCell
               value={row[`${dayPrefix}_tarea`]}
-              onChange={(val) =>
-                handleCompanyChange(row.id_interno, `${dayPrefix}_tarea`, val)
-              }
+              onChange={onTaskChange}
               placeholder="Tarea..."
             />
           </Td>
@@ -622,8 +623,43 @@ const BaseDatosBitrix = () => {
     async (companyData) => {
       const payload = preparePayload(companyData);
       try {
-        const response = await apiService.saveMatrix(payload);
+        // <--- CAMBIO IMPORTANTE: Endpoint correcto
+        const response = await apiService.savePlanificacion(payload);
+
         if (response) {
+          // <--- CAMBIO IMPORTANTE: Lógica de inhabilitación inmediata
+          const todayIndex = new Date().getDay();
+          const dayMap = {
+            1: "lunes",
+            2: "martes",
+            3: "miercoles",
+            4: "jueves",
+            5: "viernes",
+          };
+          const currentDayKey = dayMap[todayIndex];
+
+          // Si hoy es día laboral, verificamos si hay TAREA para HOY
+          if (currentDayKey) {
+            const task = payload.gestion.semana[currentDayKey]?.tarea;
+
+            // Si hay texto en la tarea, inhabilitar.
+            if (task && task.trim().length > 0) {
+              handleCompanyChange(
+                companyData.id_interno,
+                "isManagedToday",
+                true,
+              );
+              // Quitar de seleccionados si estaba
+              setSelectedIds((prev) =>
+                prev.filter((id) => id !== companyData.id_interno),
+              );
+              showToast(
+                "Tarea guardada. Cliente inhabilitado por hoy.",
+                "success",
+              );
+              return true;
+            }
+          }
           return true;
         }
       } catch (error) {
@@ -631,7 +667,7 @@ const BaseDatosBitrix = () => {
         return false;
       }
     },
-    [refresh],
+    [refresh, handleCompanyChange, showToast],
   );
 
   const executeBulkSave = async (selectedEntities, vendor) => {
@@ -644,7 +680,7 @@ const BaseDatosBitrix = () => {
       );
 
       // Enviar una sola petición con el array
-      await apiService.saveMatrix(bulkPayload);
+      await apiService.savePlanificacion(bulkPayload);
 
       generateVendorPDF(vendor.label, selectedEntities);
 
@@ -652,9 +688,29 @@ const BaseDatosBitrix = () => {
         `Proceso completado. ${selectedEntities.length} clientes guardados y PDF generado.`,
       );
 
-      // --- ACTUALIZAR LOCALMENTE isManagedToday PARA LOS CLIENTES GUARDADOS ---
-      const savedIds = selectedEntities.map((e) => e.id_interno);
-      handleCompanyChange(null, "bulk_update_managed", savedIds);
+      const todayIndex = new Date().getDay();
+      const dayMap = {
+        1: "lunes",
+        2: "martes",
+        3: "miercoles",
+        4: "jueves",
+        5: "viernes",
+      };
+      const currentDayKey = dayMap[todayIndex];
+      const idsToDisable = [];
+
+      if (currentDayKey) {
+        selectedEntities.forEach((e) => {
+          const t = e[`${currentDayKey}_tarea`];
+          if (t && t.trim().length > 0) {
+            idsToDisable.push(e.id_interno);
+          }
+        });
+      }
+
+      if (idsToDisable.length > 0) {
+        handleCompanyChange(null, "bulk_update_managed", idsToDisable);
+      }
 
       // --- REFRESCAR DATOS PARA ACTUALIZAR isManagedToday ---
       await refresh();

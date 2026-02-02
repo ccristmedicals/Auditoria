@@ -123,6 +123,13 @@ export const apiService = {
     });
   },
 
+  savePlanificacion: (payload) => {
+    return fetchJson(`${BASE_URL}/planificacion/`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
   getVendedoresApp: () => {
     return fetchJson(`${BASE_URL}/usuarios/vendedores-app`, {
       method: "GET",

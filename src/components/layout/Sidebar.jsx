@@ -8,7 +8,8 @@ import {
   Container,
   Menu,
   X as XIcon,
-  LucideShieldEllipsis,
+  ArrowUpDown,
+  Users,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -74,13 +75,20 @@ export default function Sidebar() {
       permission: (p) =>
         p?.gestion_matrix || p?.acceso_total || p?.editar_usuarios,
     },
-    {
-      to: "/vendedores",
-      label: "Vendedores",
-      icon: <LucideShieldEllipsis />,
-      permission: (p) =>
-        p?.gestion_matrix || p?.acceso_total || p?.editar_usuarios,
-    },
+    // {
+    //   to: "/rendimiento",
+    //   label: "Rendimiento",
+    //   icon: <ArrowUpDown />,
+    //   permission: (p) =>
+    //     p?.gestion_matrix || p?.acceso_total || p?.editar_usuarios,
+    // },
+    // {
+    //   to: "/vendedores",
+    //   label: "Vendedores",
+    //   icon: <Users />,
+    //   permission: (p) =>
+    //     p?.gestion_matrix || p?.acceso_total || p?.editar_usuarios,
+    // },
   ];
 
   const filteredLinks = links.filter((link) => {
@@ -90,7 +98,7 @@ export default function Sidebar() {
 
   return (
     <aside
-      className={`${isCollapsed ? "w-20" : "w-64"} min-h-screen bg-linear-to-b from-[#1a9888] to-[#023831] text-white py-6 px-4 shadow-2xl sticky top-0 transition-all duration-300 flex flex-col overflow-hidden`}
+      className={`${isCollapsed ? "w-20" : "w-52"} min-h-screen bg-linear-to-b from-[#1a9888] to-[#023831] text-white py-6 px-4 shadow-sm sticky top-0 transition-all duration-300 flex flex-col overflow-hidden`}
     >
       <div className="flex items-center justify-between mb-8 px-2">
         {!isCollapsed && (

@@ -12,7 +12,7 @@ export default function MainLayout() {
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         <Navbar user={user} onLogout={logout} />
         <main className="flex-1 min-w-0 overflow-auto">
-          <div className="bg-white dark:bg-[#191919] rounded-xl shadow-lg m-4 p-6 sm:p-4 min-h-[calc(100vh-2rem)]">
+          <div className="bg-white dark:bg-[#0b1120] rounded-xl shadow-sm dark:border dark:border-white/10 m-4 p-6 sm:p-4 min-h-[calc(100vh-2rem)]">
             <Outlet />
           </div>
         </main>

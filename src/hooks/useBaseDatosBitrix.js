@@ -95,23 +95,15 @@ export const useBaseDatosBitrix = () => {
 
     if (dayFilter) {
       const normFilter = normalizeString(dayFilter);
-
       result = result.filter((c) => {
         if (!c.dias_visita) return false;
-
         const bitrixDaysRaw = c.dias_visita;
         const normValue = normalizeString(bitrixDaysRaw);
-
-        // Dividimos por comas, punto y coma, o espacios
         const individualDays = normValue
           .split(/[,;.\s]+/)
           .map((d) => d.trim())
           .filter(Boolean);
-
-        // Verificamos si el día buscado está en cualquier posición de la lista
-        const isMatch = individualDays.includes(normFilter);
-
-        return isMatch;
+        return individualDays.includes(normFilter);
       });
     }
 
@@ -121,7 +113,6 @@ export const useBaseDatosBitrix = () => {
         let bValue = b[sortConfig.key];
 
         if (sortConfig.key === "fecha_compra") {
-          // Normalizar fechas para ordenamiento
           const parseDate = (dateStr) => {
             if (!dateStr || dateStr === "-" || dateStr === "—") return 0;
             if (dateStr.includes("/")) {
@@ -140,7 +131,6 @@ export const useBaseDatosBitrix = () => {
       });
     }
 
-    console.log("🔍 Resultado filtrado:", result.length);
     return result;
   }, [
     allCompanies,
@@ -186,61 +176,52 @@ export const useBaseDatosBitrix = () => {
         apiService.getPlanificacion(),
       ]);
 
-      console.log("📡 DEBUG - Raw API Responses:", {
-        companiesCount: companiesResponse?.data?.length || 0,
-        planificacionCount: planificacionResponse?.data?.length || 0,
-        planificacionResponseSample: planificacionResponse?.data?.[0],
-      });
-
       const rawList = companiesResponse.data || [];
       const planificacionList = planificacionResponse.data || [];
 
-      console.log("🔍 DEBUG - Planificacion Response:", {
-        totalPlanificacionRecords: planificacionList.length,
-        firstPlanificacionRecord: planificacionList[0],
-        planificacionStructure: planificacionList[0]
-          ? Object.keys(planificacionList[0])
-          : [],
-      });
-
+      // Mapear planificación usando String para el ID para asegurar coincidencia
       const planificacionMap = {};
       planificacionList.forEach((m) => {
         if (m.id_bitrix) {
-          planificacionMap[m.id_bitrix] = m;
+          planificacionMap[String(m.id_bitrix)] = m;
         }
       });
 
-      console.log("🔍 DEBUG - Planificacion Map:", {
-        totalMappedRecords: Object.keys(planificacionMap).length,
-        sampleIds: Object.keys(planificacionMap).slice(0, 5),
-        sampleRecord: planificacionMap[Object.keys(planificacionMap)[0]],
-      });
+      // --- DETERMINAR DÍA ACTUAL ---
+      const todayIndex = new Date().getDay(); // 0: Dom, 1: Lun, ...
+      const dayMap = {
+        1: "lunes",
+        2: "martes",
+        3: "miercoles",
+        4: "jueves",
+        5: "viernes",
+      };
+      const currentDayKey = dayMap[todayIndex];
 
       const formattedData = rawList.map((item, index) => {
         const b = item.bitrix || {};
         const p = item.profit || {};
         const gList = Array.isArray(item.gestion) ? item.gestion : [];
-        const savedData = planificacionMap[b.ID];
 
-        // Para BaseDatosBitrix, los datos vienen en 'semana' directamente
-        const semanaData = savedData?.semana || item.semana || {};
-        const bitacora = savedData?.bitacora || item.bitacora || "";
+        // Buscar datos guardados usando ID como String
+        const companyId = b.ID ? String(b.ID) : null;
+        const savedData = companyId ? planificacionMap[companyId] : null;
+
+        // --- RECUPERACIÓN ROBUSTA DE DATOS ---
+        const semanaData =
+          savedData?.gestion?.semana || savedData?.semana || item.semana || {};
+
+        const bitacora =
+          savedData?.gestion?.bitacora ||
+          savedData?.bitacora ||
+          item.bitacora ||
+          "";
+
         const obs_ejecutiva =
-          savedData?.obs_ejecutiva || item.obs_ejecutiva || "";
-
-        // Log detallado para los primeros 3 registros
-        if (index < 3) {
-          console.log(`🔍 DEBUG - Company #${index} (ID: ${b.ID}):`, {
-            bitrixId: b.ID,
-            hasSavedData: !!savedData,
-            savedDataKeys: savedData ? Object.keys(savedData) : [],
-            rawSemana: savedData?.semana,
-            finalSemanaData: semanaData,
-            semanaKeys: Object.keys(semanaData),
-            lunesData: semanaData.lunes,
-            gListLength: gList.length,
-          });
-        }
+          savedData?.gestion?.obs_ejecutiva ||
+          savedData?.obs_ejecutiva ||
+          item.obs_ejecutiva ||
+          "";
 
         const extractHistoryData = (dayName) => {
           const target = dayName
@@ -277,33 +258,17 @@ export const useBaseDatosBitrix = () => {
           return { accion: "", observacion: "" };
         };
 
-        // --- CALCULAR SI ESTÁ GESTIONADO HOY ---
-        const daysMap = [
-          "domingo",
-          "lunes",
-          "martes",
-          "miercoles",
-          "jueves",
-          "viernes",
-          "sabado",
-        ];
-        const todayIndex = new Date().getDay();
-        const todayName = daysMap[todayIndex] || "";
+        // --- LÓGICA DE ESTADO "GESTIONADO/INHABILITADO" ---
+        // Solo se inhabilita si hay una Tarea asignada en el día actual.
+        let isManagedToday = false;
 
-        // Verificar en el historial (gList)
-        const todayData = extractHistoryData(todayName);
-        const hasHistoricalData = !!(todayData.accion || todayData.observacion);
-
-        // Verificar en la planificación semanal (semana)
-        const todayWeekData = semanaData[todayName];
-        const hasWeekData = !!(
-          todayWeekData?.tarea ||
-          todayWeekData?.accion ||
-          todayWeekData?.observacion
-        );
-
-        // Se considera gestionado si tiene datos en historial O en planificación
-        const isManagedToday = hasHistoricalData || hasWeekData;
+        if (currentDayKey) {
+          const taskForToday = semanaData[currentDayKey]?.tarea;
+          // Si hay texto en la tarea del día de hoy, se marca como gestionado
+          if (taskForToday && taskForToday.trim().length > 0) {
+            isManagedToday = true;
+          }
+        }
 
         return {
           id_interno: b.ID ? `bx-${b.ID}` : `idx-${index}-${Date.now()}`,
@@ -334,7 +299,7 @@ export const useBaseDatosBitrix = () => {
           bitacora: bitacora,
           obs_ejecutiva: obs_ejecutiva,
 
-          // Para cada día, priorizar datos guardados en semana, luego historial
+          // Mapeo de días
           lunes_accion:
             semanaData.lunes?.accion || extractHistoryData("lunes").accion,
           lunes_observacion:
@@ -391,7 +356,6 @@ export const useBaseDatosBitrix = () => {
   };
 
   const handleCompanyChange = useCallback((id_interno, field, value) => {
-    // Caso especial: actualización masiva de isManagedToday
     if (field === "bulk_update_managed" && Array.isArray(value)) {
       setAllCompanies((prev) =>
         prev.map((c) =>
@@ -401,7 +365,6 @@ export const useBaseDatosBitrix = () => {
       return;
     }
 
-    // Caso normal: actualización individual
     setAllCompanies((prev) =>
       prev.map((c) =>
         c.id_interno === id_interno ? { ...c, [field]: value } : c,
