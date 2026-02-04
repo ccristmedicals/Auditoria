@@ -10,6 +10,8 @@ import {
   X as XIcon,
   ArrowUpDown,
   Users,
+  CalendarClock,
+  ClipboardList,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -54,8 +56,8 @@ export default function Sidebar() {
     },
     {
       to: "/base-datos-bitrix",
-      label: "Planificación",
-      icon: <Database />,
+      label: "Planificador",
+      icon: <CalendarClock />,
       permission: (p) =>
         (p?.ver_dashboard && !p?.gestion_matrix) ||
         p?.acceso_total ||
@@ -63,8 +65,8 @@ export default function Sidebar() {
     },
     {
       to: "/planificaciones",
-      label: "Planificaciones",
-      icon: <Database />,
+      label: "Registros",
+      icon: <ClipboardList />,
       permission: (p, role) => {
         const r = role?.toLowerCase().trim();
         return (

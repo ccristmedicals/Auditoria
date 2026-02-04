@@ -193,6 +193,8 @@ const Planificaciones = () => {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
+    const [selectedRutas, setSelectedRutas] = useState([]);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -234,13 +236,29 @@ const Planificaciones = () => {
         }).format(amount || 0);
     };
 
+    // Obtener rutas únicas para el selector
+    const uniqueRutas = useMemo(() => {
+        const rutas = new Set();
+        data.forEach(item => {
+            if (item.full_data?.segmento) {
+                rutas.add(item.full_data.segmento);
+            }
+        });
+        return Array.from(rutas).sort();
+    }, [data]);
+
     // Filtrado y Agrupamiento
     const groupedData = useMemo(() => {
         // 1. Filtrar
-        const filtered = data.filter(item =>
-            item.nombre_cliente?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.codigo_profit?.toLowerCase().includes(searchTerm.toLowerCase())
-        );
+        const filtered = data.filter(item => {
+            const matchesSearch = item.nombre_cliente?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                item.codigo_profit?.toLowerCase().includes(searchTerm.toLowerCase());
+
+            const matchesRuta = selectedRutas.length === 0 ||
+                selectedRutas.includes(item.full_data?.segmento);
+
+            return matchesSearch && matchesRuta;
+        });
 
         // 2. Agrupar
         const groups = filtered.reduce((acc, item) => {
@@ -259,7 +277,7 @@ const Planificaciones = () => {
             return dateB - dateA; // Descendiente
         });
 
-    }, [data, searchTerm]);
+    }, [data, searchTerm, selectedRutas]);
 
 
     if (loading) {
@@ -275,6 +293,14 @@ const Planificaciones = () => {
         );
     }
 
+    const toggleRuta = (ruta) => {
+        setSelectedRutas(prev =>
+            prev.includes(ruta)
+                ? prev.filter(r => r !== ruta)
+                : [...prev, ruta]
+        );
+    };
+
     return (
         <div className="p-4 sm:p-6 lg:p-8 min-h-screen bg-white dark:bg-[#0b1120]">
             {/* Header */}
@@ -285,9 +311,9 @@ const Planificaciones = () => {
                     </div>
                     <div>
                         <h2 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">
-                            Planificaciones{" "}
+                            Registros{" "}
                             <span className="text-[#1a9888] dark:text-teal-400">
-                                Registradas
+                                Guardados
                             </span>
                         </h2>
                         <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
@@ -296,18 +322,75 @@ const Planificaciones = () => {
                     </div>
                 </div>
 
-                {/* Buscador */}
-                <div className="relative w-full md:w-96">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Search className="h-5 w-5 text-gray-400" />
+                {/* Buscadores */}
+                <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+                    <div className="relative w-full md:w-64">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Search className="h-5 w-5 text-gray-400" />
+                        </div>
+                        <input
+                            type="text"
+                            className="block w-full pl-10 pr-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl leading-5 bg-gray-50 dark:bg-[#1a1f2e] text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#1a9888] focus:border-transparent sm:text-sm transition-all"
+                            placeholder="Buscar cliente o código..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
                     </div>
-                    <input
-                        type="text"
-                        className="block w-full pl-10 pr-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl leading-5 bg-gray-50 dark:bg-[#1a1f2e] text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#1a9888] focus:border-transparent sm:text-sm transition-all"
-                        placeholder="Buscar por cliente o código..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
+
+                    {/* Multi-select para Rutas */}
+                    <div className="relative w-full md:w-72">
+                        <button
+                            onClick={() => setIsMenuOpen(!isMenuOpen)}
+                            className="flex items-center justify-between w-full pl-10 pr-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-[#1a1f2e] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1a9888] transition-all text-sm"
+                        >
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <MapPin className="h-5 w-5 text-gray-400" />
+                            </div>
+                            <span className="truncate">
+                                {selectedRutas.length === 0
+                                    ? "Todas las rutas"
+                                    : `${selectedRutas.length} seleccionadas`}
+                            </span>
+                            <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isMenuOpen ? "rotate-180" : ""}`} />
+                        </button>
+
+                        {isMenuOpen && (
+                            <div className="absolute z-50 mt-2 w-full bg-white dark:bg-[#1a1f2e] border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl max-h-64 overflow-y-auto">
+                                <div className="p-2 sticky top-0 bg-white dark:bg-[#1a1f2e] border-b border-gray-100 dark:border-gray-800">
+                                    <button
+                                        onClick={() => setSelectedRutas([])}
+                                        className="text-[10px] font-bold text-teal-600 dark:text-teal-400 uppercase tracking-wider hover:underline"
+                                    >
+                                        Limpiar selección
+                                    </button>
+                                </div>
+                                <div className="p-1">
+                                    {uniqueRutas.map(ruta => (
+                                        <label
+                                            key={ruta}
+                                            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-teal-50 dark:hover:bg-teal-900/20 cursor-pointer transition-colors"
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                className="w-4 h-4 rounded border-gray-300 text-[#1a9888] focus:ring-[#1a9888]"
+                                                checked={selectedRutas.includes(ruta)}
+                                                onChange={() => toggleRuta(ruta)}
+                                            />
+                                            <span className="text-sm text-gray-700 dark:text-gray-300">{ruta}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Overlay invisible para cerrar el menú al hacer clic fuera */}
+                        {isMenuOpen && (
+                            <div
+                                className="fixed inset-0 z-40"
+                                onClick={() => setIsMenuOpen(false)}
+                            />
+                        )}
+                    </div>
                 </div>
             </div>
 
