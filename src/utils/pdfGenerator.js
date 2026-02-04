@@ -29,7 +29,7 @@ export const generateVendorPDF = (vendorName, selectedCompanies) => {
     22,
   );
 
-  // --- 2. FILTRAR DÍAS ACTIVOS (LÓGICA MEJORADA) ---
+  // --- 2. FILTRAR SOLO EL DÍA ACTUAL (LÓGICA MODIFICADA) ---
   const days = [
     { key: "lunes", label: "Lun" },
     { key: "martes", label: "Mar" },
@@ -38,23 +38,24 @@ export const generateVendorPDF = (vendorName, selectedCompanies) => {
     { key: "viernes", label: "Vie" },
   ];
 
-  const activeDays = days.filter((day) => {
-    // some() devuelve true si AL MENOS UNA compañía cumple la condición
-    return selectedCompanies.some((c) => {
-      const tarea = c[`${day.key}_tarea`];
-      const accion = c[`${day.key}_accion`];
+  // Obtenemos el día de la semana (0 = Domingo, 1 = Lunes, ..., 6 = Sábado)
+  const todayIndex = new Date().getDay();
 
-      // Función auxiliar para saber si hay TEXTO REAL
-      const hasContent = (val) => {
-        if (val === null || val === undefined) return false;
-        const str = String(val).trim(); // Convierte a string y quita espacios
-        // Verifica que no esté vacío y que no sea solo un guión
-        return str.length > 0 && str !== "-" && str !== "—";
-      };
+  // Mapeamos el índice numérico de JS a tus llaves de texto
+  const dayKeysMap = {
+    1: "lunes",
+    2: "martes",
+    3: "miercoles",
+    4: "jueves",
+    5: "viernes",
+  };
 
-      return hasContent(tarea) || hasContent(accion);
-    });
-  });
+  const currentDayKey = dayKeysMap[todayIndex];
+
+  // Filtramos: Solo dejamos el día que coincida con hoy
+  const activeDays = days.filter((day) => day.key === currentDayKey);
+
+  // NOTA: Si hoy es Sábado (6) o Domingo (0), activeDays estará vacío y no mostrará columnas de días.
 
   // --- 3. DEFINIR COLUMNAS ---
   const columnsDef = [
@@ -75,7 +76,7 @@ export const generateVendorPDF = (vendorName, selectedCompanies) => {
     { title: "Clasif", dataKey: "clasif", width: 10, align: "center" },
   ];
 
-  // Agregar días dinámicos (Solo los que pasaron el filtro estricto)
+  // Agregar días dinámicos (En este caso, solo será 1 día o ninguno)
   activeDays.forEach((day) => {
     columnsDef.push({
       title: day.label,
@@ -101,6 +102,7 @@ export const generateVendorPDF = (vendorName, selectedCompanies) => {
       clasif: item.clasificacion || item.horario_caja || "-",
     };
 
+    // Solo llenará la data del día activo
     activeDays.forEach((day) => {
       rowData[day.key] = item[`${day.key}_tarea`] || "-";
     });
