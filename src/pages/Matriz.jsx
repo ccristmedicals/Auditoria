@@ -112,6 +112,40 @@ const isWithinCurrentWeek = (dateStr) => {
   return date >= startOfWeek && date <= endOfWeek;
 };
 
+// --- HELPER PARA FECHAS (Ventana 30 días) ---
+const isWithinLast30Days = (dateStr) => {
+  if (!dateStr || dateStr === "—" || dateStr === "-") return false;
+
+  let date;
+  // Parseo robusto (igual que tu función anterior)
+  if (dateStr.includes("/")) {
+    const [day, month, year] = dateStr.split("/").map(Number);
+    date = new Date(year, month - 1, day);
+  } else if (dateStr.includes("-")) {
+    const parts = dateStr.split("-").map(Number);
+    if (parts[0] > 1000) {
+      date = new Date(parts[0], parts[1] - 1, parts[2]);
+    } else {
+      date = new Date(parts[2], parts[1] - 1, parts[0]);
+    }
+  } else {
+    date = new Date(dateStr);
+  }
+
+  if (isNaN(date.getTime())) return false;
+
+  const now = new Date();
+  // Reseteamos horas para comparar solo fechas
+  now.setHours(23, 59, 59, 999);
+
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(now.getDate() - 30);
+  thirtyDaysAgo.setHours(0, 0, 0, 0);
+
+  // La fecha debe ser mayor o igual a hace 30 días y menor o igual a hoy
+  return date >= thirtyDaysAgo && date <= now;
+};
+
 const TableCheckbox = React.memo(
   ({ checked, onChange, colorClass, onKeyDown, disabled }) => (
     <div className="flex justify-center">
@@ -352,6 +386,38 @@ const AuditRow = React.memo(
 
       return !!(hasVentaCall && hasCobranzaWs);
     }, [row, auditData]);
+
+    // D. LÓGICA 'RECUPERACIÓN / EFECTIVIDAD 30 DÍAS'
+    const efectividad30d = useMemo(() => {
+      if (!auditData) return false;
+
+      // 1. REPLICAMOS LA CONDICIÓN DE "RECUPERACIÓN" (Igual que en el contador)
+      // Para que cuente como "Recuperado", debe haber tenido una gestión N o P.
+      const isNP =
+        auditData.accion_venta?.p ||
+        auditData.accion_venta?.n ||
+        auditData.accion_cobranza?.p ||
+        auditData.accion_cobranza?.n ||
+        auditData.llamadas_venta?.p ||
+        auditData.llamadas_venta?.n ||
+        auditData.llamadas_cobranza?.p ||
+        auditData.llamadas_cobranza?.n;
+
+      if (!isNP) return false; // Si fue un cliente "fácil" (Directo a Efectivo), no mostramos la etiqueta de recuperación.
+
+      // 2. Verificamos fechas (Ventana 30 días)
+      const compraReciente = isWithinLast30Days(row.fecha_ultima_compra);
+      const cobroReciente = isWithinLast30Days(
+        row.ultimo_cobro || row.fecha_ultimo_cobro,
+      );
+
+      return compraReciente && cobroReciente;
+    }, [
+      auditData,
+      row.fecha_ultima_compra,
+      row.ultimo_cobro,
+      row.fecha_ultimo_cobro,
+    ]);
 
     return (
       <Tr className="hover:bg-gray-50 dark:hover:bg-slate-800/50">
@@ -723,6 +789,19 @@ const AuditRow = React.memo(
             {conGestion ? "SÍ" : "NO"}
           </span>
         </Td>
+
+        {/* --- NUEVA COLUMNA: EFECTIVIDAD 30 DIAS --- */}
+        <Td className="text-center p-2 border-l border-gray-200 dark:border-slate-800 border-r">
+          <span
+            className={`font-bold text-xs px-2 py-1 rounded ${
+              efectividad30d
+                ? "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-400"
+                : "bg-gray-50 text-gray-300 dark:bg-slate-800 dark:text-slate-600"
+            }`}
+          >
+            {efectividad30d ? "30D" : "-"}
+          </span>
+        </Td>
       </Tr>
     );
   },
@@ -883,6 +962,7 @@ const Matriz = () => {
       cumplidos_total: 0,
       visitas_dia_total: 0,
       deNpAE_total: 0,
+      efectividad_30d_total: 0, // <--- Tu variable nueva
       percent_avg: 0,
     };
 
@@ -897,6 +977,7 @@ const Matriz = () => {
       const day = row.auditoria?.[selectedDay];
       if (!day) return;
 
+      // --- Contadores de Checkboxes ---
       if (day.inicio_whatsapp?.e) counts.inicio_whatsapp.e++;
       if (day.inicio_whatsapp?.c) counts.inicio_whatsapp.c++;
       ["e", "p", "n"].forEach((f) => {
@@ -908,6 +989,7 @@ const Matriz = () => {
 
       if (day.cp) counts.cp++;
 
+      // --- Lógica de Puestas y Cumplidos ---
       const s = row.semana || {};
       const dailyTask = s[dayKey]?.tarea;
       const isPuesta = dailyTask && dailyTask.toString().trim().length > 0;
@@ -933,6 +1015,7 @@ const Matriz = () => {
       if (isPuesta && hasObs) counts.cumplidos_total++;
       if (hasObs) counts.visitas_dia_total++;
 
+      // --- Detección de Negativo o En Proceso (N/P) ---
       const isNP =
         day.accion_venta?.p ||
         day.accion_venta?.n ||
@@ -944,11 +1027,23 @@ const Matriz = () => {
         day.llamadas_cobranza?.n;
 
       if (isNP) {
+        // 1. Condición Semanal (De N-P a E semana actual)
         const compraSemana = isWithinCurrentWeek(row.fecha_ultima_compra);
         const cobroSemana = isWithinCurrentWeek(
           row.fecha_ultimo_cobro || row.ultimo_cobro,
         );
         if (compraSemana && cobroSemana) counts.deNpAE_total++;
+
+        // 2. Condición 30 Días (De N-P a E ventana 30 días) <--- AGREGADO AQUÍ
+        // Requisito: "pasa de negativo o en proceso a efectivo... con un calculo de 30 dias"
+        const compra30d = isWithinLast30Days(row.fecha_ultima_compra);
+        const cobro30d = isWithinLast30Days(
+          row.fecha_ultimo_cobro || row.ultimo_cobro,
+        );
+
+        if (compra30d && cobro30d) {
+          counts.efectividad_30d_total++;
+        }
       }
     });
 
@@ -1425,6 +1520,11 @@ const Matriz = () => {
                 <Th className="bg-white dark:bg-slate-900 border-l dark:border-slate-800 border-gray-200 text-[10px] uppercase font-bold text-center text-purple-700 dark:text-purple-300">
                   CON GESTIÓN
                 </Th>
+                <Th className="min-w-[40px] bg-white dark:bg-slate-900 p-0 border-l border-r border-white dark:border-slate-800">
+                  <HeaderCountInput
+                    value={headerCounts.efectividad_30d_total}
+                  />
+                </Th>
               </Tr>
 
               {/* Nivel 5, 6, 7 (Headers de etiquetas - Iguales) */}
@@ -1727,6 +1827,9 @@ const Matriz = () => {
                 </Th>
                 <Th className="bg-white dark:bg-slate-900 border-l dark:border-slate-800 border-gray-200 text-[10px] text-center uppercase font-bold text-purple-700 dark:text-purple-300">
                   CON GESTIÓN
+                </Th>
+                <Th className="bg-white dark:bg-slate-900 border-l border-r dark:border-slate-800 border-gray-200 text-[10px] text-center uppercase font-bold text-teal-700 dark:text-teal-300">
+                  EFECT. (30D)
                 </Th>
               </Tr>
             </Thead>
