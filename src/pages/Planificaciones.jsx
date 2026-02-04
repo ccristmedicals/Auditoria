@@ -195,6 +195,7 @@ const Planificaciones = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedRutas, setSelectedRutas] = useState([]);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [rutaSearchTerm, setRutaSearchTerm] = useState("");
 
     useEffect(() => {
         const fetchData = async () => {
@@ -246,6 +247,13 @@ const Planificaciones = () => {
         });
         return Array.from(rutas).sort();
     }, [data]);
+
+    // Filtrar rutas únicas según el buscador interno
+    const filteredUniqueRutas = useMemo(() => {
+        return uniqueRutas.filter(ruta =>
+            ruta.toLowerCase().includes(rutaSearchTerm.toLowerCase())
+        );
+    }, [uniqueRutas, rutaSearchTerm]);
 
     // Filtrado y Agrupamiento
     const groupedData = useMemo(() => {
@@ -355,30 +363,52 @@ const Planificaciones = () => {
                         </button>
 
                         {isMenuOpen && (
-                            <div className="absolute z-50 mt-2 w-full bg-white dark:bg-[#1a1f2e] border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl max-h-64 overflow-y-auto">
-                                <div className="p-2 sticky top-0 bg-white dark:bg-[#1a1f2e] border-b border-gray-100 dark:border-gray-800">
+                            <div className="absolute z-50 mt-2 w-full bg-white dark:bg-[#1a1f2e] border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl max-h-80 flex flex-col overflow-hidden">
+                                <div className="p-2 bg-white dark:bg-[#1a1f2e] border-b border-gray-100 dark:border-gray-800 space-y-2">
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
+                                            <Search className="h-3 w-3 text-gray-400" />
+                                        </div>
+                                        <input
+                                            type="text"
+                                            className="block w-full pl-7 pr-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-xs bg-gray-50 dark:bg-[#0b1120] text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#1a9888]"
+                                            placeholder="Filtrar rutas..."
+                                            value={rutaSearchTerm}
+                                            onChange={(e) => setRutaSearchTerm(e.target.value)}
+                                            onClick={(e) => e.stopPropagation()}
+                                        />
+                                    </div>
                                     <button
-                                        onClick={() => setSelectedRutas([])}
-                                        className="text-[10px] font-bold text-teal-600 dark:text-teal-400 uppercase tracking-wider hover:underline"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelectedRutas([]);
+                                        }}
+                                        className="text-[10px] font-bold text-teal-600 dark:text-teal-400 uppercase tracking-wider hover:underline w-full text-left"
                                     >
                                         Limpiar selección
                                     </button>
                                 </div>
-                                <div className="p-1">
-                                    {uniqueRutas.map(ruta => (
-                                        <label
-                                            key={ruta}
-                                            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-teal-50 dark:hover:bg-teal-900/20 cursor-pointer transition-colors"
-                                        >
-                                            <input
-                                                type="checkbox"
-                                                className="w-4 h-4 rounded border-gray-300 text-[#1a9888] focus:ring-[#1a9888]"
-                                                checked={selectedRutas.includes(ruta)}
-                                                onChange={() => toggleRuta(ruta)}
-                                            />
-                                            <span className="text-sm text-gray-700 dark:text-gray-300">{ruta}</span>
-                                        </label>
-                                    ))}
+                                <div className="p-1 overflow-y-auto">
+                                    {filteredUniqueRutas.length > 0 ? (
+                                        filteredUniqueRutas.map(ruta => (
+                                            <label
+                                                key={ruta}
+                                                className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-teal-50 dark:hover:bg-teal-900/20 cursor-pointer transition-colors"
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    className="w-4 h-4 rounded border-gray-300 text-[#1a9888] focus:ring-[#1a9888]"
+                                                    checked={selectedRutas.includes(ruta)}
+                                                    onChange={() => toggleRuta(ruta)}
+                                                />
+                                                <span className="text-sm text-gray-700 dark:text-gray-300">{ruta}</span>
+                                            </label>
+                                        ))
+                                    ) : (
+                                        <div className="p-4 text-center text-xs text-gray-400 italic">
+                                            No se encontraron rutas
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -387,7 +417,10 @@ const Planificaciones = () => {
                         {isMenuOpen && (
                             <div
                                 className="fixed inset-0 z-40"
-                                onClick={() => setIsMenuOpen(false)}
+                                onClick={() => {
+                                    setIsMenuOpen(false);
+                                    setRutaSearchTerm(""); // Limpiar búsqueda al cerrar
+                                }}
                             />
                         )}
                     </div>
