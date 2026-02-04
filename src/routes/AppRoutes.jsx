@@ -10,6 +10,8 @@ import Matriz from "../pages/Matriz";
 import Rendimiento from "../pages/Rendimiento";
 import Vendedores from "../pages/Vendedores";
 
+import Planificaciones from "../pages/Planificaciones";
+
 const AppRoutes = () => {
   return (
     <Routes>
@@ -32,6 +34,7 @@ const AppRoutes = () => {
         <Route path="/matriz" element={<Matriz />} />
         <Route path="/rendimiento" element={<Rendimiento />} />
         <Route path="/vendedores" element={<Vendedores />} />
+        <Route path="/planificaciones" element={<Planificaciones />} />
       </Route>
 
       {/* Ruta para manejar páginas no encontradas */}

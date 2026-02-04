@@ -406,5 +406,6 @@ export const useBaseDatosBitrix = () => {
       return [...new Set(segments)].sort();
     }, [allCompanies]),
     refresh,
+    user,
   };
 };

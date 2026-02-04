@@ -62,6 +62,21 @@ export default function Sidebar() {
         p?.editar_usuarios,
     },
     {
+      to: "/planificaciones",
+      label: "Planificaciones",
+      icon: <Database />,
+      permission: (p, role) => {
+        const r = role?.toLowerCase().trim();
+        return (
+          p?.gestion_matrix ||
+          p?.acceso_total ||
+          p?.editar_usuarios ||
+          r === "auditor" ||
+          r === "administrador"
+        );
+      },
+    },
+    {
       to: "/base-datos-profit",
       label: "Comparativa Profit-Bitrix",
       icon: <DatabaseZap />,
@@ -93,7 +108,7 @@ export default function Sidebar() {
 
   const filteredLinks = links.filter((link) => {
     if (!link.permission) return true;
-    return link.permission(user?.permisos);
+    return link.permission(user?.permisos, user?.role);
   });
 
   return (
@@ -120,11 +135,10 @@ export default function Sidebar() {
             <Link
               key={`${to}-${index}`}
               to={to}
-              className={`flex items-center rounded-lg transition-all duration-300 group ${isCollapsed ? "justify-center py-3 px-0" : "space-x-3 py-3 px-3"} ${
-                isActive
-                  ? "bg-white/15 text-white font-bold border-l-4 border-teal-400 shadow-lg shadow-teal-900/20"
-                  : "text-teal-100/70 hover:bg-white/10 hover:text-white border-l-4 border-transparent font-medium"
-              }`}
+              className={`flex items-center rounded-lg transition-all duration-300 group ${isCollapsed ? "justify-center py-3 px-0" : "space-x-3 py-3 px-3"} ${isActive
+                ? "bg-white/15 text-white font-bold border-l-4 border-teal-400 shadow-lg shadow-teal-900/20"
+                : "text-teal-100/70 hover:bg-white/10 hover:text-white border-l-4 border-transparent font-medium"
+                }`}
               title={isCollapsed ? label : ""}
             >
               <span

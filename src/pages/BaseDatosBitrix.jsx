@@ -298,9 +298,8 @@ const CompanyRow = React.memo(
         {row.visibility?.vencido && (
           <Td
             align="right"
-            className={`font-mono text-xs font-bold ${
-              row.saldo_vencido > 0 ? "text-red-600" : "text-green-600"
-            }`}
+            className={`font-mono text-xs font-bold ${row.saldo_vencido > 0 ? "text-red-600" : "text-green-600"
+              }`}
           >
             {formatCurrency(row.saldo_vencido) + "$"}
           </Td>
@@ -438,6 +437,7 @@ const BaseDatosBitrix = () => {
     handleCompanyChange,
     refresh,
     uniqueSegments,
+    user,
   } = useBaseDatosBitrix();
 
   const { showToast, ToastContainer } = useToast();
@@ -452,7 +452,7 @@ const BaseDatosBitrix = () => {
   const [confirmData, setConfirmData] = useState({
     title: "",
     message: "",
-    onConfirm: () => {},
+    onConfirm: () => { },
   });
 
   // --- COLUMN VISIBILITY STATE ---
@@ -675,9 +675,13 @@ const BaseDatosBitrix = () => {
     setShowConfirm(false);
     try {
       // Construir array de payloads
-      const bulkPayload = selectedEntities.map((entity) =>
-        preparePayload(entity),
-      );
+      const bulkPayload = selectedEntities.map((entity) => ({
+        ...preparePayload(entity),
+        vendedor: vendor.label,
+        usuario: user?.nombre || user?.usuario || "Usuario desconocido",
+      }));
+
+      console.log("JSON enviado:", bulkPayload);
 
       // Enviar una sola petición con el array
       await apiService.savePlanificacion(bulkPayload);
@@ -805,11 +809,10 @@ const BaseDatosBitrix = () => {
             disabled={
               isBulkSaving || selectedIds.length === 0 || !selectedVendedor
             }
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-lg transition-all shadow-md ${
-              isBulkSaving || selectedIds.length === 0 || !selectedVendedor
-                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                : "bg-teal-600 text-white hover:bg-teal-700 active:scale-95"
-            }`}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-lg transition-all shadow-md ${isBulkSaving || selectedIds.length === 0 || !selectedVendedor
+              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+              : "bg-teal-600 text-white hover:bg-teal-700 active:scale-95"
+              }`}
           >
             {isBulkSaving ? (
               <Loader size={18} className="animate-spin" />
@@ -863,11 +866,10 @@ const BaseDatosBitrix = () => {
           {/* 4. TOGGLE VENCIDOS (Filtro Hook) */}
           <button
             onClick={() => setOnlyVencidos(!onlyVencidos)}
-            className={`flex items-center gap-2 px-3 py-2 text-sm border rounded-lg transition-all shadow-sm ${
-              onlyVencidos
-                ? "bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300 ring-1 ring-red-200"
-                : "bg-white border-gray-300 text-gray-700 dark:bg-[#262626] dark:border-gray-600 dark:text-gray-300 hover:bg-gray-50"
-            }`}
+            className={`flex items-center gap-2 px-3 py-2 text-sm border rounded-lg transition-all shadow-sm ${onlyVencidos
+              ? "bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300 ring-1 ring-red-200"
+              : "bg-white border-gray-300 text-gray-700 dark:bg-[#262626] dark:border-gray-600 dark:text-gray-300 hover:bg-gray-50"
+              }`}
           >
             {onlyVencidos ? <CheckSquare size={16} /> : <Square size={16} />}
             <span>Solo Vencidos</span>
@@ -899,11 +901,10 @@ const BaseDatosBitrix = () => {
           {/* FILTRO VER SELECCIONADOS */}
           <button
             onClick={() => setShowOnlySelected(!showOnlySelected)}
-            className={`px-3 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 shadow-sm ${
-              showOnlySelected
-                ? "bg-[#1a9888] text-white border-[#1a9888]"
-                : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-[#1a9888]"
-            }`}
+            className={`px-3 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 shadow-sm ${showOnlySelected
+              ? "bg-[#1a9888] text-white border-[#1a9888]"
+              : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-[#1a9888]"
+              }`}
           >
             <Filter size={16} />
             {showOnlySelected ? "Ver Todos" : "Ver Selec."}
@@ -1116,20 +1117,20 @@ const BaseDatosBitrix = () => {
                   "dias_visita",
                   "convenio",
                 ]) > 0 && (
-                  <Th
-                    colSpan={getGroupColSpan([
-                      "codigo_profit",
-                      "ciudad",
-                      "segmento",
-                      "coordenadas",
-                      "dias_visita",
-                      "convenio",
-                    ])}
-                    className="border-b border-r border-gray-200 dark:border-[#333] bg-blue-50 dark:bg-blue-900 text-blue-600 text-center"
-                  >
-                    Datos Bitrix
-                  </Th>
-                )}
+                    <Th
+                      colSpan={getGroupColSpan([
+                        "codigo_profit",
+                        "ciudad",
+                        "segmento",
+                        "coordenadas",
+                        "dias_visita",
+                        "convenio",
+                      ])}
+                      className="border-b border-r border-gray-200 dark:border-[#333] bg-blue-50 dark:bg-blue-900 text-blue-600 text-center"
+                    >
+                      Datos Bitrix
+                    </Th>
+                  )}
                 {getGroupColSpan([
                   "limite",
                   "transito",
@@ -1137,19 +1138,19 @@ const BaseDatosBitrix = () => {
                   "fecha_compra",
                   "morosidad",
                 ]) > 0 && (
-                  <Th
-                    colSpan={getGroupColSpan([
-                      "limite",
-                      "transito",
-                      "vencido",
-                      "fecha_compra",
-                      "morosidad",
-                    ])}
-                    className="border-b border-r border-gray-200 dark:border-[#333] bg-green-50 dark:bg-green-900 text-green-600 text-center"
-                  >
-                    Datos Profit
-                  </Th>
-                )}
+                    <Th
+                      colSpan={getGroupColSpan([
+                        "limite",
+                        "transito",
+                        "vencido",
+                        "fecha_compra",
+                        "morosidad",
+                      ])}
+                      className="border-b border-r border-gray-200 dark:border-[#333] bg-green-50 dark:bg-green-900 text-green-600 text-center"
+                    >
+                      Datos Profit
+                    </Th>
+                  )}
                 {getGroupColSpan([
                   "ultimo_cobro",
                   "sku",
@@ -1157,19 +1158,19 @@ const BaseDatosBitrix = () => {
                   "actual",
                   "anterior",
                 ]) > 0 && (
-                  <Th
-                    colSpan={getGroupColSpan([
-                      "ultimo_cobro",
-                      "sku",
-                      "clasif",
-                      "actual",
-                      "anterior",
-                    ])}
-                    className="border-b border-r border-gray-200 dark:border-[#333] text-purple-600 text-center bg-indigo-200 dark:bg-indigo-800"
-                  >
-                    Ventas
-                  </Th>
-                )}
+                    <Th
+                      colSpan={getGroupColSpan([
+                        "ultimo_cobro",
+                        "sku",
+                        "clasif",
+                        "actual",
+                        "anterior",
+                      ])}
+                      className="border-b border-r border-gray-200 dark:border-[#333] text-purple-600 text-center bg-indigo-200 dark:bg-indigo-800"
+                    >
+                      Ventas
+                    </Th>
+                  )}
                 {getGroupColSpan(["bitacora", "obs_ejecutiva"]) > 0 && (
                   <Th
                     colSpan={getGroupColSpan(["bitacora", "obs_ejecutiva"])}
