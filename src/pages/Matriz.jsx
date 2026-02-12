@@ -932,6 +932,7 @@ const Matriz = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedZonas, setSelectedZonas] = useState([]); // Nuevo estado para filtro de Zonas
   const [selectedRutas, setSelectedRutas] = useState([]); // Nuevo estado para filtro de Rutas
+  const [showSinGestionOnly, setShowSinGestionOnly] = useState(false);
   const [page, setPage] = useState(1);
   const ITEMS_PER_PAGE = 25;
   const { showToast, ToastContainer } = useToast();
@@ -1017,7 +1018,7 @@ const Matriz = () => {
 
   useEffect(() => {
     setPage(1);
-  }, [searchTerm, selectedZonas, selectedRutas]);
+  }, [searchTerm, selectedZonas, selectedRutas, showSinGestionOnly]);
 
   const filteredData = useMemo(() => {
     return data.filter((item) => {
@@ -1033,9 +1034,41 @@ const Matriz = () => {
       if (selectedRutas.length > 0) {
         if (!selectedRutas.includes(item.segmento)) return false;
       }
+      if (showSinGestionOnly) {
+        const day = item.auditoria?.[selectedDay];
+        if (!day) return true;
+
+        const hasCheck =
+          day.inicio_whatsapp?.e ||
+          day.inicio_whatsapp?.c ||
+          day.accion_venta?.e ||
+          day.accion_venta?.p ||
+          day.accion_venta?.n ||
+          day.accion_cobranza?.e ||
+          day.accion_cobranza?.p ||
+          day.accion_cobranza?.n ||
+          day.llamadas_venta?.e ||
+          day.llamadas_venta?.p ||
+          day.llamadas_venta?.n ||
+          day.llamadas_cobranza?.e ||
+          day.llamadas_cobranza?.p ||
+          day.llamadas_cobranza?.n;
+
+        const hasObs =
+          day.observacion && day.observacion.toString().trim().length > 0;
+
+        if (hasCheck || hasObs) return false;
+      }
       return true;
     });
-  }, [data, searchTerm, selectedZonas, selectedRutas]);
+  }, [
+    data,
+    searchTerm,
+    selectedZonas,
+    selectedRutas,
+    showSinGestionOnly,
+    selectedDay,
+  ]);
 
   const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE) || 1;
   const paginatedData = filteredData.slice(
@@ -1285,6 +1318,21 @@ const Matriz = () => {
               selected={selectedRutas}
               onChange={setSelectedRutas}
             />
+            <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-[#1a2333] border border-gray-200 dark:border-gray-700 rounded-xl transition-all hover:border-[#1a9888]/50">
+              <input
+                id="sinGestionFilter"
+                type="checkbox"
+                checked={showSinGestionOnly}
+                onChange={(e) => setShowSinGestionOnly(e.target.checked)}
+                className="w-4 h-4 accent-[#1a9888] cursor-pointer"
+              />
+              <label
+                htmlFor="sinGestionFilter"
+                className="text-xs font-bold text-slate-600 dark:text-slate-300 cursor-pointer whitespace-nowrap select-none"
+              >
+                Sin Gestión
+              </label>
+            </div>
             <div className="relative group w-full sm:w-64">
               <Search
                 size={16}
