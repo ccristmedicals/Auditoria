@@ -11,7 +11,7 @@ export const useAuditoriaGeo = () => {
   const totalPages = Math.ceil(totalRecords / ITEMS_PER_PAGE_VISUAL) || 1;
   const paginatedData = allData.slice(
     (page - 1) * ITEMS_PER_PAGE_VISUAL,
-    page * ITEMS_PER_PAGE_VISUAL
+    page * ITEMS_PER_PAGE_VISUAL,
   );
 
   useEffect(() => {
@@ -63,6 +63,10 @@ export const useAuditoriaGeo = () => {
           const b = item.bitrix || {};
           const c = item.coordinate_comparison || {};
 
+          if (index === 0 || index === 1) {
+            console.log("🔥 ITEM COMPLETO (Índice " + index + "):", item);
+          }
+
           return {
             id_interno: `${p.co_cli}-${b.bitrix_id}-${index}`,
             codigo_profit: p.co_cli || "—",
@@ -84,8 +88,8 @@ export const useAuditoriaGeo = () => {
 
       const uniqueData = Array.from(
         new Map(
-          formattedData.map((item) => [item.codigo_profit, item])
-        ).values()
+          formattedData.map((item) => [item.codigo_profit, item]),
+        ).values(),
       );
 
       setAllData(uniqueData);
@@ -105,8 +109,8 @@ export const useAuditoriaGeo = () => {
   const handleAuditChange = useCallback((id_interno, value) => {
     setAllData((prev) =>
       prev.map((row) =>
-        row.id_interno === id_interno ? { ...row, obs_auditor: value } : row
-      )
+        row.id_interno === id_interno ? { ...row, obs_auditor: value } : row,
+      ),
     );
   }, []);
 

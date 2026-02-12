@@ -89,23 +89,27 @@ export default function Sidebar() {
       to: "/matriz",
       label: "Matriz",
       icon: <Container />,
+      permission: (p, role) =>
+        p?.gestion_matrix ||
+        p?.acceso_total ||
+        p?.editar_usuarios ||
+        p?.ver_rutas ||
+        role?.toLowerCase().trim() === "ejecutiva",
+    },
+    {
+      to: "/rendimiento",
+      label: "Rendimiento",
+      icon: <ArrowUpDown />,
       permission: (p) =>
         p?.gestion_matrix || p?.acceso_total || p?.editar_usuarios,
     },
-    // {
-    //   to: "/rendimiento",
-    //   label: "Rendimiento",
-    //   icon: <ArrowUpDown />,
-    //   permission: (p) =>
-    //     p?.gestion_matrix || p?.acceso_total || p?.editar_usuarios,
-    // },
-    // {
-    //   to: "/vendedores",
-    //   label: "Vendedores",
-    //   icon: <Users />,
-    //   permission: (p) =>
-    //     p?.gestion_matrix || p?.acceso_total || p?.editar_usuarios,
-    // },
+    {
+      to: "/vendedores",
+      label: "Vendedores",
+      icon: <Users />,
+      permission: (p) =>
+        p?.gestion_matrix || p?.acceso_total || p?.editar_usuarios,
+    },
   ];
 
   const filteredLinks = links.filter((link) => {
@@ -137,10 +141,11 @@ export default function Sidebar() {
             <Link
               key={`${to}-${index}`}
               to={to}
-              className={`flex items-center rounded-lg transition-all duration-300 group ${isCollapsed ? "justify-center py-3 px-0" : "space-x-3 py-3 px-3"} ${isActive
-                ? "bg-white/15 text-white font-bold border-l-4 border-teal-400 shadow-lg shadow-teal-900/20"
-                : "text-teal-100/70 hover:bg-white/10 hover:text-white border-l-4 border-transparent font-medium"
-                }`}
+              className={`flex items-center rounded-lg transition-all duration-300 group ${isCollapsed ? "justify-center py-3 px-0" : "space-x-3 py-3 px-3"} ${
+                isActive
+                  ? "bg-white/15 text-white font-bold border-l-4 border-teal-400 shadow-lg shadow-teal-900/20"
+                  : "text-teal-100/70 hover:bg-white/10 hover:text-white border-l-4 border-transparent font-medium"
+              }`}
               title={isCollapsed ? label : ""}
             >
               <span

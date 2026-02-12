@@ -37,6 +37,26 @@ const isWithinCurrentWeek = (dateStr) => {
   return date >= startOfWeek && date <= endOfWeek;
 };
 
+// --- HELPER PARA GESTIÓN SEMANAL ---
+// Función para obtener el número de semana del año (ISO 8601)
+const getWeekNumber = (date) => {
+  const d = new Date(
+    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
+  );
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
+};
+
+// Función para obtener el identificador de semana (año-semana)
+const getCurrentWeekId = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const week = getWeekNumber(now);
+  return `${year}-W${week.toString().padStart(2, "0")}`;
+};
+
 // --- CREAR AUDITORIA DIARIA ---
 const createDailyAudit = () => ({
   inicio_whatsapp: { e: false, c: false },
@@ -110,17 +130,31 @@ export const useAuditoria = () => {
         const matrixMap = new Map();
         const matrixArray = matrixData?.data || matrixData || [];
 
-        if (Array.isArray(matrixArray)) {
-          // El backend devuelve ORDER BY fecha_registro DESC.
-          // Tomamos el primero (más reciente) para cada id_bitrix.
-          matrixArray.forEach((item) => {
-            if (item.id_bitrix) {
-              const idStr = item.id_bitrix.toString();
-              if (!matrixMap.has(idStr)) {
-                matrixMap.set(idStr, item);
+        // --- LÓGICA DE LIMPIEZA SEMANAL ---
+        const savedWeekId = localStorage.getItem("matrixWeekId");
+        const currentWeekId = getCurrentWeekId();
+
+        // Si es una nueva semana, no cargamos los registros antiguos en el mapa visual
+        // Pero se mantienen en el log histórico del backend.
+        if (savedWeekId !== currentWeekId) {
+          console.log(
+            `[Matrix] Nueva semana detectada: ${currentWeekId}. Iniciando matriz limpia.`,
+          );
+          localStorage.setItem("matrixWeekId", currentWeekId);
+          // Al no poblar matrixMap, los clientes aparecerán con auditoría por defecto (vacía)
+        } else {
+          if (Array.isArray(matrixArray)) {
+            // El backend devuelve ORDER BY fecha_registro DESC.
+            // Tomamos el primero (más reciente) para cada id_bitrix.
+            matrixArray.forEach((item) => {
+              if (item.id_bitrix) {
+                const idStr = item.id_bitrix.toString();
+                if (!matrixMap.has(idStr)) {
+                  matrixMap.set(idStr, item);
+                }
               }
-            }
-          });
+            });
+          }
         }
 
         const processedData = companies

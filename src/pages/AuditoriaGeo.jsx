@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useState } from "react";
 import { useAuditoriaGeo } from "../hooks/useAuditoriaGeo";
 import {
@@ -21,28 +22,46 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  Save,
+  Database,
+  Layers,
 } from "lucide-react";
 
 // --- HELPERS VISUALES ---
 
-// 1. Lógica de Color de Fila
+// 1. StatCard (Nuevo componente para consistencia visual)
+const StatCard = ({ icon: Icon, label, value, colorClass, iconColor }) => (
+  <div
+    className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${colorClass} shadow-sm min-w-[140px]`}
+  >
+    <div className={`p-2 rounded-lg ${iconColor}`}>
+      <Icon size={18} />
+    </div>
+    <div>
+      <p className="text-[10px] uppercase font-bold opacity-70 leading-none mb-1">
+        {label}
+      </p>
+      <p className="text-lg font-black leading-none">{value}</p>
+    </div>
+  </div>
+);
+
+// 2. Lógica de Color de Fila
 const getRowColor = (status) => {
   switch (status) {
     case "MATCH":
-      return "bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:hover:bg-green-900/30";
+      return "bg-green-50 hover:bg-green-100 dark:bg-green-900/10 dark:hover:bg-green-900/20";
     case "CLOSE":
-      return "bg-yellow-50 hover:bg-yellow-100 dark:bg-yellow-900/20 dark:hover:bg-yellow-900/30";
+      return "bg-yellow-50 hover:bg-yellow-100 dark:bg-yellow-900/10 dark:hover:bg-yellow-900/20";
     case "MISSING_BOTH":
     case "MISSING_PROFIT":
     case "MISSING_BITRIX":
-      return "bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30";
+      return "bg-red-50 hover:bg-red-100 dark:bg-red-900/10 dark:hover:bg-red-900/20";
     default:
       return "bg-white hover:bg-slate-50 dark:bg-[#111827] dark:hover:bg-white/5";
   }
 };
 
-// 2. Badge de Estado
+// 3. Badge de Estado
 const GeoStatusBadge = ({ status, distance }) => {
   let icon = <AlertTriangle size={14} />;
   let text = status;
@@ -84,7 +103,7 @@ const GeoStatusBadge = ({ status, distance }) => {
 
   return (
     <div
-      className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs font-bold w-fit ${colorClass}`}
+      className={`flex items-center justify-center gap-1.5 px-2 py-0.5 rounded-full border text-[10px] font-bold w-full max-w-[120px] shadow-sm ${colorClass}`}
     >
       {icon}
       <span>{text}</span>
@@ -92,7 +111,7 @@ const GeoStatusBadge = ({ status, distance }) => {
   );
 };
 
-// 3. Input Editable
+// 4. Input Editable
 const EditableCell = ({ value, onChange, placeholder = "..." }) => (
   <div className="relative w-full">
     <input
@@ -100,11 +119,11 @@ const EditableCell = ({ value, onChange, placeholder = "..." }) => (
       value={value || ""}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="w-full min-w-[100px] bg-white dark:bg-[#262626] border border-gray-300 dark:border-gray-600 rounded px-2 py-1.5 text-sm outline-none transition-all placeholder-gray-400 focus:ring-2 focus:ring-[#1a9888] focus:border-transparent dark:text-gray-200"
+      className="w-full min-w-[100px] bg-white dark:bg-[#262626] border border-gray-300 dark:border-gray-600 rounded px-2 py-1.5 text-xs outline-none transition-all placeholder-gray-400 focus:ring-2 focus:ring-[#1a9888] focus:border-transparent dark:text-gray-200 shadow-sm"
     />
     <Edit3
       size={12}
-      className="absolute right-2 top-2.5 text-gray-400 pointer-events-none opacity-50"
+      className="absolute right-2 top-2 text-gray-400 pointer-events-none opacity-50"
     />
   </div>
 );
@@ -134,33 +153,54 @@ const AuditoriaGeo = () => {
     }
   };
 
+  const problemCount = auditData.filter((r) =>
+    r.status.includes("MISSING"),
+  ).length;
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 min-h-screen bg-white dark:bg-[#0b1120]">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8 border-b border-gray-200 dark:border-white/5 pb-6">
+      {/* --- HEADER --- */}
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 mb-8 border-b border-gray-200 dark:border-white/5 pb-6">
         <div className="flex items-center gap-4">
           <div className="bg-teal-50 dark:bg-teal-900/20 p-3 rounded-2xl">
             <MapPin size={32} className="text-[#1a9888] dark:text-teal-400" />
           </div>
           <div>
             <h2 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">
-              Auditoría de <span className="text-[#1a9888] dark:text-teal-400">Coordenadas</span>
+              Auditoría de{" "}
+              <span className="text-[#1a9888] dark:text-teal-400">
+                Coordenadas
+              </span>
             </h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
-              Total Registros: {totalRecords} | Páginas: {totalPages}
+            <p className="text-sm text-slate-500 dark:text-slate-400 font-medium mt-1">
+              Validación cruzada entre Profit y Bitrix
             </p>
           </div>
         </div>
-        <div className="flex gap-4 text-sm">
-          <div className="px-3 py-1 bg-red-50 text-red-600 rounded-full border border-red-100 dark:bg-red-900/20 dark:border-red-800 flex items-center gap-2">
-            <AlertTriangle size={14} />
-            <span>
-              Problemas:{" "}
-              <strong>
-                {auditData.filter((r) => r.status.includes("MISSING")).length}
-              </strong>
-            </span>
-          </div>
+
+        {/* --- STATS CARDS --- */}
+        <div className="flex flex-wrap gap-3">
+          <StatCard
+            icon={Database}
+            label="Registros"
+            value={totalRecords}
+            colorClass="bg-slate-50 border-slate-200 text-slate-700 dark:bg-slate-800/50 dark:border-slate-700 dark:text-slate-300"
+            iconColor="text-slate-500"
+          />
+          <StatCard
+            icon={Layers}
+            label="Páginas"
+            value={totalPages}
+            colorClass="bg-blue-50 border-blue-100 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300"
+            iconColor="text-blue-500"
+          />
+          <StatCard
+            icon={AlertTriangle}
+            label="Problemas (Pag)"
+            value={problemCount}
+            colorClass="bg-red-50 border-red-100 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300"
+            iconColor="text-red-500"
+          />
         </div>
       </div>
 
@@ -173,83 +213,76 @@ const AuditoriaGeo = () => {
         ) : (
           <Table>
             <Thead>
-              {/* CORRECCIÓN AQUÍ: 
-                                1. bg-gray-50 aplicado DIRECTAMENTE a cada Th.
-                                2. z-20 añadido para que estén por encima del contenido.
-                                3. stickyTop añadido a todos para que no se oculte al bajar.
-                            */}
+              {/* Nivel 1 Header */}
               <Tr className="border-b-0">
                 <Th
                   colSpan={2}
                   stickyTop
-                  className="border-b border-r border-gray-200 dark:border-[#333] text-[#1a9888] bg-gray-50 dark:bg-[#1e1e1e] z-20"
+                  className="border-b border-r border-gray-200 dark:border-[#333] text-slate-700 dark:text-slate-300 bg-gray-100 dark:bg-[#1e1e1e] z-20 text-center"
                 >
                   CLIENTE
                 </Th>
                 <Th
                   colSpan={2}
                   stickyTop
-                  className="border-b border-r border-gray-200 dark:border-[#333] bg-blue-100 dark:bg-blue-900 text-blue-600 z-20"
+                  className="border-b border-r border-gray-200 dark:border-[#333] bg-purple-50 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 z-20 text-center"
                 >
                   UBICACIÓN
                 </Th>
                 <Th
                   colSpan={1}
                   stickyTop
-                  className="border-b border-r border-gray-200 dark:border-[#333] text-green-600 bg-green-50 dark:bg-green-900 z-20"
+                  className="border-b border-r border-green-200 dark:border-green-900 bg-green-50 dark:bg-green-900/40 text-green-700 dark:text-green-300 z-20 text-center"
                 >
                   PROFIT
                 </Th>
                 <Th
                   colSpan={2}
                   stickyTop
-                  className="border-b border-r border-gray-200 dark:border-[#333] text-blue-600 bg-blue-50 dark:bg-blue-900 z-20"
+                  className="border-b border-r border-blue-200 dark:border-blue-900 text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/40 z-20 text-center"
                 >
                   BITRIX
                 </Th>
                 <Th
                   colSpan={2}
                   stickyTop
-                  className="border-b border-gray-200 dark:border-[#333] text-gray-600 font-bold bg-gray-100 dark:bg-gray-800 z-20"
+                  className="border-b border-gray-200 dark:border-[#333] text-gray-600 dark:text-gray-400 font-bold bg-gray-100 dark:bg-gray-800 z-20 text-center"
                 >
                   AUDITORÍA
                 </Th>
               </Tr>
 
-              {/* SEGUNDA FILA:
-                                1. bg-white aplicado DIRECTAMENTE a cada Th.
-                                2. top-[value] añadido si quisieras que esta fila también sea sticky (la dejaré normal para que se oculte bajo la primera si así lo deseas, o sólida para que no transparente).
-                            */}
+              {/* Nivel 2 Header */}
               <Tr className="border-b border-gray-200 dark:border-[#333]">
-                <Th className="min-w-[100px] bg-white dark:bg-[#1e1e1e] z-10">
+                <Th className="min-w-[100px] bg-white dark:bg-[#1e1e1e] z-10 text-xs uppercase text-gray-500">
                   Código
                 </Th>
-                <Th className="min-w-[250px] text-left bg-white dark:bg-[#1e1e1e] shadow-md z-10">
+                <Th className="min-w-[250px] text-left bg-white dark:bg-[#1e1e1e] shadow-md z-10 border-r border-gray-100 dark:border-gray-800 text-xs uppercase text-gray-500">
                   Nombre Cliente
                 </Th>
 
-                <Th className="min-w-[150px] bg-white dark:bg-[#1e1e1e]">
+                <Th className="min-w-[150px] bg-white dark:bg-[#1e1e1e] text-xs uppercase text-gray-500">
                   Zona
                 </Th>
-                <Th className="min-w-[120px] bg-white dark:bg-[#1e1e1e]">
+                <Th className="min-w-[120px] bg-white dark:bg-[#1e1e1e] border-r border-gray-100 dark:border-gray-800 text-xs uppercase text-gray-500">
                   Ruta
                 </Th>
 
-                <Th className="min-w-[180px] bg-green-50 dark:bg-green-900">
+                <Th className="min-w-[180px] bg-green-50 dark:bg-green-900 border-r border-green-100 dark:border-green-900 text-xs uppercase text-green-700 dark:text-green-500 text-center">
                   Coordenadas
                 </Th>
 
-                <Th className="min-w-[100px] bg-blue-50 dark:bg-blue-900">
+                <Th className="min-w-[100px] bg-blue-50 dark:bg-blue-900 text-xs uppercase text-blue-700 dark:text-blue-500 text-center">
                   ID
                 </Th>
-                <Th className="min-w-[180px] bg-blue-50 dark:bg-blue-900">
+                <Th className="min-w-[180px] bg-blue-50 dark:bg-blue-900 border-r border-blue-100 dark:border-blue-900 text-xs uppercase text-blue-700 dark:text-blue-500 text-center">
                   Coordenadas
                 </Th>
 
-                <Th className="min-w-[160px] text-center bg-gray-100 dark:bg-gray-800">
+                <Th className="min-w-[160px] text-center bg-gray-50 dark:bg-gray-800 text-xs uppercase text-gray-500">
                   Estado
                 </Th>
-                <Th className="min-w-[200px] bg-gray-100 dark:bg-gray-800">
+                <Th className="min-w-[200px] bg-gray-50 dark:bg-gray-800 text-xs uppercase text-gray-500">
                   Observación
                 </Th>
               </Tr>
@@ -259,7 +292,7 @@ const AuditoriaGeo = () => {
               {auditData.map((row) => (
                 <Tr key={row.id_interno} className={getRowColor(row.status)}>
                   {/* Sticky Columns */}
-                  <Td className="bg-slate-50/50 dark:bg-[#0b1120] text-xs font-mono font-bold text-slate-700 dark:text-slate-300 z-10 transition-colors">
+                  <Td className="bg-slate-50 dark:bg-[#0b1120] text-xs font-mono font-bold text-slate-700 dark:text-slate-300 z-10 transition-colors">
                     {row.codigo_profit}
                   </Td>
                   <Td className="text-left font-semibold bg-white dark:bg-[#111827] border-r dark:border-white/5 shadow-md text-xs z-10 transition-colors">
@@ -270,32 +303,33 @@ const AuditoriaGeo = () => {
 
                   {/* Location */}
                   <Td className="text-xs transition-colors">{row.zona}</Td>
-                  <Td className="transition-colors">
+                  <Td className="transition-colors border-r border-gray-200 dark:border-white/5">
                     <span
-                      className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${row.ruta && row.ruta.includes("CERRADO")
-                        ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-300"
-                        : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
-                        }`}
+                      className={`text-[10px] px-2 py-0.5 rounded-md font-bold border ${
+                        row.ruta && row.ruta.includes("CERRADO")
+                          ? "bg-red-50 text-red-600 border-red-100 dark:bg-red-900/20 dark:border-red-900 dark:text-red-300"
+                          : "bg-slate-50 text-slate-600 border-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400"
+                      }`}
                     >
                       {row.ruta}
                     </span>
                   </Td>
 
                   {/* Profit */}
-                  <Td className="font-mono text-[10px] text-slate-500 bg-green-50/30 border-l border-gray-200 dark:bg-green-900/10 dark:border-white/5 transition-colors">
+                  <Td className="font-mono text-[10px] text-center text-slate-500 bg-green-50 border-r border-green-100 dark:bg-green-900 dark:border-white/5 transition-colors">
                     {row.coords_profit || "-"}
                   </Td>
 
                   {/* Bitrix */}
-                  <Td className="font-mono text-xs text-blue-600 font-bold bg-blue-50/30 border-l border-gray-200 dark:bg-blue-900/10 dark:border-white/5 transition-colors">
+                  <Td className="font-mono text-xs text-center text-blue-600 font-bold bg-blue-50 dark:bg-blue-900 transition-colors">
                     {row.id_bitrix}
                   </Td>
-                  <Td className="font-mono text-[10px] text-slate-500 bg-blue-50/20 dark:bg-blue-900/5 transition-colors">
+                  <Td className="font-mono text-[10px] text-center text-slate-500 bg-blue-50 border-r border-blue-100 dark:bg-blue-900 dark:border-white/5 transition-colors">
                     {row.coords_bitrix || "-"}
                   </Td>
 
                   {/* Auditoría */}
-                  <Td className="flex justify-center border-l border-gray-200 dark:border-white/5 transition-colors">
+                  <Td className="flex justify-center transition-colors py-2">
                     <GeoStatusBadge
                       status={row.status}
                       distance={row.distancia}

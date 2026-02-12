@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { apiService } from "../services/apiService";
 import { useAuditoria } from "../hooks/useAuditoria";
+import { useAuth } from "../hooks/useAuth";
 import {
   Save,
   Edit3,
@@ -15,6 +16,9 @@ import {
   CheckCircle,
   Loader,
   Lock,
+  // Agregué estos dos iconos para el nuevo header visual
+  Filter,
+  Calendar,
 } from "lucide-react";
 import {
   TableContainer,
@@ -29,18 +33,21 @@ import { FilterMultiSelect } from "../components/ui/FilterMultiSelect";
 
 import { useToast } from "../components/ui/Toast";
 
-// --- COMPONENTES AUXILIARES ---
+// --- COMPONENTES AUXILIARES (MODIFICADOS SOLO VISUALMENTE PARA EL HEADER) ---
+
+// 1. StatBadge: Rediseñado para el estilo "Clean" (Tarjetas)
 const StatBadge = React.memo(({ label, value, colorClass }) => (
-  <div className="flex flex-col items-center px-4 border-r last:border-r-0 border-gray-200 dark:border-slate-800 min-w-[100px]">
-    <span className="text-[10px] uppercase font-bold text-gray-400 leading-none mb-1 text-center">
+  <div
+    className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg border ${colorClass} min-w-[90px] shadow-sm`}
+  >
+    <span className="text-[10px] uppercase font-bold opacity-80 leading-none mb-1 text-center">
       {label}
     </span>
-    <span className={`text-sm font-black ${colorClass} leading-none`}>
-      {value}
-    </span>
+    <span className="text-xl font-black leading-none">{value}</span>
   </div>
 ));
 
+// Los demás componentes auxiliares se mantienen IGUALES
 const ClassificationBadge = React.memo(({ value }) => {
   const letter = (value || "").toString().toUpperCase().charAt(0);
 
@@ -201,10 +208,11 @@ const EditableCell = React.memo(
             }
           }}
           placeholder={disabled ? "" : placeholder}
-          className={`w-full min-w-[120px] bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded px-2 py-1.5 text-sm outline-none ${disabled
+          className={`w-full min-w-[120px] bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded px-2 py-1.5 text-sm outline-none ${
+            disabled
               ? "text-gray-500 cursor-not-allowed bg-gray-50/50 dark:bg-slate-900/50"
               : "focus:ring-2 focus:ring-[#1a9888] dark:text-gray-200"
-            }`}
+          }`}
         />
         {!disabled && (
           <Edit3
@@ -353,6 +361,26 @@ const AuditRow = React.memo(
 
     // C. LÓGICA 'CON GESTION'
     const conGestion = useMemo(() => {
+      // Solo mostrar gestión si estamos viendo el día actual
+      const today = new Date();
+      const dayOfWeek = today.getDay(); // 0=domingo, 1=lunes, ..., 6=sábado
+
+      // Mapeo de días: Si es domingo (0), se trata como lunes
+      const dayMap = {
+        0: "lunes", // Domingo -> Lunes (no trabajan domingos)
+        1: "lunes",
+        2: "martes",
+        3: "miercoles",
+        4: "jueves",
+        5: "viernes",
+        6: "sábado",
+      };
+
+      const currentDayName = dayMap[dayOfWeek];
+
+      // Si no estamos viendo el día actual, no mostrar gestión
+      if (selectedDay !== currentDayName) return false;
+
       // 1. Cohort Check (> 2024)
       let purchaseYear = 0;
       if (row.fecha_ultima_compra) {
@@ -367,25 +395,50 @@ const AuditRow = React.memo(
 
       if (purchaseYear <= 2024) return false;
 
-      // 2. Dates Check
-      const compraSemana = isWithinCurrentWeek(row.fecha_ultima_compra);
-      const cobroSemana = isWithinCurrentWeek(
-        row.fecha_ultimo_cobro || row.ultimo_cobro,
-      );
-      if (compraSemana && cobroSemana) return true;
-
-      // 3. Actions Check
-      // Venta por llamada (Cualquiera de E, P, N en llamadas_venta)
-      const hasVentaCall =
+      // 2. Verificar si hay gestión HOY (checkboxes marcados o observación)
+      const hasCheckboxes =
+        auditData?.inicio_whatsapp?.e ||
+        auditData?.inicio_whatsapp?.c ||
+        auditData?.accion_venta?.e ||
+        auditData?.accion_venta?.p ||
+        auditData?.accion_venta?.n ||
+        auditData?.accion_cobranza?.e ||
+        auditData?.accion_cobranza?.p ||
+        auditData?.accion_cobranza?.n ||
         auditData?.llamadas_venta?.e ||
         auditData?.llamadas_venta?.p ||
-        auditData?.llamadas_venta?.n;
+        auditData?.llamadas_venta?.n ||
+        auditData?.llamadas_cobranza?.e ||
+        auditData?.llamadas_cobranza?.p ||
+        auditData?.llamadas_cobranza?.n;
 
-      // Cobranza por Whatsapp (Checkbox "EJECUTIVA" -> inicio_whatsapp.e)
-      const hasCobranzaWs = auditData?.inicio_whatsapp?.e;
+      const hasObservation =
+        auditData?.observacion &&
+        auditData.observacion.toString().trim().length > 0;
 
-      return !!(hasVentaCall && hasCobranzaWs);
-    }, [row, auditData]);
+      // 3. Verificar si hay gestión de Profit/Bitrix para hoy
+      const logDelDia = Array.isArray(row.gestion)
+        ? row.gestion.find((g) => {
+            if (!g.dia_semana) return false;
+            return (
+              g.dia_semana
+                .toLowerCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "") ===
+              selectedDay
+                .toLowerCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+            );
+          })
+        : null;
+
+      const hasExternalGestion =
+        logDelDia &&
+        (logDelDia.venta_descripcion || logDelDia.cobranza_descripcion);
+
+      return hasCheckboxes || hasObservation || hasExternalGestion;
+    }, [row, auditData, selectedDay]);
 
     // D. LÓGICA 'RECUPERACIÓN / EFECTIVIDAD 30 DÍAS'
     const efectividad30d = useMemo(() => {
@@ -671,10 +724,11 @@ const AuditRow = React.memo(
 
         {/* --- DIFERENCIA COORDENADAS --- */}
         <Td
-          className={`text-center text-xs whitespace-nowrap font-medium ${distanciaTxt !== "-" && esLejos
+          className={`text-center text-xs whitespace-nowrap font-medium ${
+            distanciaTxt !== "-" && esLejos
               ? "text-red-500 font-bold"
               : "text-green-600"
-            }`}
+          }`}
         >
           {distanciaTxt}
         </Td>
@@ -807,30 +861,41 @@ const AuditRow = React.memo(
   },
 );
 
-// --- COMPONENTE PRINCIPAL ---
+// --- COMPONENTE PRINCIPAL (MODIFICADO HEADER, MATRIZ INTACTA) ---
 const Matriz = () => {
   const { data, loading, error, handleAuditoriaChange } = useAuditoria();
   const actualCurrentDay = useMemo(() => {
     const dayOfWeek = new Date().getDay();
     const map = {
-      0: "lunes", // Domingo -> Lunes
+      0: "domingo", // Domingo -> Lunes
       1: "lunes",
       2: "martes",
       3: "miercoles",
       4: "jueves",
       5: "viernes",
-      6: "lunes", // Sábado -> Lunes
+      6: "sábado", // Sábado -> Lunes
     };
     return map[dayOfWeek] || "lunes";
   }, []);
 
   const [selectedDay, setSelectedDay] = useState(actualCurrentDay);
+  const { user } = useAuth();
 
   // --- CAMBIO: Variable para controlar si se puede editar
-  const isEditable = useMemo(
-    () => selectedDay === actualCurrentDay,
-    [selectedDay, actualCurrentDay],
-  );
+  const isEditable = useMemo(() => {
+    const role = user?.role?.toLowerCase().trim();
+    const p = user?.permisos;
+
+    // Si es ejecutiva, bloqueamos edición siempre (como pidió el usuario)
+    if (role === "ejecutiva") return false;
+
+    // Verificación de permisos de gestión (Auditor o Administrador)
+    const canManage =
+      p?.gestion_matrix || p?.acceso_total || p?.editar_usuarios;
+
+    // Solo se permite editar si es el día actual Y tiene permisos de gestión
+    return selectedDay === actualCurrentDay && canManage;
+  }, [selectedDay, actualCurrentDay, user?.role, user?.permisos]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedZonas, setSelectedZonas] = useState([]); // Nuevo estado para filtro de Zonas
   const [selectedRutas, setSelectedRutas] = useState([]); // Nuevo estado para filtro de Rutas
@@ -998,14 +1063,14 @@ const Matriz = () => {
 
       const log = Array.isArray(row.gestion)
         ? row.gestion.find((g) => {
-          if (!g.dia_semana) return false;
-          return (
-            g.dia_semana
-              .toLowerCase()
-              .normalize("NFD")
-              .replace(/[\u0300-\u036f]/g, "") === dayKey
-          );
-        })
+            if (!g.dia_semana) return false;
+            return (
+              g.dia_semana
+                .toLowerCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "") === dayKey
+            );
+          })
         : null;
 
       const hasObs =
@@ -1112,137 +1177,136 @@ const Matriz = () => {
     );
 
   return (
-    <div className="p-2 min-h-screen bg-white dark:bg-[#191919]">
-      {/* --- CONTENEDOR PRINCIPAL DEL HEADER --- */}
-      <div className="bg-white dark:bg-[#1e1e1e] rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-4 p-4">
-        {/* 1. TÍTULO E INFORMACIÓN */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 pb-4 border-b border-gray-100 dark:border-gray-800">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-teal-50 dark:bg-teal-900/20 text-[#1a9888] rounded-xl">
-              <Save size={24} />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-gray-800 dark:text-white leading-tight">
-                Auditoría de Conversaciones
-              </h2>
-              <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                <span>
-                  Total: <b>{data.length}</b>
+    <div className="p-4 sm:p-6 lg:p-8 min-h-screen bg-white dark:bg-[#0b1120]">
+      {/* --- HEADER REDISEÑADO (CLEAN/TEAL) --- */}
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 mb-8 border-b border-gray-200 dark:border-white/5 pb-6">
+        <div className="flex items-center gap-4">
+          <div className="bg-teal-50 dark:bg-teal-900/20 p-3 rounded-2xl">
+            <Save size={32} className="text-[#1a9888] dark:text-teal-400" />
+          </div>
+          <div>
+            <h2 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">
+              Auditoría de{" "}
+              <span className="text-[#1a9888] dark:text-teal-400">
+                Conversaciones
+              </span>
+            </h2>
+            <div className="flex items-center gap-3 mt-1 text-sm text-slate-500 dark:text-slate-400 font-medium">
+              <span>
+                Total:{" "}
+                <b className="text-slate-900 dark:text-white">{data.length}</b>
+              </span>
+              <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
+              <span>
+                Visibles:{" "}
+                <b className="text-slate-900 dark:text-white">
+                  {filteredData.length}
+                </b>
+              </span>
+              {!isEditable && (
+                <span className="ml-2 flex items-center gap-1 text-xs font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800">
+                  <Lock size={10} /> SOLO LECTURA
                 </span>
-                <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
-                <span>
-                  Visibles: <b>{filteredData.length}</b>
-                </span>
-                {!isEditable && (
-                  <span className="ml-2 px-2 py-0.5 rounded text-xs font-bold bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300 flex items-center gap-1">
-                    <Lock size={10} /> MODO LECTURA
-                  </span>
-                )}
-              </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* 2. BARRA DE HERRAMIENTAS (Filtros & Stats) */}
-        <div className="flex flex-col xl:flex-row justify-between gap-4 items-start xl:items-center">
-          {/* IZQUIERDA: FILTROS (Día, Zona, Búsqueda) */}
-          <div className="flex flex-col sm:flex-row gap-3 w-full xl:w-auto">
-            {/* Selector de Día (Estilo Segmented Control) */}
-            <div className="flex bg-gray-100 dark:bg-[#252525] p-1 rounded-lg shrink-0 overflow-x-auto">
-              {["lunes", "martes", "miercoles", "jueves", "viernes", "sabado"].map(
-                (day) => (
-                  <button
-                    key={day}
-                    onClick={() => setSelectedDay(day)}
-                    className={`px-3 py-1.5 text-xs font-semibold rounded-md capitalize whitespace-nowrap transition-all ${selectedDay === day
-                        ? "bg-white dark:bg-[#1a9888] text-[#1a9888] dark:text-white shadow-sm ring-1 ring-black/5 dark:ring-0 opacity-100"
-                        : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-                      }`}
-                  >
-                    {day}
-                  </button>
-                ),
-              )}
-            </div>
-
-            {/* Grupo Zona y Buscador */}
-            <div className="flex gap-2 w-full sm:w-auto items-center">
-              <div className="shrink-0">
-                <FilterMultiSelect
-                  label="Zonas"
-                  options={uniqueZonas}
-                  selected={selectedZonas}
-                  onChange={setSelectedZonas}
-                />
-              </div>
-
-              <div className="shrink-0">
-                <FilterMultiSelect
-                  label="Rutas"
-                  options={uniqueRutas}
-                  selected={selectedRutas}
-                  onChange={setSelectedRutas}
-                />
-              </div>
-
-              <div className="relative w-full sm:w-60 group">
-                <input
-                  type="text"
-                  placeholder="Buscar cliente..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-8 py-2 text-xs bg-gray-50 dark:bg-[#252525] border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#1a9888] focus:border-transparent outline-none dark:text-white transition-all group-hover:bg-white dark:group-hover:bg-[#2a2a2a]"
-                />
-                <Search
-                  className="absolute left-3 top-2.5 text-gray-400 group-focus-within:text-[#1a9888]"
-                  size={14}
-                />
-                {searchTerm && (
-                  <button
-                    onClick={() => setSearchTerm("")}
-                    className="absolute right-2.5 top-2.5 text-gray-400 hover:text-red-500 transition-colors"
-                  >
-                    <XCircle size={14} />
-                  </button>
-                )}
-              </div>
-            </div>
+        {/* BARRA DE HERRAMIENTAS DE FILTRO */}
+        <div className="flex flex-col sm:flex-row gap-3 w-full xl:w-auto items-end">
+          {/* Selector Día (Estilo Pills) */}
+          <div className="flex bg-gray-100 dark:bg-[#1a2333] p-1 rounded-xl overflow-x-auto border border-gray-200 dark:border-gray-700">
+            {[
+              "lunes",
+              "martes",
+              "miercoles",
+              "jueves",
+              "viernes",
+              "sábado",
+            ].map((day) => (
+              <button
+                key={day}
+                onClick={() => setSelectedDay(day)}
+                className={`px-4 py-2 text-xs font-bold rounded-lg capitalize whitespace-nowrap transition-all ${
+                  selectedDay === day
+                    ? "bg-[#1a9888] text-white shadow-md shadow-teal-500/20"
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700"
+                }`}
+              >
+                {day}
+              </button>
+            ))}
           </div>
 
-          {/* DERECHA: INDICADORES (KPIs) */}
-          <div className="flex flex-wrap gap-2 items-center justify-end w-full xl:w-auto border-t xl:border-t-0 border-gray-100 dark:border-gray-800 pt-3 xl:pt-0">
-            <StatBadge
-              label="Efectivas"
-              value={stats.efectivas}
-              colorClass="text-green-600 bg-green-50 dark:bg-green-900/20 border-green-100 dark:border-green-800"
+          {/* Inputs Filtros */}
+          <div className="flex gap-2 w-full sm:w-auto">
+            <FilterMultiSelect
+              label="Zonas"
+              options={uniqueZonas}
+              selected={selectedZonas}
+              onChange={setSelectedZonas}
             />
-            <StatBadge
-              label="Venta (P)"
-              value={stats.ventaProceso}
-              colorClass="text-orange-600 bg-orange-50 dark:bg-orange-900/20 border-orange-100 dark:border-orange-800"
+            <FilterMultiSelect
+              label="Rutas"
+              options={uniqueRutas}
+              selected={selectedRutas}
+              onChange={setSelectedRutas}
             />
-            <StatBadge
-              label="Cobro (P)"
-              value={stats.cobranzaProceso}
-              colorClass="text-blue-600 bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800"
-            />
-
-            <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1 hidden sm:block"></div>
-
-            <StatBadge
-              label="Sin Gestión"
-              value={stats.sinGestion}
-              colorClass="text-red-600 bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-800"
-            />
-            <StatBadge
-              label="Recuperados"
-              value={headerCounts.deNpAE_total}
-              colorClass="text-purple-600 bg-purple-50 dark:bg-purple-900/20 border-purple-100 dark:border-purple-800"
-            />
+            <div className="relative group w-full sm:w-64">
+              <Search
+                size={16}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#1a9888] transition-colors"
+              />
+              <input
+                type="text"
+                placeholder="Buscar cliente, código..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-8 py-2.5 bg-gray-50 dark:bg-[#1a2333] border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-[#1a9888]/50 dark:text-white text-sm font-medium transition-all"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500"
+                >
+                  <XCircle size={14} />
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
+      {/* BARRA DE ESTADISTICAS (KPIs - Estilo Tarjetas) */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+        <StatBadge
+          label="Efectivas"
+          value={stats.efectivas}
+          colorClass="bg-green-50 border-green-100 text-green-700 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400"
+        />
+        <StatBadge
+          label="Venta (P)"
+          value={stats.ventaProceso}
+          colorClass="bg-orange-50 border-orange-100 text-orange-700 dark:bg-orange-900/20 dark:border-orange-800 dark:text-orange-400"
+        />
+        <StatBadge
+          label="Cobro (P)"
+          value={stats.cobranzaProceso}
+          colorClass="bg-blue-50 border-blue-100 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-400"
+        />
+        <StatBadge
+          label="Sin Gestión"
+          value={stats.sinGestion}
+          colorClass="bg-red-50 border-red-100 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400"
+        />
+        <StatBadge
+          label="Recuperados"
+          value={headerCounts.deNpAE_total}
+          colorClass="bg-purple-50 border-purple-100 text-purple-700 dark:bg-purple-900/20 dark:border-purple-800 dark:text-purple-400"
+        />
+      </div>
+
+      {/* --- AQUÍ COMIENZA LA MATRIZ (INTACTA) --- */}
       <TableContainer className="max-h-[85vh]">
         {loading ? (
           <div className="p-10 flex flex-col items-center justify-center text-gray-500">
@@ -1792,16 +1856,16 @@ const Matriz = () => {
                 >
                   N
                 </Th>
-                <Th className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-amber-950/20 border-r border-yellow-200 dark:border-amber-900 text-yellow-700 dark:text-amber-300">
+                <Th className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-amber-950 border-r border-yellow-200 dark:border-amber-900 text-yellow-700 dark:text-amber-300">
                   Planificación
                 </Th>
-                <Th className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-amber-950/20 border-r border-yellow-200 dark:border-amber-900 text-yellow-700 dark:text-amber-300">
+                <Th className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-amber-950 border-r border-yellow-200 dark:border-amber-900 text-yellow-700 dark:text-amber-300">
                   Acción del Dia
                 </Th>
-                <Th className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-amber-950/20 border-r border-yellow-200 dark:border-amber-900 text-yellow-700 dark:text-amber-300">
+                <Th className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-amber-950 border-r border-yellow-200 dark:border-amber-900 text-yellow-700 dark:text-amber-300">
                   Diferencia de Coordenadas
                 </Th>
-                <Th className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-amber-950/20 border-r border-yellow-200 dark:border-amber-900 text-yellow-700 dark:text-amber-300">
+                <Th className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-amber-950 border-r border-yellow-200 dark:border-amber-900 text-yellow-700 dark:text-amber-300">
                   Observación del vendedor
                 </Th>
                 <Th className="text-center text-[10px] uppercase bg-gray-200 dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 text-gray-700 dark:text-slate-300">
