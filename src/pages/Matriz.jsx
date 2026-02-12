@@ -81,76 +81,106 @@ const formatCurrency = (val) =>
   );
 
 // --- HELPER PARA FECHAS ---
-const isWithinCurrentWeek = (dateStr) => {
-  if (!dateStr || dateStr === "—" || dateStr === "-") return false;
+const isWithinCurrentWeek = (dateInput) => {
+  if (!dateInput) return false;
 
-  // Forzamos el parseo a hora local para evitar desfases de zona horaria (UTC vs Local)
-  let date;
-  if (dateStr.includes("/")) {
-    const [day, month, year] = dateStr.split("/").map(Number);
-    date = new Date(year, month - 1, day);
-  } else if (dateStr.includes("-")) {
-    const parts = dateStr.split("-").map(Number);
-    if (parts[0] > 1000) {
-      // YYYY-MM-DD
-      date = new Date(parts[0], parts[1] - 1, parts[2]);
-    } else {
-      // DD-MM-YYYY
-      date = new Date(parts[2], parts[1] - 1, parts[0]);
+  try {
+    let dateStr = String(dateInput).trim();
+    if (dateStr === "—" || dateStr === "-" || !dateStr) return false;
+
+    // Limpiar hora si existe
+    if (dateStr.includes(" ")) {
+      dateStr = dateStr.split(" ")[0];
     }
-  } else {
-    date = new Date(dateStr);
+
+    let date;
+    if (dateStr.includes("/")) {
+      const parts = dateStr.split("/").map((n) => parseInt(n, 10));
+      if (parts.length === 3) {
+        date = new Date(parts[2], parts[1] - 1, parts[0]);
+      }
+    } else if (dateStr.includes("-")) {
+      const parts = dateStr.split("-").map((n) => parseInt(n, 10));
+      if (parts.length === 3) {
+        if (parts[0] > 1000) {
+          // YYYY-MM-DD
+          date = new Date(parts[0], parts[1] - 1, parts[2]);
+        } else {
+          // DD-MM-YYYY
+          date = new Date(parts[2], parts[1] - 1, parts[0]);
+        }
+      }
+    } else {
+      date = new Date(dateStr);
+    }
+
+    if (!date || isNaN(date.getTime())) return false;
+
+    // Normalizamos a la fecha de hoy local
+    const now = new Date();
+    const dayOfWeek = now.getDay() || 7; // Lunes = 1, Domingo = 7
+
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - (dayOfWeek - 1));
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    return date >= startOfWeek && date <= endOfWeek;
+  } catch (e) {
+    return false;
   }
-
-  if (isNaN(date.getTime())) return false;
-
-  // Normalizamos a la fecha de hoy local
-  const now = new Date();
-  const dayOfWeek = now.getDay() || 7; // Lunes = 1, Domingo = 7
-
-  const startOfWeek = new Date(now);
-  startOfWeek.setDate(now.getDate() - (dayOfWeek - 1));
-  startOfWeek.setHours(0, 0, 0, 0);
-
-  const endOfWeek = new Date(startOfWeek);
-  endOfWeek.setDate(startOfWeek.getDate() + 6);
-  endOfWeek.setHours(23, 59, 59, 999);
-
-  return date >= startOfWeek && date <= endOfWeek;
 };
 
 // --- HELPER PARA FECHAS (Ventana 30 días) ---
-const isWithinLast30Days = (dateStr) => {
-  if (!dateStr || dateStr === "—" || dateStr === "-") return false;
+const isWithinLast30Days = (dateInput) => {
+  if (!dateInput) return false;
 
-  let date;
-  // Parseo robusto (igual que tu función anterior)
-  if (dateStr.includes("/")) {
-    const [day, month, year] = dateStr.split("/").map(Number);
-    date = new Date(year, month - 1, day);
-  } else if (dateStr.includes("-")) {
-    const parts = dateStr.split("-").map(Number);
-    if (parts[0] > 1000) {
-      date = new Date(parts[0], parts[1] - 1, parts[2]);
-    } else {
-      date = new Date(parts[2], parts[1] - 1, parts[0]);
+  try {
+    let dateStr = String(dateInput).trim();
+    if (dateStr === "—" || dateStr === "-" || !dateStr) return false;
+
+    if (dateStr.includes(" ")) {
+      dateStr = dateStr.split(" ")[0];
     }
-  } else {
-    date = new Date(dateStr);
+
+    let date;
+    // Parseo robusto (igual que tu función anterior)
+    if (dateStr.includes("/")) {
+      const parts = dateStr.split("/").map((n) => parseInt(n, 10));
+      if (parts.length === 3) {
+        date = new Date(parts[2], parts[1] - 1, parts[0]);
+      }
+    } else if (dateStr.includes("-")) {
+      const parts = dateStr.split("-").map((n) => parseInt(n, 10));
+      if (parts.length === 3) {
+        if (parts[0] > 1000) {
+          date = new Date(parts[0], parts[1] - 1, parts[2]);
+        } else {
+          date = new Date(parts[2], parts[1] - 1, parts[0]);
+        }
+      }
+    } else {
+      date = new Date(dateStr);
+    }
+
+    if (!date || isNaN(date.getTime())) return false;
+
+    const now = new Date();
+    // Reseteamos horas para comparar solo fechas
+    now.setHours(23, 59, 59, 999);
+
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(now.getDate() - 30);
+    thirtyDaysAgo.setHours(0, 0, 0, 0);
+
+    // La fecha debe ser mayor o igual a hace 30 días y menor o igual a hoy
+    return date >= thirtyDaysAgo && date <= now;
+  } catch (e) {
+    return false;
   }
-
-  if (isNaN(date.getTime())) return false;
-
-  const now = new Date();
-  // Reseteamos horas para comparar solo fechas
-  now.setHours(23, 59, 59, 999);
-
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(now.getDate() - 30);
-  thirtyDaysAgo.setHours(0, 0, 0, 0);
-
-  // La fecha debe ser mayor o igual a hace 30 días y menor o igual a hoy
-  return date >= thirtyDaysAgo && date <= now;
 };
 
 const TableCheckbox = React.memo(
@@ -277,7 +307,9 @@ const AuditRow = React.memo(
             .toLowerCase()
             .normalize("NFD")
             .replace(/[\u0300-\u036f]/g, "");
-          return diaApi === diaSelect;
+
+          // Validar que sea el día correcto Y de la semana actual
+          return diaApi === diaSelect && isWithinCurrentWeek(g.fecha_registro);
         });
       }
       return null;
@@ -1581,7 +1613,7 @@ const Matriz = () => {
                 <Th className="bg-white dark:bg-slate-900 border-l dark:border-slate-800 border-gray-200 text-[10px] uppercase font-bold text-center dark:text-slate-300">
                   De N-P a E
                 </Th>
-                <Th className="bg-white dark:bg-slate-900 border-l dark:border-slate-800 border-gray-200 text-[10px] uppercase font-bold text-center text-purple-700 dark:text-purple-300">
+                <Th className="bg-white dark:bg-slate-900 border-l dark:border-slate-800 border-gray-200 text-[10px] uppercase font-bold text-center dark:text-slate-300">
                   CON GESTIÓN
                 </Th>
                 <Th className="min-w-[40px] bg-white dark:bg-slate-900 p-0 border-l border-r border-white dark:border-slate-800">
@@ -1625,7 +1657,7 @@ const Matriz = () => {
                 </Th>
                 <Th
                   colSpan={4}
-                  className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-amber-950/30 border-r dark:border-amber-900 border-yellow-200 text-yellow-700 dark:text-amber-300"
+                  className="text-center text-[10px] uppercase bg-yellow-50 dark:bg-amber-950/30 border-r border-yellow-200 dark:border-amber-900 text-yellow-700 dark:text-amber-300"
                 >
                   Visitas Asesor de Venta
                 </Th>

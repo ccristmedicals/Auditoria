@@ -4,37 +4,60 @@ import { apiService } from "../services/apiService";
 import { useAuth } from "./useAuth";
 
 // --- HELPER DE FECHAS (Hora Local) ---
-const isWithinCurrentWeek = (dateStr) => {
-  if (!dateStr || dateStr === "—" || dateStr === "-") return false;
+const isWithinCurrentWeek = (dateInput) => {
+  if (!dateInput) return false;
 
-  let date;
-  if (dateStr.includes("/")) {
-    const [day, month, year] = dateStr.split("/").map(Number);
-    date = new Date(year, month - 1, day);
-  } else if (dateStr.includes("-")) {
-    const parts = dateStr.split("-").map(Number);
-    if (parts[0] > 1000) {
-      date = new Date(parts[0], parts[1] - 1, parts[2]);
-    } else {
-      date = new Date(parts[2], parts[1] - 1, parts[0]);
+  try {
+    // Convertir a string de forma segura y limpiar espacios
+    let dateStr = String(dateInput).trim();
+    if (dateStr === "—" || dateStr === "-" || !dateStr) return false;
+
+    // Si viene con hora (ej: "2024-05-12 14:30:00"), nos quedamos solo con la fecha
+    if (dateStr.includes(" ")) {
+      dateStr = dateStr.split(" ")[0];
     }
-  } else {
-    date = new Date(dateStr);
+
+    let date;
+    if (dateStr.includes("/")) {
+      const parts = dateStr.split("/").map((n) => parseInt(n, 10));
+      // DD/MM/YYYY
+      if (parts.length === 3) {
+        date = new Date(parts[2], parts[1] - 1, parts[0]);
+      }
+    } else if (dateStr.includes("-")) {
+      const parts = dateStr.split("-").map((n) => parseInt(n, 10)); // Convertir a enteros para evitar NaN por espacios
+      if (parts.length === 3) {
+        if (parts[0] > 1000) {
+          // YYYY-MM-DD
+          date = new Date(parts[0], parts[1] - 1, parts[2]);
+        } else {
+          // DD-MM-YYYY
+          date = new Date(parts[2], parts[1] - 1, parts[0]);
+        }
+      }
+    } else {
+      // Intento final constructor estándar
+      date = new Date(dateStr);
+    }
+
+    if (!date || isNaN(date.getTime())) return false;
+
+    // Normalizar a semana actual
+    const now = new Date();
+    const dayOfWeek = now.getDay() || 7; // Lunes = 1
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - (dayOfWeek - 1));
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    return date >= startOfWeek && date <= endOfWeek;
+  } catch (err) {
+    // Si falla el parseo, asumimos false para no romper la app
+    return false;
   }
-
-  if (isNaN(date.getTime())) return false;
-
-  const now = new Date();
-  const dayOfWeek = now.getDay() || 7; // Lunes = 1, Domingo = 7
-  const startOfWeek = new Date(now);
-  startOfWeek.setDate(now.getDate() - (dayOfWeek - 1));
-  startOfWeek.setHours(0, 0, 0, 0);
-
-  const endOfWeek = new Date(startOfWeek);
-  endOfWeek.setDate(startOfWeek.getDate() + 6);
-  endOfWeek.setHours(23, 59, 59, 999);
-
-  return date >= startOfWeek && date <= endOfWeek;
 };
 
 // --- HELPER PARA GESTIÓN SEMANAL ---
@@ -83,7 +106,7 @@ const calculateDistance = (coord1, coord2) => {
     const phi1 = (lat1 * Math.PI) / 180;
     const phi2 = (lat2 * Math.PI) / 180;
     const deltaPhi = ((lat2 - lat1) * Math.PI) / 180;
-    const deltaLambda = ((lon2 - lon1) * Math.PI) / 180;
+    const deltaLambda = ((lon1 - lon2) * Math.PI) / 180;
 
     const a =
       Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
@@ -128,7 +151,7 @@ export const useAuditoria = () => {
         }
 
         const matrixMap = new Map();
-        const matrixArray = matrixData?.data || matrixData || [];
+        let matrixArray = matrixData?.data || matrixData || [];
 
         // --- LÓGICA DE LIMPIEZA SEMANAL ---
         const savedWeekId = localStorage.getItem("matrixWeekId");
@@ -159,65 +182,97 @@ export const useAuditoria = () => {
 
         const processedData = companies
           .map((item) => {
-            if (!item) return null;
+            try {
+              if (!item) return null;
 
-            const b = item.bitrix || {};
-            const p = item.profit || {};
+              const b = item.bitrix || {};
+              const p = item.profit || {};
 
-            // Buscar datos registrados para este cliente
-            const registered = matrixMap.get(b.ID?.toString());
+              // Buscar datos registrados para este cliente en el Map
+              // Usamos toString() seguro
+              const bId = b.ID ? String(b.ID) : null;
+              const registered = bId ? matrixMap.get(bId) : null;
 
-            // Historial de gestiones (Profit/Bitrix)
-            const g = Array.isArray(item.gestion) ? item.gestion : [];
+              // Historial de gestiones (Profit/Bitrix)
+              const g = Array.isArray(item.gestion) ? item.gestion : [];
 
-            return {
-              id: b.ID || Math.random(),
-              id_bitrix: b.ID || "—",
-              etapa: "",
-              nombre: b.TITLE || "Sin Nombre",
-              codigo: b.UF_CRM_1634787828 || "—",
-              zona: b.UF_CRM_1635903069 || "—",
-              segmento: b.UF_CRM_1638457710 || "—",
-              coordenadas: b.UF_CRM_1651251237102 || null,
-              diasVisita: Array.isArray(b.UF_CRM_1686015739936)
-                ? b.UF_CRM_1686015739936.join(", ")
-                : b.UF_CRM_1686015739936
-                  ? "Sí"
-                  : "No",
-              limite_credito: parseFloat(p.login) || 0,
-              saldo_transito: parseFloat(p.saldo_trancito) || 0,
-              saldo_vencido: parseFloat(p.saldo_vencido) || 0,
-              fecha_ultima_compra: p.fecha_ultima_compra || "—",
-              factura_morosidad: p.factura_mayor_morosidad || "—",
-              ultimo_cobro: p.ultimo_cobro || "—",
-              sku_mes: parseFloat(p.sku_mes) || 0,
-              horario_caja: p.horar_caja || "—",
-              posee_convenio: "—",
-              venta_mes_actual: parseFloat(p.ventas_mes_actual) || 0,
-              venta_mes_pasado: parseFloat(p.ventas_mes_pasado) || 0,
-              ventas_anterior_1: parseFloat(p.ventas_mes_pasado) || 0,
-              ventas_anterior_2: 0,
-              fecha_ultimo_cobro: p.ultimo_cobro || "—",
-              clasificacion: p.horar_caja || "—",
-              gestion: g,
+              // VALIDACIÓN DE FECHA PARA AUDITORÍA (CHECKBOXES)
+              // Logica:
+              // 1. Siempre cargamos 'semana' (Planificación), 'bitacora', etc. del registro guardado.
+              // 2. Solo cargamos 'auditoria' (Checkboxes) si el registro pertenece a la semana actual.
+              
+              let auditoriaData = null;
+              if (registered) {
+                const recordDate =
+                  registered.updated_at ||
+                  registered.created_at ||
+                  registered.fecha_registro;
 
-              // Recuperar datos registrados (vienen como columnas planas del backend)
-              bitacora: registered?.bitacora || item.bitacora || "",
-              obs_ejecutiva:
-                registered?.obs_ejecutiva || item.obs_ejecutiva || "",
-              semana: registered?.semana || item.semana || {},
-              auditoria: registered?.auditoria_matriz || {
-                lunes: createDailyAudit(),
-                martes: createDailyAudit(),
-                miercoles: createDailyAudit(),
-                jueves: createDailyAudit(),
-                viernes: createDailyAudit(),
-                sabado: createDailyAudit(),
-              },
+                if (isWithinCurrentWeek(recordDate)) {
+                  auditoriaData = registered.auditoria_matriz;
+                }
+              }
 
-              calculateDistance: calculateDistance,
-              isWithinCurrentWeek: isWithinCurrentWeek,
-            };
+              // Si no corresponde cargar auditoría (es de sem pasada) o no existe, iniciamos limpia.
+              if (!auditoriaData) {
+                auditoriaData = {
+                  lunes: createDailyAudit(),
+                  martes: createDailyAudit(),
+                  miercoles: createDailyAudit(),
+                  jueves: createDailyAudit(),
+                  viernes: createDailyAudit(),
+                  sabado: createDailyAudit(),
+                };
+              }
+
+              return {
+                id: b.ID || Math.random(),
+                id_bitrix: b.ID || "—",
+                etapa: "",
+                nombre: b.TITLE || "Sin Nombre",
+                codigo: b.UF_CRM_1634787828 || "—",
+                zona: b.UF_CRM_1635903069 || "—",
+                segmento: b.UF_CRM_1638457710 || "—",
+                coordenadas: b.UF_CRM_1651251237102 || null,
+                diasVisita: Array.isArray(b.UF_CRM_1686015739936)
+                  ? b.UF_CRM_1686015739936.join(", ")
+                  : b.UF_CRM_1686015739936
+                    ? "Sí"
+                    : "No",
+                limite_credito: parseFloat(p.login) || 0,
+                saldo_transito: parseFloat(p.saldo_trancito) || 0,
+                saldo_vencido: parseFloat(p.saldo_vencido) || 0,
+                fecha_ultima_compra: p.fecha_ultima_compra || "—",
+                factura_morosidad: p.factura_mayor_morosidad || "—",
+                ultimo_cobro: p.ultimo_cobro || "—",
+                sku_mes: parseFloat(p.sku_mes) || 0,
+                horario_caja: p.horar_caja || "—",
+                posee_convenio: "—",
+                venta_mes_actual: parseFloat(p.ventas_mes_actual) || 0,
+                venta_mes_pasado: parseFloat(p.ventas_mes_pasado) || 0,
+                ventas_anterior_1: parseFloat(p.ventas_mes_pasado) || 0,
+                ventas_anterior_2: 0,
+                fecha_ultimo_cobro: p.ultimo_cobro || "—",
+                clasificacion: p.horar_caja || "—",
+                gestion: g,
+
+                // PERSISTENCIA DE DATOS (Planificación, Bitácora, Acción del Día)
+                // Se cargan siempre del registro encontrado, sin importar la fecha.
+                bitacora: registered?.bitacora || item.bitacora || "",
+                obs_ejecutiva:
+                  registered?.obs_ejecutiva || item.obs_ejecutiva || "",
+                semana: registered?.semana || item.semana || {},
+                
+                // CHECKBOXES (Auditoría) -> Filtro de semana aplicado arriba
+                auditoria: auditoriaData,
+
+                calculateDistance: calculateDistance,
+                isWithinCurrentWeek: isWithinCurrentWeek,
+              };
+            } catch (errItem) {
+              console.warn("Error procesando fila en Matriz:", errItem);
+              return null;
+            }
           })
           .filter(Boolean);
 
