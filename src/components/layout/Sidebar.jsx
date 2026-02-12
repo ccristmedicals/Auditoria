@@ -96,20 +96,20 @@ export default function Sidebar() {
         p?.ver_rutas ||
         role?.toLowerCase().trim() === "ejecutiva",
     },
-    {
-      to: "/rendimiento",
-      label: "Rendimiento",
-      icon: <ArrowUpDown />,
-      permission: (p) =>
-        p?.gestion_matrix || p?.acceso_total || p?.editar_usuarios,
-    },
-    {
-      to: "/vendedores",
-      label: "Vendedores",
-      icon: <Users />,
-      permission: (p) =>
-        p?.gestion_matrix || p?.acceso_total || p?.editar_usuarios,
-    },
+    // {
+    //   to: "/rendimiento",
+    //   label: "Rendimiento",
+    //   icon: <ArrowUpDown />,
+    //   permission: (p) =>
+    //     p?.gestion_matrix || p?.acceso_total || p?.editar_usuarios,
+    // },
+    // {
+    //   to: "/vendedores",
+    //   label: "Vendedores",
+    //   icon: <Users />,
+    //   permission: (p) =>
+    //     p?.gestion_matrix || p?.acceso_total || p?.editar_usuarios,
+    // },
   ];
 
   const filteredLinks = links.filter((link) => {
