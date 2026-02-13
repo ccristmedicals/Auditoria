@@ -1,4 +1,4 @@
-/* eslint-disable no-unused-vars */
+/* eslint-disable no-undef */
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, {
   useState,
@@ -39,8 +39,6 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
-  CheckCircle,
-  Eye,
 } from "lucide-react";
 import { apiService } from "../services/apiService";
 import { FilterMultiSelect } from "../components/ui/FilterMultiSelect";
@@ -48,24 +46,6 @@ import { FilterSingleSelect } from "../components/ui/FilterSingleSelect";
 import { generateVendorPDF } from "../utils/pdfGenerator";
 import { useToast } from "../components/ui/Toast";
 import { ConfirmModal } from "../components/ui/ConfirmModal";
-
-// --- HELPERS VISUALES SUPERIORES ---
-
-const StatCard = ({ icon: Icon, label, value, colorClass, iconColor }) => (
-  <div
-    className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${colorClass} shadow-sm min-w-[140px] flex-1 sm:flex-none`}
-  >
-    <div className={`p-2 rounded-lg ${iconColor}`}>
-      <Icon size={18} />
-    </div>
-    <div>
-      <p className="text-[10px] uppercase font-bold opacity-70 leading-none mb-1">
-        {label}
-      </p>
-      <p className="text-lg font-black leading-none">{value}</p>
-    </div>
-  </div>
-);
 
 const ErrorAwareCell = React.memo(({ value, isError, icon = false }) => {
   if (isError) {
@@ -143,16 +123,9 @@ const ClassificationBadge = React.memo(({ value }) => {
   );
 });
 
-// --- COMPONENTE FILA (SIN TOCAR) ---
+// --- COMPONENTE FILA ---
 const CompanyRow = React.memo(
-  ({
-    row,
-    isSelected,
-    toggleSelect,
-    handleCompanyChange,
-    formatCurrency,
-    handleSave,
-  }) => {
+  ({ row, isSelected, toggleSelect, handleCompanyChange, formatCurrency }) => {
     // --- HELPER PARA RENDERIZAR TEXTO CON COLORES ---
     const renderStyledContent = (textString) => {
       if (!textString) return "-";
@@ -201,13 +174,16 @@ const CompanyRow = React.memo(
       if (!isVisible) return null;
 
       const onTaskChange = (val) => {
+        // 1. Actualiza estado local
         handleCompanyChange(row.id_interno, `${dayPrefix}_tarea`, val);
+        // 2. Dispara guardado inmediato para verificar si inhabilita
         const updatedRow = { ...row, [`${dayPrefix}_tarea`]: val };
         handleSave(updatedRow);
       };
 
       return (
         <>
+          {/* TAREA (Editable) - AHORA PRIMERO */}
           <Td
             className={`${bgColorClass} ${borderClass} min-w-[150px] align-middle`}
           >
@@ -218,6 +194,7 @@ const CompanyRow = React.memo(
             />
           </Td>
 
+          {/* ACCIÓN (Solo Lectura) */}
           <Td
             className={`${bgColorClass} min-w-[150px] align-middle text-center`}
           >
@@ -226,6 +203,7 @@ const CompanyRow = React.memo(
             </div>
           </Td>
 
+          {/* OBSERVACIÓN (Solo Lectura) */}
           <Td
             className={`${bgColorClass} min-w-[150px] align-middle text-center`}
           >
@@ -247,6 +225,7 @@ const CompanyRow = React.memo(
               : "hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
         }
       >
+        {/* Checkbox */}
         <Td className="bg-white dark:bg-[#111827] border-r dark:border-white/5 text-center transition-colors">
           <input
             type="checkbox"
@@ -257,6 +236,7 @@ const CompanyRow = React.memo(
           />
         </Td>
 
+        {/* Datos Básicos */}
         <Td className="bg-slate-50/50 dark:bg-[#0b1120] text-xs font-mono transition-colors">
           {row.id}
         </Td>
@@ -269,6 +249,7 @@ const CompanyRow = React.memo(
           </div>
         </Td>
 
+        {/* Celdas Informativas */}
         {row.visibility?.codigo_profit && (
           <Td>
             <ErrorAwareCell
@@ -364,6 +345,7 @@ const CompanyRow = React.memo(
           </Td>
         )}
 
+        {/* --- SECCIÓN GESTIÓN --- */}
         {row.visibility?.bitacora && (
           <Td className="bg-gray-50 dark:bg-gray-800 border-l border-gray-200 dark:border-[#333] min-w-[300px]">
             <EditableCell
@@ -387,6 +369,7 @@ const CompanyRow = React.memo(
           </Td>
         )}
 
+        {/* --- AGENDA SEMANAL --- */}
         {renderDayCells(
           "lunes",
           "bg-indigo-50 dark:bg-indigo-900/20",
@@ -417,6 +400,8 @@ const CompanyRow = React.memo(
           "border-r border-gray-200 dark:border-[#333]",
           row.visibility,
         )}
+
+        {/* Guardar */}
       </Tr>
     );
   },
@@ -428,6 +413,7 @@ const BaseDatosBitrix = () => {
     companies,
     allCompanies,
     loading,
+    // Filtros del Hook
     selectedSegments,
     setSelectedSegments,
     selectedVendedor,
@@ -443,10 +429,12 @@ const BaseDatosBitrix = () => {
     setDayFilter,
     sortConfig,
     setSortConfig,
+    // Paginación
     page,
     totalPages,
     totalRecords,
     goToPage,
+    // Acciones
     handleCompanyChange,
     refresh,
     uniqueSegments,
@@ -454,10 +442,13 @@ const BaseDatosBitrix = () => {
   } = useBaseDatosBitrix();
 
   const { showToast, ToastContainer } = useToast();
+
   const [jumpPage, setJumpPage] = useState("");
   const [selectedIds, setSelectedIds] = useState([]);
   const [showOnlySelected, setShowOnlySelected] = useState(false);
   const [isBulkSaving, setIsBulkSaving] = useState(false);
+
+  // --- MODAL DE CONFIRMACIÓN ---
   const [showConfirm, setShowConfirm] = useState(false);
   const [confirmData, setConfirmData] = useState({
     title: "",
@@ -465,25 +456,31 @@ const BaseDatosBitrix = () => {
     onConfirm: () => {},
   });
 
+  // --- COLUMN VISIBILITY STATE ---
   const [columnVisibility, setColumnVisibility] = useState({
+    // Bitrix
     codigo_profit: true,
     ciudad: true,
     segmento: true,
     coordenadas: true,
     dias_visita: true,
     convenio: true,
+    // Profit
     limite: true,
     transito: true,
     vencido: true,
     fecha_compra: true,
     morosidad: true,
+    // Ventas
     ultimo_cobro: true,
     sku: true,
     clasif: true,
     actual: true,
     anterior: true,
+    // Gestión
     bitacora: true,
     obs_ejecutiva: true,
+    // Agenda (Por días completos)
     lunes: true,
     martes: true,
     miercoles: true,
@@ -494,6 +491,7 @@ const BaseDatosBitrix = () => {
   const [showColumnMenu, setShowColumnMenu] = useState(false);
   const columnMenuRef = useRef(null);
 
+  // Close menu on click outside
   useEffect(() => {
     function handleClickOutside(event) {
       if (
@@ -511,15 +509,22 @@ const BaseDatosBitrix = () => {
     setColumnVisibility((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const getGroupColSpan = (keys) =>
-    keys.reduce((acc, key) => acc + (columnVisibility[key] ? 1 : 0), 0);
+  // Helper para calcular colSpan de grupos de headers
+  const getGroupColSpan = (keys) => {
+    return keys.reduce((acc, key) => acc + (columnVisibility[key] ? 1 : 0), 0);
+  };
+
+  // Agenda: cada día tiene 3 columnas fijas. Si el día está visible, colSpan 3, sino 0.
   const getDayColSpan = (dayKey) => (columnVisibility[dayKey] ? 3 : 0);
-  const getAgendaTotalColSpan = () =>
-    getDayColSpan("lunes") +
-    getDayColSpan("martes") +
-    getDayColSpan("miercoles") +
-    getDayColSpan("jueves") +
-    getDayColSpan("viernes");
+  const getAgendaTotalColSpan = () => {
+    return (
+      getDayColSpan("lunes") +
+      getDayColSpan("martes") +
+      getDayColSpan("miercoles") +
+      getDayColSpan("jueves") +
+      getDayColSpan("viernes")
+    );
+  };
 
   const toggleSelect = useCallback((id_interno) => {
     setSelectedIds((prev) =>
@@ -532,6 +537,7 @@ const BaseDatosBitrix = () => {
   const toggleSelectAll = useCallback(
     (checked) => {
       if (checked) {
+        // Seleccionar solo los que NO están gestionados hoy
         const availableIds = companies
           .filter((c) => !c.isManagedToday)
           .map((c) => c.id_interno);
@@ -543,16 +549,27 @@ const BaseDatosBitrix = () => {
     [companies],
   );
 
+  // Filtro para mostrar en la tabla:
+  // Si "Ver Selec." está activo, mostramos TODOS los seleccionados (de allCompanies).
+  // Si no, mostramos la página actual (companies) que viene del hook ya filtrada y ordenada.
   const displayedCompanies = useMemo(() => {
-    if (showOnlySelected)
-      return allCompanies.filter((c) => selectedIds.includes(c.id_interno));
+    if (showOnlySelected) {
+      let result = allCompanies.filter((c) =>
+        selectedIds.includes(c.id_interno),
+      );
+      // Opcional: Podríamos ordenar aquí los seleccionados si quisiéramos,
+      // pero por ahora mantenemos la lógica simple.
+      return result;
+    }
     return companies;
   }, [showOnlySelected, allCompanies, companies, selectedIds]);
 
+  // Helper para cambiar la dirección al hacer click (actualiza el estado del hook)
   const handleSort = (key) => {
     let direction = "asc";
-    if (sortConfig.key === key && sortConfig.direction === "asc")
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
       direction = "desc";
+    }
     setSortConfig({ key, direction });
   };
 
@@ -563,6 +580,7 @@ const BaseDatosBitrix = () => {
     }).format(amount || 0);
   }, []);
 
+  // Helper para preparar el payload de un cliente
   const preparePayload = (companyData) => {
     return {
       id_bitrix: companyData.id,
@@ -570,17 +588,33 @@ const BaseDatosBitrix = () => {
       gestion: {
         bitacora: companyData.bitacora,
         obs_ejecutiva: companyData.obs_ejecutiva,
-        semana: ["lunes", "martes", "miercoles", "jueves", "viernes"].reduce(
-          (acc, day) => {
-            acc[day] = {
-              accion: companyData[`${day}_accion`],
-              observacion: companyData[`${day}_observacion`],
-              tarea: companyData[`${day}_tarea`],
-            };
-            return acc;
+        semana: {
+          lunes: {
+            accion: companyData.lunes_accion,
+            observacion: companyData.lunes_observacion,
+            tarea: companyData.lunes_tarea,
           },
-          {},
-        ),
+          martes: {
+            accion: companyData.martes_accion,
+            observacion: companyData.martes_observacion,
+            tarea: companyData.martes_tarea,
+          },
+          miercoles: {
+            accion: companyData.miercoles_accion,
+            observacion: companyData.miercoles_observacion,
+            tarea: companyData.miercoles_tarea,
+          },
+          jueves: {
+            accion: companyData.jueves_accion,
+            observacion: companyData.jueves_observacion,
+            tarea: companyData.jueves_tarea,
+          },
+          viernes: {
+            accion: companyData.viernes_accion,
+            observacion: companyData.viernes_observacion,
+            tarea: companyData.viernes_tarea,
+          },
+        },
       },
       full_data: companyData,
     };
@@ -590,8 +624,11 @@ const BaseDatosBitrix = () => {
     async (companyData) => {
       const payload = preparePayload(companyData);
       try {
+        // <--- CAMBIO IMPORTANTE: Endpoint correcto
         const response = await apiService.savePlanificacion(payload);
+
         if (response) {
+          // <--- CAMBIO IMPORTANTE: Lógica de inhabilitación inmediata
           const todayIndex = new Date().getDay();
           const dayMap = {
             1: "lunes",
@@ -601,24 +638,33 @@ const BaseDatosBitrix = () => {
             5: "viernes",
           };
           const currentDayKey = dayMap[todayIndex];
-          if (
-            currentDayKey &&
-            payload.gestion.semana[currentDayKey]?.tarea?.trim()
-          ) {
-            handleCompanyChange(companyData.id_interno, "isManagedToday", true);
-            setSelectedIds((prev) =>
-              prev.filter((id) => id !== companyData.id_interno),
-            );
-            showToast(
-              "Tarea guardada. Cliente inhabilitado por hoy.",
-              "success",
-            );
-            return true;
+
+          // Si hoy es día laboral, verificamos si hay TAREA para HOY
+          if (currentDayKey) {
+            const task = payload.gestion.semana[currentDayKey]?.tarea;
+
+            // Si hay texto en la tarea, inhabilitar.
+            if (task && task.trim().length > 0) {
+              handleCompanyChange(
+                companyData.id_interno,
+                "isManagedToday",
+                true,
+              );
+              // Quitar de seleccionados si estaba
+              setSelectedIds((prev) =>
+                prev.filter((id) => id !== companyData.id_interno),
+              );
+              showToast(
+                "Tarea guardada. Cliente inhabilitado por hoy.",
+                "success",
+              );
+              return true;
+            }
           }
+          return true;
         }
-        return true;
       } catch (error) {
-        console.error(error);
+        console.error("Error al guardar:", error);
         return false;
       }
     },
@@ -629,13 +675,52 @@ const BaseDatosBitrix = () => {
     setIsBulkSaving(true);
     setShowConfirm(false);
     try {
-      const bulkPayload = selectedEntities.map(preparePayload);
+      // Construir array de payloads
+      const bulkPayload = selectedEntities.map((entity) => ({
+        ...preparePayload(entity),
+        vendedor: vendor.label,
+        usuario: user?.nombre || user?.usuario || "Usuario desconocido",
+      }));
+
+      console.log("JSON enviado:", bulkPayload);
+
+      // Enviar una sola petición con el array
       await apiService.savePlanificacion(bulkPayload);
+
       generateVendorPDF(vendor.label, selectedEntities);
+
       showToast(
-        `Proceso completado. ${selectedEntities.length} guardados y PDF generado.`,
+        `Proceso completado. ${selectedEntities.length} clientes guardados y PDF generado.`,
       );
+
+      const todayIndex = new Date().getDay();
+      const dayMap = {
+        1: "lunes",
+        2: "martes",
+        3: "miercoles",
+        4: "jueves",
+        5: "viernes",
+      };
+      const currentDayKey = dayMap[todayIndex];
+      const idsToDisable = [];
+
+      if (currentDayKey) {
+        selectedEntities.forEach((e) => {
+          const t = e[`${currentDayKey}_tarea`];
+          if (t && t.trim().length > 0) {
+            idsToDisable.push(e.id_interno);
+          }
+        });
+      }
+
+      if (idsToDisable.length > 0) {
+        handleCompanyChange(null, "bulk_update_managed", idsToDisable);
+      }
+
+      // --- REFRESCAR DATOS PARA ACTUALIZAR isManagedToday ---
       await refresh();
+
+      // --- LIMPIEZA DE FILTROS Y SELECCIÓN ---
       setSelectedIds([]);
       setSelectedVendedor(null);
       setSearchTerm("");
@@ -643,24 +728,45 @@ const BaseDatosBitrix = () => {
       setSelectedSegments([]);
       setShowOnlySelected(false);
     } catch (error) {
-      showToast(`Error masivo: ${error.message}`, "error");
+      console.error("Error en proceso masivo:", error);
+      showToast(
+        `Ocurrió un error durante el guardado masivo: ${error.message}`,
+        "error",
+      );
     } finally {
       setIsBulkSaving(false);
     }
   };
 
   const handleBulkSaveAndPDF = async () => {
-    if (selectedIds.length === 0 || !selectedVendedor)
-      return alert("Selecciona clientes y un vendedor.");
+    if (selectedIds.length === 0) {
+      alert("Por favor, selecciona al menos un cliente.");
+      return;
+    }
+    if (!selectedVendedor) {
+      alert("Por favor, selecciona un vendedor para generar el PDF.");
+      return;
+    }
+
     const selectedEntities = allCompanies.filter((c) =>
       selectedIds.includes(c.id_interno),
     );
     const vendor = vendedores.find((v) => v.value === selectedVendedor);
-    if (!vendor) return alert("Error: Vendedor no encontrado.");
+
+    if (!vendor) {
+      console.error("❌ Vendedor no encontrado:", {
+        selectedVendedor,
+        vendedoresCount: vendedores.length,
+      });
+      alert(
+        "Error: No se pudo encontrar la información del vendedor seleccionado.",
+      );
+      return;
+    }
 
     setConfirmData({
       title: "Confirmar Solicitud",
-      message: `¿Deseas guardar ${selectedEntities.length} clientes y generar PDF para "${vendor.label}"?`,
+      message: `¿Deseas guardar los cambios de ${selectedEntities.length} clientes y generar el PDF para "${vendor.label}"?`,
       onConfirm: () => executeBulkSave(selectedEntities, vendor),
     });
     setShowConfirm(true);
@@ -673,13 +779,13 @@ const BaseDatosBitrix = () => {
       goToPage(p);
       setJumpPage("");
     } else {
-      alert(`Página inválida`);
+      alert(`Página inválida (1-${totalPages})`);
     }
   };
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 min-h-screen bg-white dark:bg-[#0b1120]">
-      {/* --- NUEVO HEADER Y KPIS --- */}
+      {/* --- HEADER Y BARRA DE FILTROS --- */}
       <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 mb-8 border-b border-gray-200 dark:border-white/5 pb-6">
         <div className="flex items-center gap-4">
           <div className="bg-teal-50 dark:bg-teal-900/20 p-3 rounded-2xl">
@@ -691,56 +797,99 @@ const BaseDatosBitrix = () => {
               <span className="text-[#1a9888] dark:text-teal-400">Bitrix</span>
             </h2>
             <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
-              Gestión estratégica y planificación de visitas
+              Total: {totalRecords} | Visibles: {displayedCompanies.length} |
+              Seleccionados: {selectedIds.length}
             </p>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-3">
-          <StatCard
-            icon={Database}
-            label="Total"
-            value={totalRecords}
-            colorClass="bg-slate-50 border-slate-200 text-slate-700 dark:bg-slate-800/50 dark:border-slate-700 dark:text-slate-300"
-            iconColor="text-slate-500"
-          />
-          <StatCard
-            icon={Eye}
-            label="Visibles"
-            value={displayedCompanies.length}
-            colorClass="bg-blue-50 border-blue-100 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300"
-            iconColor="text-blue-500"
-          />
-          <StatCard
-            icon={CheckCircle}
-            label="Selección"
-            value={selectedIds.length}
-            colorClass={
-              selectedIds.length > 0
-                ? "bg-teal-50 border-teal-100 text-teal-700 dark:bg-teal-900/20 dark:text-teal-300"
-                : "bg-gray-50 text-gray-400"
+        <div className="flex flex-col sm:flex-row flex-wrap gap-3 items-start sm:items-center">
+          {/* BOTÓN GUARDAR Y GENERAR PDF */}
+          <button
+            onClick={handleBulkSaveAndPDF}
+            disabled={
+              isBulkSaving || selectedIds.length === 0 || !selectedVendedor
             }
-            iconColor={
-              selectedIds.length > 0 ? "text-teal-500" : "text-gray-400"
-            }
-          />
-        </div>
-      </div>
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-lg transition-all shadow-md ${
+              isBulkSaving || selectedIds.length === 0 || !selectedVendedor
+                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                : "bg-teal-600 text-white hover:bg-teal-700 active:scale-95"
+            }`}
+          >
+            {isBulkSaving ? (
+              <Loader size={18} className="animate-spin" />
+            ) : (
+              <FileText size={18} />
+            )}
+            <span>Guardar y Generar PDF</span>
+          </button>
 
-      {/* --- NUEVA BARRA DE COMANDOS --- */}
-      <div className="flex flex-col gap-4 mb-6">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="relative w-full sm:w-64 group">
+          <div className="h-8 w-px bg-gray-200 dark:bg-gray-700 mx-2 hidden sm:block" />
+
+          {/* 1. INPUT ZONA (Filtro del Hook) */}
+          <div className="relative w-full sm:w-48 group">
             <input
               type="text"
-              placeholder="Buscar cliente, ID o Profit..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-8 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1e1e1e] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1a9888] transition-all shadow-sm"
+              placeholder="Filtrar Zona..."
+              value={filterZona}
+              onChange={(e) => setFilterZona(e.target.value)}
+              className="w-full pl-9 pr-8 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1a9888]/50 focus:border-[#1a9888] transition-all"
             />
             <Search
               size={16}
               className="absolute left-3 top-2.5 text-gray-400 group-focus-within:text-[#1a9888]"
+            />
+            {filterZona && (
+              <button
+                onClick={() => setFilterZona("")}
+                className="absolute right-2 top-2.5 text-gray-400 hover:text-red-500"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+
+          {/* 2. SELECTOR SEGMENTOS (Filtro Backend) */}
+          <FilterMultiSelect
+            label="Segmentos"
+            options={uniqueSegments}
+            selected={selectedSegments}
+            onChange={setSelectedSegments}
+          />
+
+          {/* 3. SELECTOR VENDEDOR (Single Select) */}
+          <FilterSingleSelect
+            label="Asignar Vendedor"
+            options={vendedores}
+            selected={selectedVendedor}
+            onChange={setSelectedVendedor}
+          />
+
+          {/* 4. TOGGLE VENCIDOS (Filtro Hook) */}
+          <button
+            onClick={() => setOnlyVencidos(!onlyVencidos)}
+            className={`flex items-center gap-2 px-3 py-2 text-sm border rounded-lg transition-all shadow-sm ${
+              onlyVencidos
+                ? "bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300 ring-1 ring-red-200"
+                : "bg-white border-gray-300 text-gray-700 dark:bg-[#262626] dark:border-gray-600 dark:text-gray-300 hover:bg-gray-50"
+            }`}
+          >
+            {onlyVencidos ? <CheckSquare size={16} /> : <Square size={16} />}
+            <span>Solo Vencidos</span>
+          </button>
+
+          {/* 4. BUSCADOR LOCAL (Nombre/ID) */}
+          <div className="relative w-full sm:w-48">
+            <input
+              type="text"
+              placeholder="Buscar (Nombre/ID/Profit)..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-8 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1a9888]/50 focus:border-[#1a9888] transition-all"
+            />
+            <Search
+              size={16}
+              className="absolute left-3 top-2.5 text-gray-400"
             />
             {searchTerm && (
               <button
@@ -752,131 +901,187 @@ const BaseDatosBitrix = () => {
             )}
           </div>
 
-          <div className="relative w-full sm:w-48 group">
-            <input
-              type="text"
-              placeholder="Filtrar Zona..."
-              value={filterZona}
-              onChange={(e) => setFilterZona(e.target.value)}
-              className="w-full pl-9 py-2 text-sm rounded-xl border border-gray-200 text-gray-700 dark:text-gray-00 dark:border-gray-700 bg-white dark:bg-[#1e1e1e] focus:outline-none focus:ring-2 focus:ring-[#1a9888] transition-all shadow-sm"
-            />
-            <MapPin
-              size={16}
-              className="absolute left-3 top-2.5 text-gray-400 group-focus-within:text-[#1a9888]"
-            />
-          </div>
-
-          <div className="w-full sm:w-40">
-            <FilterMultiSelect
-              label="Segmentos"
-              options={uniqueSegments}
-              selected={selectedSegments}
-              onChange={setSelectedSegments}
-            />
-          </div>
-
+          {/* FILTRO VER SELECCIONADOS */}
           <button
-            onClick={() => setOnlyVencidos(!onlyVencidos)}
-            className={`flex items-center gap-2 px-3 py-2 text-sm border rounded-xl transition-all shadow-sm h-[38px] ${
-              onlyVencidos
-                ? "bg-red-50 border-red-200 text-red-700 ring-1 ring-red-200 dark:bg-red-900/20 dark:border-red-800"
-                : "bg-white text-gray-600 dark:bg-[#1e1e1e] dark:border-gray-700 dark:text-gray-300"
+            onClick={() => setShowOnlySelected(!showOnlySelected)}
+            className={`px-3 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 shadow-sm ${
+              showOnlySelected
+                ? "bg-[#1a9888] text-white border-[#1a9888]"
+                : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-[#1a9888]"
             }`}
           >
-            {onlyVencidos ? <CheckSquare size={16} /> : <Square size={16} />}
-            <span>Vencidos</span>
+            <Filter size={16} />
+            {showOnlySelected ? "Ver Todos" : "Ver Selec."}
           </button>
-        </div>
 
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-slate-50 dark:bg-white/5 p-3 rounded-2xl border border-gray-100 dark:border-white/5">
-          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-            <div className="w-full sm:w-64">
-              <FilterSingleSelect
-                label="Vendedor para PDF"
-                options={vendedores}
-                selected={selectedVendedor}
-                onChange={setSelectedVendedor}
-              />
-            </div>
+          {/* TOGGLE COLUMNAS */}
+          <div className="relative" ref={columnMenuRef}>
             <button
-              onClick={handleBulkSaveAndPDF}
-              disabled={
-                isBulkSaving || selectedIds.length === 0 || !selectedVendedor
-              }
-              className={`flex items-center gap-2 px-6 py-2 text-sm font-bold rounded-xl transition-all shadow-lg flex-1 sm:flex-none justify-center ${
-                isBulkSaving || selectedIds.length === 0 || !selectedVendedor
-                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                  : "bg-[#1a9888] text-white hover:bg-teal-700 active:scale-95 shadow-teal-500/20"
-              }`}
+              onClick={() => setShowColumnMenu(!showColumnMenu)}
+              className="px-3 py-2 rounded-lg text-sm font-medium border bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-[#1a9888] flex items-center gap-2 shadow-sm"
             >
-              {isBulkSaving ? (
-                <Loader size={18} className="animate-spin" />
-              ) : (
-                <FileText size={18} />
-              )}
-              <span>Guardar y PDF</span>
-            </button>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowOnlySelected(!showOnlySelected)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${
-                showOnlySelected
-                  ? "bg-[#1a9888] text-white border-[#1a9888]"
-                  : "bg-white text-gray-600 border-gray-200 hover:border-[#1a9888] dark:bg-[#1e1e1e] dark:border-gray-700 dark:text-gray-300"
-              }`}
-            >
-              <Filter size={14} className="inline mr-1" />
-              {showOnlySelected ? "Ver Todos" : "Ver Selec."}
+              <Columns size={16} />
+              Columnas
+              <ChevronDown size={14} />
             </button>
 
-            <div className="relative" ref={columnMenuRef}>
-              <button
-                onClick={() => setShowColumnMenu(!showColumnMenu)}
-                className="px-4 py-2 rounded-xl text-xs font-bold border bg-white dark:bg-[#1e1e1e] text-gray-600 border-gray-200 hover:border-[#1a9888] flex items-center gap-2 dark:border-gray-700 dark:text-gray-300"
-              >
-                <Columns size={14} />
-                Columnas <ChevronDown size={14} />
-              </button>
-              {showColumnMenu && (
-                <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-[#202020] border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl z-50 p-3 max-h-[70vh] overflow-y-auto">
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">
-                        Filtros de Vista
-                      </h4>
-                      <div className="space-y-1">
-                        {Object.keys(columnVisibility).map((key) => (
-                          <label
-                            key={key}
-                            className="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5 p-1.5 rounded-lg transition-colors"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={columnVisibility[key]}
-                              onChange={() => toggleColumn(key)}
-                              className="rounded accent-[#1a9888]"
-                            />
-                            <span className="capitalize">
-                              {key.replace("_", " ")}
-                            </span>
-                          </label>
-                        ))}
-                      </div>
+            {showColumnMenu && (
+              <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-[#202020] border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 p-3 max-h-[80vh] overflow-y-auto">
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">
+                      Datos Bitrix
+                    </h4>
+                    <div className="space-y-1">
+                      {[
+                        "codigo_profit",
+                        "ciudad",
+                        "segmento",
+                        "coordenadas",
+                        "dias_visita",
+                        "convenio",
+                      ].map((key) => (
+                        <label
+                          key={key}
+                          className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 p-1 rounded"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={columnVisibility[key]}
+                            onChange={() => toggleColumn(key)}
+                            className="rounded text-[#1a9888]"
+                          />
+                          <span className="capitalize">
+                            {key.replace("_", " ")}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">
+                      Datos Profit
+                    </h4>
+                    <div className="space-y-1">
+                      {[
+                        "limite",
+                        "transito",
+                        "vencido",
+                        "fecha_compra",
+                        "morosidad",
+                      ].map((key) => (
+                        <label
+                          key={key}
+                          className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 p-1 rounded"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={columnVisibility[key]}
+                            onChange={() => toggleColumn(key)}
+                            className="rounded text-[#1a9888]"
+                          />
+                          <span className="capitalize">
+                            {key.replace("_", " ")}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">
+                      Ventas
+                    </h4>
+                    <div className="space-y-1">
+                      {[
+                        "ultimo_cobro",
+                        "sku",
+                        "clasif",
+                        "actual",
+                        "anterior",
+                      ].map((key) => (
+                        <label
+                          key={key}
+                          className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 p-1 rounded"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={columnVisibility[key]}
+                            onChange={() => toggleColumn(key)}
+                            className="rounded text-[#1a9888]"
+                          />
+                          <span className="capitalize">
+                            {key.replace("_", " ")}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">
+                      Gestión
+                    </h4>
+                    <div className="space-y-1">
+                      {["bitacora", "obs_ejecutiva"].map((key) => (
+                        <label
+                          key={key}
+                          className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 p-1 rounded"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={columnVisibility[key]}
+                            onChange={() => toggleColumn(key)}
+                            className="rounded text-[#1a9888]"
+                          />
+                          <span className="capitalize">
+                            {key.replace("_", " ")}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">
+                      Agenda Semanal
+                    </h4>
+                    <div className="space-y-1">
+                      {[
+                        "lunes",
+                        "martes",
+                        "miercoles",
+                        "jueves",
+                        "viernes",
+                      ].map((key) => (
+                        <label
+                          key={key}
+                          className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 p-1 rounded"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={columnVisibility[key]}
+                            onChange={() => toggleColumn(key)}
+                            className="rounded text-[#1a9888]"
+                          />
+                          <span className="capitalize">{key}</span>
+                        </label>
+                      ))}
                     </div>
                   </div>
                 </div>
-              )}
-            </div>
-
-            <button
-              onClick={refresh}
-              className="p-2 bg-white dark:bg-[#1e1e1e] border border-gray-200 dark:border-gray-700 rounded-xl text-gray-400 hover:text-[#1a9888] transition-colors"
-            >
-              <RefreshCw size={20} className={loading ? "animate-spin" : ""} />
-            </button>
+              </div>
+            )}
           </div>
+
+          {/* REFRESCAR */}
+          <button
+            onClick={refresh}
+            disabled={loading}
+            className="p-2 text-gray-500 bg-white border border-gray-300 hover:text-[#1a9888] hover:border-[#1a9888] hover:bg-teal-50 rounded-lg transition-all shadow-sm"
+          >
+            <RefreshCw
+              size={20}
+              className={loading ? "animate-spin text-[#1a9888]" : ""}
+            />
+          </button>
         </div>
       </div>
 
@@ -1023,7 +1228,7 @@ const BaseDatosBitrix = () => {
                         className="w-full text-[10px] p-1 rounded border border-blue-200 bg-white text-gray-700 font-normal focus:outline-none focus:ring-1 focus:ring-blue-500"
                         value={dayFilter}
                         onChange={(e) => setDayFilter(e.target.value)}
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e) => e.stopPropagation()} // Evita ordenar si estuviera activo
                       >
                         <option value="">-- Todos --</option>
                         <option value="Diario">Diario</option>
@@ -1110,6 +1315,8 @@ const BaseDatosBitrix = () => {
                   </Th>
                 )}
 
+                {/* GESTIÓN */}
+                {/* GESTIÓN */}
                 {columnVisibility.bitacora && (
                   <Th className="min-w-[300px] text-orange-600 font-bold bg-orange-200 dark:bg-orange-800">
                     Bitácora
@@ -1121,6 +1328,8 @@ const BaseDatosBitrix = () => {
                   </Th>
                 )}
 
+                {/* AGENDA SEMANAL */}
+                {/* LUNES */}
                 {columnVisibility.lunes && (
                   <>
                     <Th className="min-w-[150px] bg-indigo-50 dark:bg-indigo-900">
@@ -1134,6 +1343,8 @@ const BaseDatosBitrix = () => {
                     </Th>
                   </>
                 )}
+
+                {/* MARTES */}
                 {columnVisibility.martes && (
                   <>
                     <Th className="min-w-[150px] bg-white dark:bg-[#1e1e1e]">
@@ -1147,6 +1358,8 @@ const BaseDatosBitrix = () => {
                     </Th>
                   </>
                 )}
+
+                {/* MIERCOLES */}
                 {columnVisibility.miercoles && (
                   <>
                     <Th className="min-w-[150px] bg-indigo-50 dark:bg-indigo-900">
@@ -1160,6 +1373,8 @@ const BaseDatosBitrix = () => {
                     </Th>
                   </>
                 )}
+
+                {/* JUEVES */}
                 {columnVisibility.jueves && (
                   <>
                     <Th className="min-w-[150px] bg-white dark:bg-[#1e1e1e]">
@@ -1173,6 +1388,8 @@ const BaseDatosBitrix = () => {
                     </Th>
                   </>
                 )}
+
+                {/* VIERNES */}
                 {columnVisibility.viernes && (
                   <>
                     <Th className="min-w-[150px] bg-indigo-50 dark:bg-indigo-900">
@@ -1204,10 +1421,7 @@ const BaseDatosBitrix = () => {
                 ))
               ) : (
                 <Tr>
-                  <Td
-                    colSpan={50}
-                    className="text-center py-8 text-gray-500 italic"
-                  >
+                  <Td colSpan={40} className="text-center py-8 text-gray-500">
                     No se encontraron resultados para tu búsqueda.
                   </Td>
                 </Tr>
@@ -1217,13 +1431,13 @@ const BaseDatosBitrix = () => {
         )}
       </TableContainer>
 
-      {/* --- PAGINACIÓN --- */}
+      {/* Paginación */}
       <div className="flex flex-col sm:flex-row items-center justify-between border-t border-gray-200 dark:border-gray-700 pt-4 mt-2 gap-4">
         <div className="flex items-center gap-2">
           <button
             onClick={() => goToPage(1)}
             disabled={page === 1}
-            className="p-2 rounded-lg border dark:border-gray-600 disabled:opacity-50 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+            className="p-2 rounded-lg border dark:border-gray-600 disabled:opacity-50"
           >
             <ChevronsLeft size={16} />
           </button>
@@ -1247,16 +1461,14 @@ const BaseDatosBitrix = () => {
           <button
             onClick={() => goToPage(totalPages)}
             disabled={page === totalPages}
-            className="p-2 rounded-lg border dark:border-gray-600 disabled:opacity-50 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+            className="p-2 rounded-lg border dark:border-gray-600 disabled:opacity-50"
           >
             <ChevronsRight size={16} />
           </button>
         </div>
 
         <form onSubmit={handleJumpSubmit} className="flex items-center gap-2">
-          <span className="text-sm text-gray-500 font-bold uppercase text-[10px]">
-            Ir a pág:
-          </span>
+          <span className="text-sm text-gray-500">Ir a:</span>
           <input
             type="number"
             min="1"
@@ -1267,7 +1479,7 @@ const BaseDatosBitrix = () => {
           />
           <button
             type="submit"
-            className="px-3 py-1 text-xs font-bold text-white bg-slate-800 rounded-md hover:bg-black transition-colors"
+            className="px-3 py-1 text-xs font-bold text-white bg-gray-600 rounded-md"
           >
             IR
           </button>
@@ -1280,7 +1492,10 @@ const BaseDatosBitrix = () => {
         message={confirmData.message}
         onConfirm={confirmData.onConfirm}
         onCancel={() => setShowConfirm(false)}
+        confirmLabel="Confirmar"
+        cancelLabel="Cancelar"
       />
+
       <ToastContainer />
     </div>
   );

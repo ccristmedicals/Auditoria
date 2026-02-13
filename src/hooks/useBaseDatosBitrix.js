@@ -195,7 +195,6 @@ export const useBaseDatosBitrix = () => {
         3: "miercoles",
         4: "jueves",
         5: "viernes",
-        6: "sábado",
       };
       const currentDayKey = dayMap[todayIndex];
 
@@ -336,13 +335,6 @@ export const useBaseDatosBitrix = () => {
             semanaData.viernes?.observacion ||
             extractHistoryData("viernes").observacion,
           viernes_tarea: semanaData.viernes?.tarea || "",
-
-          sábado_accion:
-            semanaData.sábado?.accion || extractHistoryData("sábado").accion,
-          sábado_observacion:
-            semanaData.sábado?.observacion ||
-            extractHistoryData("sábado").observacion,
-          sábado_tarea: semanaData.sábado?.tarea || "",
 
           isManagedToday: isManagedToday,
         };
