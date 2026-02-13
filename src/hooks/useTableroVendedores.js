@@ -1,6 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { apiService } from "../services/apiService";
-import { analizarGeocerca } from "../utils/geolocalizacion";
+import {
+  analizarGeocerca,
+  calcularDistanciaMetros,
+} from "../utils/geolocalizacion";
 import { obtenerDireccionBDC } from "../utils/obtenerDireccion";
 
 export const useTableroVendedores = () => {
@@ -8,6 +11,19 @@ export const useTableroVendedores = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [direcciones, setDirecciones] = useState({});
+
+  // ESTADO PARA OBSERVACIONES MANUALES (Cargamos de localStorage al inicio)
+  const [observacionesManuales, setObservacionesManuales] = useState(() => {
+    const saved = localStorage.getItem("tablero_observaciones");
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  // Función para actualizar y guardar en localStorage
+  const actualizarObservacion = (vendedorId, texto) => {
+    const nuevasObs = { ...observacionesManuales, [vendedorId]: texto };
+    setObservacionesManuales(nuevasObs);
+    localStorage.setItem("tablero_observaciones", JSON.stringify(nuevasObs));
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -39,6 +55,14 @@ export const useTableroVendedores = () => {
       const fullData = item.full_data || {};
       const gestiones = Array.isArray(fullData.gestion) ? fullData.gestion : [];
 
+      const coordsCliente = fullData.coordenadas
+        ? fullData.coordenadas.split(",")
+        : [];
+      const latCliente =
+        coordsCliente.length === 2 ? parseFloat(coordsCliente[0]) : null;
+      const lngCliente =
+        coordsCliente.length === 2 ? parseFloat(coordsCliente[1]) : null;
+
       if (!agrupado[nombreVendedor]) {
         agrupado[nombreVendedor] = {
           id: nombreVendedor,
@@ -49,16 +73,11 @@ export const useTableroVendedores = () => {
           geoTotalGps: 0,
           geoEnSitio: 0,
           horas: [],
-
-          // Datos de Rastreo
           ultimoRegistroTime: 0,
           ultimaLat: null,
           ultimaLng: null,
           ultimoCliente: "N/A",
-
-          // NUEVO: Array para observaciones estructuradas
-          observacionData: [],
-
+          distancia: 0,
           negociaciones: 0,
           cobradoDia: 0,
           metaCobranza: 1000,
@@ -85,7 +104,6 @@ export const useTableroVendedores = () => {
           if (analisis.status === "OK") v.geoEnSitio += 1;
         }
 
-        // Buscar última gestión
         gestiones.forEach((g) => {
           if (g.fecha_registro) {
             const fechaSafe = new Date(g.fecha_registro.replace(" ", "T"));
@@ -93,35 +111,22 @@ export const useTableroVendedores = () => {
 
             if (!isNaN(time)) {
               v.horas.push(fechaSafe);
-
               if (time > v.ultimoRegistroTime) {
                 v.ultimoRegistroTime = time;
                 v.ultimaLat = g.ubicacion_lat;
                 v.ultimaLng = g.ubicacion_lng;
                 v.ultimoCliente = item.nombre_cliente;
 
-                // --- LÓGICA OBSERVACIONES ESTRUCTURADAS ---
-                const obsList = [];
-
-                // 1. Venta (Verde)
-                if (g.venta_tipoGestion) {
-                  const desc = (g.venta_descripcion || "").trim();
-                  obsList.push({
-                    type: "venta",
-                    text: `${g.venta_tipoGestion}${desc ? " - " + desc : ""}`,
-                  });
+                if (latCliente && lngCliente && v.ultimaLat && v.ultimaLng) {
+                  const dist = calcularDistanciaMetros(
+                    latCliente,
+                    lngCliente,
+                    parseFloat(v.ultimaLat),
+                    parseFloat(v.ultimaLng),
+                  );
+                  v.distancia = Math.round(dist);
                 }
-
-                // 2. Cobranza (Azul)
-                if (g.cobranza_tipoGestion) {
-                  const desc = (g.cobranza_descripcion || "").trim();
-                  obsList.push({
-                    type: "cobranza",
-                    text: `${g.cobranza_tipoGestion}${desc ? " - " + desc : ""}`,
-                  });
-                }
-
-                v.observacionData = obsList;
+                // NOTA: Eliminamos la lógica de obsList porque ya no la mostrarás
               }
             }
           }
@@ -156,32 +161,46 @@ export const useTableroVendedores = () => {
         horaLlegada,
         pctGeocerca,
         direccionTexto,
-        ultimoCliente: v.ultimoCliente,
-        gestionesPlanificacion: v.reportesEstablecidos,
-        visitasALograr: v.reportesEstablecidos,
-        observacionData: v.observacionData, // Pasamos el array al componente
+        // Insertamos el valor guardado manualmente
+        observacionManual: observacionesManuales[v.vendedor] || "",
       };
     });
-  }, [rawData, direcciones]);
+  }, [rawData, direcciones, observacionesManuales]);
 
+  // --- SOLUCIÓN QUEUE (ANTI-BLOQUEO) ---
   useEffect(() => {
     if (vendedoresFinal.length === 0) return;
-    const cargarDirecciones = async () => {
-      const nuevasDirecciones = {};
-      const promesas = vendedoresFinal.map(async (v) => {
-        if (v.ultimaLat && v.ultimaLng && !direcciones[v.vendedor]) {
-          const dir = await obtenerDireccionBDC(v.ultimaLat, v.ultimaLng);
-          nuevasDirecciones[v.vendedor] = dir;
-        }
-      });
-      await Promise.all(promesas);
-      if (Object.keys(nuevasDirecciones).length > 0) {
-        setDirecciones((prev) => ({ ...prev, ...nuevasDirecciones }));
+    const faltantes = vendedoresFinal.filter(
+      (v) => v.ultimaLat && v.ultimaLng && !direcciones[v.vendedor],
+    );
+
+    if (faltantes.length === 0) return;
+
+    const cargarSecuencialmente = async () => {
+      const vendedor = faltantes[0];
+      try {
+        const dir = await obtenerDireccionBDC(
+          vendedor.ultimaLat,
+          vendedor.ultimaLng,
+        );
+        setDirecciones((prev) => ({ ...prev, [vendedor.vendedor]: dir }));
+      } catch (e) {
+        console.error("Error queue", e);
       }
     };
-    cargarDirecciones();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rawData]);
 
-  return { vendedores: vendedoresFinal, loading, error };
+    const timer = setTimeout(() => {
+      cargarSecuencialmente();
+    }, 1200);
+
+    return () => clearTimeout(timer);
+  }, [vendedoresFinal, direcciones]);
+
+  // Retornamos también la función para actualizar
+  return {
+    vendedores: vendedoresFinal,
+    loading,
+    error,
+    actualizarObservacion,
+  };
 };

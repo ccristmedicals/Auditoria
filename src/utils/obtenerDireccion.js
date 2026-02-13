@@ -1,34 +1,50 @@
 /**
- * Obtiene una dirección aproximada (Ciudad, Sector) a partir de coordenadas
- * usando la API gratuita de BigDataCloud.
- * No requiere API Key para uso básico desde el navegador.
+ * Nueva función usando OpenStreetMap (Nominatim)
+ * Es gratuita y suele aguantar más peticiones que BigDataCloud en modo free.
  */
 export const obtenerDireccionBDC = async (lat, lng) => {
   if (!lat || !lng) return "Sin GPS";
 
   try {
-    const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=es`;
+    // Usamos Nominatim de OpenStreetMap
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`;
 
-    const response = await fetch(url);
-    if (!response.ok) throw new Error("Error API");
+    const response = await fetch(url, {
+      headers: {
+        // Es buena práctica identificar tu app, aunque sea genérico
+        "User-Agent": "GestorVendedoresApp/1.0",
+      },
+    });
+
+    if (!response.ok) throw new Error("Error API OSM");
 
     const data = await response.json();
 
-    // La API devuelve varios campos, intentamos armar algo legible:
-    // locality: Suele ser el sector o ciudad pequeña
-    // city: Ciudad principal
-    // principalSubdivision: Estado/Provincia
+    // Armamos la dirección con los datos de OSM
+    const addr = data.address || {};
 
+    // Prioridad de campos para que se vea bien (Calle, Barrio, Ciudad)
     const partes = [];
-    if (data.locality) partes.push(data.locality);
-    if (data.city && data.city !== data.locality) partes.push(data.city);
-    // Si no hay localidad ni ciudad, usamos la subdivisión
-    if (partes.length === 0 && data.principalSubdivision)
-      partes.push(data.principalSubdivision);
 
-    return partes.join(", ") || "Ubicación desconocida";
+    // Intentamos calle o lugar específico
+    if (addr.road) partes.push(addr.road);
+    else if (addr.pedestrian) partes.push(addr.pedestrian);
+
+    // Barrio o sector
+    if (addr.neighbourhood) partes.push(addr.neighbourhood);
+    else if (addr.suburb) partes.push(addr.suburb);
+
+    // Ciudad o pueblo (si no hay barrio)
+    if (partes.length < 2) {
+      if (addr.city) partes.push(addr.city);
+      else if (addr.town) partes.push(addr.town);
+      else if (addr.village) partes.push(addr.village);
+    }
+
+    return partes.join(", ") || "Ubicación encontrada";
   } catch (error) {
     console.warn("Error obteniendo dirección:", error);
-    return "Error de red";
+    // Devuelve null o texto vacío para que NO salga "Error de red" en la pantalla
+    return "Dirección no disponible";
   }
 };

@@ -394,13 +394,11 @@ const AuditRow = React.memo(
 
     // C. LÓGICA 'CON GESTION'
     const conGestion = useMemo(() => {
-      // Solo mostrar gestión si estamos viendo el día actual
+      // Solo mostrar gestión si estamos viendo el día actual (reutilizamos lógica de día)
       const today = new Date();
-      const dayOfWeek = today.getDay(); // 0=domingo, 1=lunes, ..., 6=sábado
-
-      // Mapeo de días: Si es domingo (0), se trata como lunes
+      const dayOfWeek = today.getDay();
       const dayMap = {
-        0: "lunes", // Domingo -> Lunes (no trabajan domingos)
+        0: "lunes",
         1: "lunes",
         2: "martes",
         3: "miercoles",
@@ -408,13 +406,10 @@ const AuditRow = React.memo(
         5: "viernes",
         6: "sábado",
       };
-
       const currentDayName = dayMap[dayOfWeek];
-
-      // Si no estamos viendo el día actual, no mostrar gestión
       if (selectedDay !== currentDayName) return false;
 
-      // 1. Cohort Check (> 2024)
+      // 1. Filtro: Año >= 2024 y Posee Código Profit
       let purchaseYear = 0;
       if (row.fecha_ultima_compra) {
         if (row.fecha_ultima_compra.includes("/")) {
@@ -426,51 +421,19 @@ const AuditRow = React.memo(
         }
       }
 
-      if (purchaseYear <= 2024) return false;
+      const hasProfitCode = row.codigo && row.codigo !== "—";
+      if (purchaseYear < 2024 || !hasProfitCode) return false;
 
-      // 2. Verificar si hay gestión HOY (checkboxes marcados o observación)
-      const hasCheckboxes =
-        auditData?.inicio_whatsapp?.e ||
-        auditData?.inicio_whatsapp?.c ||
-        auditData?.accion_venta?.e ||
-        auditData?.accion_venta?.p ||
-        auditData?.accion_venta?.n ||
-        auditData?.accion_cobranza?.e ||
-        auditData?.accion_cobranza?.p ||
-        auditData?.accion_cobranza?.n ||
+      // 2. Verificar gestiones VÁLIDAS (Sólamente Venta por llamada o Cobranza por WhatsApp)
+      const hasCobranzaWhatsApp =
+        auditData?.inicio_whatsapp?.e || auditData?.inicio_whatsapp?.c;
+
+      const hasVentaPorLlamada =
         auditData?.llamadas_venta?.e ||
         auditData?.llamadas_venta?.p ||
-        auditData?.llamadas_venta?.n ||
-        auditData?.llamadas_cobranza?.e ||
-        auditData?.llamadas_cobranza?.p ||
-        auditData?.llamadas_cobranza?.n;
+        auditData?.llamadas_venta?.n;
 
-      const hasObservation =
-        auditData?.observacion &&
-        auditData.observacion.toString().trim().length > 0;
-
-      // 3. Verificar si hay gestión de Profit/Bitrix para hoy
-      const logDelDia = Array.isArray(row.gestion)
-        ? row.gestion.find((g) => {
-            if (!g.dia_semana) return false;
-            return (
-              g.dia_semana
-                .toLowerCase()
-                .normalize("NFD")
-                .replace(/[\u0300-\u036f]/g, "") ===
-              selectedDay
-                .toLowerCase()
-                .normalize("NFD")
-                .replace(/[\u0300-\u036f]/g, "")
-            );
-          })
-        : null;
-
-      const hasExternalGestion =
-        logDelDia &&
-        (logDelDia.venta_descripcion || logDelDia.cobranza_descripcion);
-
-      return hasCheckboxes || hasObservation || hasExternalGestion;
+      return !!(hasCobranzaWhatsApp || hasVentaPorLlamada);
     }, [row, auditData, selectedDay]);
 
     // D. LÓGICA 'RECUPERACIÓN / EFECTIVIDAD 30 DÍAS'

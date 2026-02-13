@@ -136,9 +136,10 @@ export const useAuditoria = () => {
 
         const userSegments = user?.segmentos || [];
 
-        const [rawData, matrixData] = await Promise.all([
+        const [rawData, matrixData, planificacionData] = await Promise.all([
           apiService.getAllCompanies(userSegments),
           apiService.getMatrix(),
+          apiService.getPlanificacion(),
         ]);
 
         let companies = [];
@@ -180,6 +181,19 @@ export const useAuditoria = () => {
           }
         }
 
+        const planificacionMap = new Map();
+        const planArray = planificacionData?.data || planificacionData || [];
+        if (Array.isArray(planArray)) {
+          planArray.forEach((p) => {
+            if (p.id_bitrix) {
+              const idStr = p.id_bitrix.toString();
+              if (!planificacionMap.has(idStr)) {
+                planificacionMap.set(idStr, p);
+              }
+            }
+          });
+        }
+
         const processedData = companies
           .map((item) => {
             try {
@@ -200,7 +214,7 @@ export const useAuditoria = () => {
               // Logica:
               // 1. Siempre cargamos 'semana' (Planificación), 'bitacora', etc. del registro guardado.
               // 2. Solo cargamos 'auditoria' (Checkboxes) si el registro pertenece a la semana actual.
-              
+
               let auditoriaData = null;
               if (registered) {
                 const recordDate =
@@ -224,6 +238,18 @@ export const useAuditoria = () => {
                   sabado: createDailyAudit(),
                 };
               }
+
+              // PERSISTENCIA DE DATOS (Planificación, Bitácora, Acción del Día)
+              // Se cargan siempre del registro encontrado, sin importar la fecha.
+              const planRecord = bId ? planificacionMap.get(bId) : null;
+              const semanaFromPlan =
+                planRecord?.gestion?.semana || planRecord?.semana || {};
+
+              const semanaMerged = {
+                ...(item.semana || {}),
+                ...(registered?.semana || {}),
+                ...semanaFromPlan, // La planificación de la ejecutiva manda sobre tareas
+              };
 
               return {
                 id: b.ID || Math.random(),
@@ -256,13 +282,20 @@ export const useAuditoria = () => {
                 clasificacion: p.horar_caja || "—",
                 gestion: g,
 
-                // PERSISTENCIA DE DATOS (Planificación, Bitácora, Acción del Día)
-                // Se cargan siempre del registro encontrado, sin importar la fecha.
-                bitacora: registered?.bitacora || item.bitacora || "",
+                bitacora:
+                  registered?.bitacora ||
+                  planRecord?.gestion?.bitacora ||
+                  planRecord?.bitacora ||
+                  item.bitacora ||
+                  "",
                 obs_ejecutiva:
-                  registered?.obs_ejecutiva || item.obs_ejecutiva || "",
-                semana: registered?.semana || item.semana || {},
-                
+                  registered?.obs_ejecutiva ||
+                  planRecord?.gestion?.obs_ejecutiva ||
+                  planRecord?.obs_ejecutiva ||
+                  item.obs_ejecutiva ||
+                  "",
+                semana: semanaMerged,
+
                 // CHECKBOXES (Auditoría) -> Filtro de semana aplicado arriba
                 auditoria: auditoriaData,
 

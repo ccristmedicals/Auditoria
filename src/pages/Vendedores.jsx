@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   Users,
   Search,
@@ -8,10 +8,12 @@ import {
   MapPin,
   Navigation,
   Store,
-  ShoppingCart,
-  Banknote,
   Loader2,
 } from "lucide-react";
+
+// 1. Importamos el Toast
+import { useToast } from "../components/ui/Toast";
+
 import { useTableroVendedores } from "../hooks/useTableroVendedores";
 import {
   TableContainer,
@@ -31,7 +33,6 @@ const formatCurrency = (val) =>
 
 const formatPercent = (val) => `${Number(val || 0).toFixed(0)}%`;
 
-// Componente de Badge simple para los KPIs superiores
 const StatCard = ({ label, value, icon: Icon, colorHex }) => (
   <div className="bg-white dark:bg-[#111827] p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex items-center gap-4">
     <div
@@ -51,9 +52,53 @@ const StatCard = ({ label, value, icon: Icon, colorHex }) => (
   </div>
 );
 
+// --- CELDA EDITABLE OPTIMIZADA ---
+const ObservacionCell = ({ valorInicial, onGuardar }) => {
+  const [valor, setValor] = useState(valorInicial);
+
+  useEffect(() => {
+    setValor(valorInicial);
+  }, [valorInicial]);
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      // Al hacer blur, se dispara automáticamente el evento handleBlur de abajo
+      e.target.blur();
+    }
+  };
+
+  const handleBlur = () => {
+    // Solo guardamos (y mostramos el toast) si el valor realmente cambió
+    if (valor !== valorInicial) {
+      onGuardar(valor);
+    }
+  };
+
+  return (
+    <textarea
+      className="w-full h-20 p-2 text-xs border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 focus:ring-2 focus:ring-[#1a9888] focus:border-transparent outline-none resize-none placeholder-gray-300 dark:text-white transition-all"
+      placeholder="Escribir nota..."
+      value={valor}
+      onChange={(e) => setValor(e.target.value)}
+      onKeyDown={handleKeyDown}
+      onBlur={handleBlur}
+    />
+  );
+};
+
+// --- COMPONENTE PRINCIPAL ---
 const Vendedores = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const { vendedores: rawData, loading } = useTableroVendedores();
+
+  // 2. Destructuramos el hook del Toast
+  const { showToast, ToastContainer } = useToast();
+
+  const {
+    vendedores: rawData,
+    loading,
+    actualizarObservacion,
+  } = useTableroVendedores();
 
   const filteredData = useMemo(() => {
     if (!searchTerm) return rawData;
@@ -92,10 +137,9 @@ const Vendedores = () => {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 min-h-screen bg-white dark:bg-[#0b1120]">
-      {/* HEADER ESTILO NUEVO (TEAL) */}
+      {/* HEADER */}
       <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 mb-8 border-b border-gray-200 dark:border-white/5 pb-6">
         <div className="flex items-center gap-4">
-          {/* Icono con el estilo Teal */}
           <div className="bg-teal-50 dark:bg-teal-900/20 p-3 rounded-2xl">
             <Users size={32} className="text-[#1a9888] dark:text-teal-400" />
           </div>
@@ -112,7 +156,6 @@ const Vendedores = () => {
           </div>
         </div>
 
-        {/* Buscador Integrado en el Header */}
         <div className="relative w-full xl:w-96">
           <Search
             size={18}
@@ -128,13 +171,13 @@ const Vendedores = () => {
         </div>
       </div>
 
-      {/* TARJETAS DE KPIS (Clean Style) */}
+      {/* KPIS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <StatCard
           label="Visitas Logradas"
           value={totals.logrados}
           icon={CheckCircle2}
-          colorHex="#059669" // Emerald 600
+          colorHex="#059669"
         />
         <StatCard
           label="% Cumplimiento"
@@ -146,33 +189,27 @@ const Vendedores = () => {
           label="Cobrado Hoy"
           value={formatCurrency(totals.cobrado)}
           icon={Target}
-          colorHex="#2563eb" // Blue 600
+          colorHex="#2563eb"
         />
       </div>
 
-      {/* TABLA COMPLETA CON CABECERAS SÓLIDAS */}
+      {/* TABLA */}
       <TableContainer className="shadow-none border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden bg-white dark:bg-[#111827]">
         <Table>
           <Thead>
             <tr className="uppercase leading-tight">
-              {/* Vendedor (Ámbar - Sólido) */}
               <Th
                 stickyLeft
-                align="left"
                 className="bg-amber-50 dark:bg-amber-900 text-amber-900 dark:text-amber-100 min-w-[200px] border-b dark:border-gray-700 font-bold"
               >
                 Vendedor
               </Th>
-
-              {/* Horarios (Gris - Sólido) */}
               <Th className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 min-w-[100px] border-b dark:border-gray-700 font-bold">
                 Salida
               </Th>
               <Th className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 min-w-[100px] border-b dark:border-gray-700 font-bold">
                 Llegada
               </Th>
-
-              {/* Métricas Visitas (Gris - Sólido) */}
               <Th className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-b dark:border-gray-700 font-bold">
                 Plan
               </Th>
@@ -182,20 +219,14 @@ const Vendedores = () => {
               <Th className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 min-w-[100px] border-b dark:border-gray-700 font-bold">
                 % Visitas
               </Th>
-
-              {/* Faltantes (Verde - Sólido) */}
               <Th className="bg-emerald-100 dark:bg-emerald-900 text-emerald-900 dark:text-emerald-100 min-w-[100px] border-b dark:border-gray-700 font-bold">
                 Faltantes
               </Th>
-
-              {/* GEOCERCA (Indigo - Sólido) */}
               <Th className="bg-indigo-100 dark:bg-indigo-900 text-indigo-900 dark:text-indigo-100 min-w-[280px] text-center border-b dark:border-gray-700 font-bold">
                 <div className="flex items-center gap-1 justify-center">
                   <MapPin size={12} /> Última Ubicación
                 </div>
               </Th>
-
-              {/* Finanzas (Azul - Sólido) */}
               <Th className="bg-blue-50 dark:bg-blue-900 text-blue-900 dark:text-blue-100 min-w-[110px] border-b dark:border-gray-700 font-bold">
                 Negoc.
               </Th>
@@ -205,13 +236,9 @@ const Vendedores = () => {
               <Th className="bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100 min-w-[110px] border-b dark:border-gray-700 font-bold">
                 % Cobro
               </Th>
-
-              {/* Ventas (Ámbar - Sólido) */}
               <Th className="bg-amber-100 dark:bg-amber-900 text-amber-900 dark:text-amber-100 min-w-[130px] border-b dark:border-gray-700 font-bold">
                 Ventas
               </Th>
-
-              {/* KPIs Mensuales (Cyan/Purple/Rose - Sólidos) */}
               <Th className="bg-cyan-100 dark:bg-cyan-900 text-cyan-900 dark:text-cyan-100 min-w-[100px] border-b dark:border-gray-700 font-bold">
                 Cartera
               </Th>
@@ -227,10 +254,8 @@ const Vendedores = () => {
               <Th className="bg-rose-100 dark:bg-rose-900 text-rose-900 dark:text-rose-100 min-w-[100px] border-b dark:border-gray-700 font-bold">
                 % Plan
               </Th>
-
-              {/* Observación (Gris - Sólido) */}
               <Th className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 min-w-[250px] border-b dark:border-gray-700 font-bold">
-                Observación
+                Observación Manual
               </Th>
             </tr>
           </Thead>
@@ -251,20 +276,16 @@ const Vendedores = () => {
                   row.reportesEstablecidos > 0
                     ? (row.reportesLogrados / row.reportesEstablecidos) * 100
                     : 0;
-
                 const restaLogrado =
                   row.reportesEstablecidos - row.reportesLogrados;
-
                 const percCobranza =
                   row.metaCobranza > 0
                     ? (row.cobradoDia / row.metaCobranza) * 100
                     : 0;
-
                 const percPlanificado =
                   row.visitasALograr > 0
                     ? (row.gestionesPlanificacion / row.visitasALograr) * 100
                     : 0;
-
                 const percMetaMensual =
                   row.metaMensual > 0
                     ? (row.carteraActiva / row.metaMensual) * 100
@@ -275,7 +296,6 @@ const Vendedores = () => {
                     key={row.id}
                     className="hover:bg-gray-50 dark:hover:bg-[#1a2333]"
                   >
-                    {/* 1. Vendedor */}
                     <Td
                       stickyLeft
                       align="left"
@@ -283,23 +303,15 @@ const Vendedores = () => {
                     >
                       {row.vendedor}
                     </Td>
-
-                    {/* 2. Horarios */}
                     <Td>{row.horaSalida}</Td>
                     <Td>{row.horaLlegada}</Td>
-
-                    {/* 3. Visitas */}
                     <Td className="font-medium">{row.reportesEstablecidos}</Td>
                     <Td className="font-bold text-slate-900 dark:text-white">
                       {row.reportesLogrados}
                     </Td>
                     <Td>
                       <span
-                        className={`px-2 py-1 rounded-md text-[11px] font-bold border ${
-                          percVisitas >= 90
-                            ? "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900 dark:text-emerald-100 dark:border-emerald-800"
-                            : "bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-900 dark:text-rose-100 dark:border-rose-800"
-                        }`}
+                        className={`px-2 py-1 rounded-md text-[11px] font-bold border ${percVisitas >= 90 ? "bg-emerald-100 text-emerald-800 border-emerald-200" : "bg-rose-100 text-rose-800 border-rose-200"}`}
                       >
                         {formatPercent(percVisitas)}
                       </span>
@@ -308,7 +320,7 @@ const Vendedores = () => {
                       {restaLogrado}
                     </Td>
 
-                    {/* 4. GEOCERCA HÍBRIDA */}
+                    {/* CELDA GEOLOCALIZACION */}
                     <Td className="text-center p-2 align-middle">
                       {row.direccionTexto === "Sin actividad" ? (
                         <span className="text-xs text-gray-400 italic">
@@ -316,20 +328,14 @@ const Vendedores = () => {
                         </span>
                       ) : (
                         <div className="flex flex-col items-center gap-1.5 py-1">
-                          {/* Badge Porcentaje */}
                           <div
-                            className={`inline-flex items-center px-2 py-0.5 rounded text-[9px] font-extrabold border ${
-                              row.pctGeocerca >= 80
-                                ? "bg-green-100 text-green-700 border-green-200 dark:bg-green-900 dark:text-green-100 dark:border-green-800"
-                                : row.pctGeocerca >= 50
-                                  ? "bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900 dark:text-yellow-100 dark:border-yellow-800"
-                                  : "bg-red-100 text-red-700 border-red-200 dark:bg-red-900 dark:text-red-100 dark:border-red-800"
-                            }`}
+                            className={`inline-flex items-center px-2 py-0.5 rounded text-[9px] font-extrabold border ${row.pctGeocerca >= 80 ? "bg-green-100 text-green-700 border-green-200" : row.pctGeocerca >= 50 ? "bg-yellow-100 text-yellow-700 border-yellow-200" : "bg-red-100 text-red-700 border-red-200"}`}
                           >
                             {row.pctGeocerca}% EN RANGO
                           </div>
-
-                          {/* Tienda */}
+                          <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                            Dist: {row.distancia || 0}m
+                          </span>
                           <div className="flex items-center gap-1.5 text-blue-700 dark:text-blue-400 font-bold text-[11px] leading-tight">
                             <Store size={12} className="shrink-0" />
                             <span
@@ -339,34 +345,22 @@ const Vendedores = () => {
                               {row.ultimoCliente || "Cliente Desconocido"}
                             </span>
                           </div>
-
-                          {/* Dirección Real */}
                           <div className="flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400 max-w-[200px]">
-                            {row.direccionTexto.includes("Localizando") ? (
-                              <span className="animate-pulse text-blue-500 flex items-center gap-1">
-                                <Loader2 size={10} className="animate-spin" />{" "}
-                                Localizando...
-                              </span>
-                            ) : (
-                              <>
-                                <Navigation
-                                  size={10}
-                                  className="shrink-0 text-slate-400"
-                                />
-                                <span
-                                  className="truncate"
-                                  title={row.direccionTexto}
-                                >
-                                  {row.direccionTexto}
-                                </span>
-                              </>
-                            )}
+                            <Navigation
+                              size={10}
+                              className="shrink-0 text-slate-400"
+                            />
+                            <span
+                              className="truncate"
+                              title={row.direccionTexto}
+                            >
+                              {row.direccionTexto}
+                            </span>
                           </div>
                         </div>
                       )}
                     </Td>
 
-                    {/* 5. Finanzas */}
                     <Td>{row.negociaciones}</Td>
                     <Td className="text-blue-600 dark:text-blue-400 font-bold">
                       {formatCurrency(row.cobradoDia)}
@@ -374,13 +368,9 @@ const Vendedores = () => {
                     <Td className="font-black">
                       {formatPercent(percCobranza)}
                     </Td>
-
-                    {/* 6. Ventas (Real) */}
                     <Td className="text-emerald-600 dark:text-emerald-400 font-black">
                       {formatCurrency(row.ventas)}
                     </Td>
-
-                    {/* 7. KPIs Mensuales */}
                     <Td>{row.carteraActiva}</Td>
                     <Td className="font-black">
                       {formatPercent(percMetaMensual)}
@@ -391,42 +381,28 @@ const Vendedores = () => {
                       {formatPercent(percPlanificado)}
                     </Td>
 
-                    {/* 8. Observación */}
-                    <Td align="left" className="max-w-[250px] align-top">
-                      <div className="flex flex-col gap-1.5 w-full">
-                        {!row.observacionData ||
-                        row.observacionData.length === 0 ? (
-                          <span className="text-xs text-gray-400 italic">
-                            Sin detalle
-                          </span>
-                        ) : (
-                          row.observacionData.map((obs, idx) => (
-                            <div
-                              key={idx}
-                              className={`flex items-center gap-1.5 text-[11px] p-1.5 rounded-md border max-w-full ${
-                                obs.type === "venta"
-                                  ? "bg-emerald-50 border-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:border-emerald-800 dark:text-emerald-200"
-                                  : "bg-blue-50 border-blue-100 text-blue-800 dark:bg-blue-900/40 dark:border-blue-800 dark:text-blue-200"
-                              }`}
-                            >
-                              <div className="shrink-0">
-                                {obs.type === "venta" ? (
-                                  <ShoppingCart size={12} />
-                                ) : (
-                                  <Banknote size={12} />
-                                )}
-                              </div>
+                    {/* --- CELDA DE OBSERVACIÓN CON TOAST --- */}
+                    <Td align="left" className="p-2">
+                      <ObservacionCell
+                        valorInicial={row.observacionManual}
+                        onGuardar={(nuevoTexto) => {
+                          // 1. AQUÍ AGREGAMOS EL LOG
+                          console.log("📤 DATOS A ENVIAR AL BACKEND:", {
+                            vendedor: row.vendedor,
+                            observacion: nuevoTexto,
+                            // Si quieres ver toda la fila completa:
+                            datosCompletos: row,
+                          });
 
-                              <span
-                                className="truncate font-medium flex-1 cursor-help"
-                                title={obs.text}
-                              >
-                                {obs.text}
-                              </span>
-                            </div>
-                          ))
-                        )}
-                      </div>
+                          // 2. Ejecutamos la lógica normal
+                          actualizarObservacion(row.vendedor, nuevoTexto);
+
+                          showToast(
+                            "Observación guardada correctamente",
+                            "success",
+                          );
+                        }}
+                      />
                     </Td>
                   </Tr>
                 );
@@ -435,6 +411,9 @@ const Vendedores = () => {
           </Tbody>
         </Table>
       </TableContainer>
+
+      {/* 3. Renderizamos el contenedor de Toasts */}
+      <ToastContainer />
     </div>
   );
 };
