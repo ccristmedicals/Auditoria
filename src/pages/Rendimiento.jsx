@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { generateRendimientoExcel } from "../utils/ExcelExporter";
 import { apiService } from "../services/apiService";
 import {
   TrendingUp,
@@ -125,31 +126,25 @@ const Rendimiento = () => {
         let exec_no_efectivos = 0;
         let vend_efectivos = 0;
         let vend_no_efectivos = 0;
-
-        // --- NUEVO CONTADOR PARA "GESTIONES REALES" ---
         let gestiones_reales_con_gestion = 0;
 
         clientesDelSegmento.forEach((cliente) => {
           const bitrixID = String(cliente.bitrix?.ID || "");
 
-          // --- A. LÓGICA DE FILTRO PREVIO (AÑO >= 2024 y CÓDIGO) ---
+          // --- A. LÓGICA DE FILTRO PREVIO ---
           let purchaseYear = 0;
           const fechaUltimaCompra = cliente.profit?.fecha_ultima_compra || "";
 
           if (fechaUltimaCompra) {
             if (fechaUltimaCompra.includes("-")) {
               const parts = fechaUltimaCompra.split("-");
-              // YYYY-MM-DD o DD-MM-YYYY
               purchaseYear =
                 parts[0] > 1000 ? parseInt(parts[0]) : parseInt(parts[2]);
             } else if (fechaUltimaCompra.includes("/")) {
-              // DD/MM/YYYY
               purchaseYear = parseInt(fechaUltimaCompra.split("/")[2]);
             }
           }
 
-          // Asumimos que el código Profit viene en este campo de Bitrix (segun tu JSON anterior)
-          // Si viene en cliente.profit.codigo, ajusta aquí: cliente.profit?.codigo
           const codigoProfit = cliente.bitrix?.UF_CRM_1634787828 || "";
           const hasProfitCode = codigoProfit && codigoProfit !== "—";
 
@@ -194,7 +189,7 @@ const Rendimiento = () => {
                   exec_no_efectivos++;
                 }
 
-                // 2. Lógica "CON GESTIÓN" (Para columna Gest. Reales)
+                // 2. Lógica "CON GESTIÓN"
                 if (isEligible) {
                   const hasWa =
                     diaLog.inicio_whatsapp?.e === true ||
@@ -252,7 +247,6 @@ const Rendimiento = () => {
             efectivos: vend_efectivos,
             no_efectivos: vend_no_efectivos,
           },
-          // Guardamos el dato calculado específicamente
           gestiones_reales: gestiones_reales_con_gestion,
         };
       });
@@ -280,7 +274,6 @@ const Rendimiento = () => {
         acc.ejecutiva_no += curr.ejecutiva.no_efectivos;
         acc.vendedor_efectivos += curr.vendedor.efectivos;
         acc.vendedor_no += curr.vendedor.no_efectivos;
-        // Sumamos las gestiones reales (Con Gestión)
         acc.gestiones_reales += curr.gestiones_reales || 0;
         return acc;
       },
@@ -290,7 +283,7 @@ const Rendimiento = () => {
         ejecutiva_no: 0,
         vendedor_efectivos: 0,
         vendedor_no: 0,
-        gestiones_reales: 0, // Inicializar
+        gestiones_reales: 0,
       },
     );
   }, [filteredData]);
@@ -308,6 +301,12 @@ const Rendimiento = () => {
           (totals.vendedor_efectivos + totals.vendedor_no)) *
         100
       : 0;
+
+  // --- FUNCIÓN DE EXPORTACIÓN A EXCEL ---
+  const handleExport = () => {
+    // Le pasamos la data filtrada y los totales calculados
+    generateRendimientoExcel(filteredData, totals);
+  };
 
   if (loading) {
     return (
@@ -354,8 +353,12 @@ const Rendimiento = () => {
             >
               <RefreshCw size={18} />
             </button>
-            <button className="px-4 py-3 bg-[#1a9888] text-white rounded-xl hover:bg-[#158072] transition-all shadow-lg shadow-teal-900/20">
+            <button
+              onClick={handleExport} // <--- USAR EL NUEVO HANDLER
+              className="px-4 py-3 bg-[#1a9888] text-white rounded-xl hover:bg-[#158072] transition-all shadow-lg shadow-teal-900/20 flex items-center gap-2"
+            >
               <Download size={18} />
+              <span className="hidden sm:inline font-bold">Excel</span>
             </button>
           </div>
           <div className="relative w-full xl:w-80">
@@ -491,11 +494,8 @@ const Rendimiento = () => {
                   ? (row.vendedor.efectivos / totalGestionesVendedor) * 100
                   : 0;
 
-              // --- CÁLCULOS CONSOLIDADO (USANDO LA LÓGICA 'CON GESTIÓN') ---
-              // Ahora usamos row.gestiones_reales que calculamos en loadData
+              // --- CÁLCULOS CONSOLIDADO ---
               const gestionesVerdaderas = row.gestiones_reales;
-
-              // % Cumplimiento = (Con Gestión / Total Clientes en la Ruta)
               const pctCumplimiento =
                 row.total_clientes > 0
                   ? (gestionesVerdaderas / row.total_clientes) * 100
@@ -530,7 +530,7 @@ const Rendimiento = () => {
 
                   {/* --- GRUPO VENDEDOR --- */}
                   <Td className="text-center text-amber-700 dark:text-amber-400 font-medium border-r dark:border-gray-800">
-                    {row.vendedor.efectivos}
+                    {row.ejecutiva.efectivos}
                   </Td>
                   <Td className="text-center text-gray-500 dark:text-gray-400 border-r dark:border-gray-800">
                     {row.vendedor.no_efectivos}
@@ -539,7 +539,7 @@ const Rendimiento = () => {
                     <PercentBadge value={pctVendedor} />
                   </Td>
 
-                  {/* --- GRUPO CONSOLIDADO (AHORA CON LÓGICA CON GESTIÓN) --- */}
+                  {/* --- GRUPO CONSOLIDADO --- */}
                   <Td className="text-center text-purple-700 dark:text-purple-400 font-bold border-r dark:border-gray-800">
                     {gestionesVerdaderas}
                   </Td>

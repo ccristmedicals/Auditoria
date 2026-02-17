@@ -198,10 +198,7 @@ const Vendedores = () => {
         <Table>
           <Thead>
             <tr className="uppercase leading-tight">
-              <Th
-                stickyLeft
-                className="bg-amber-50 dark:bg-amber-900 text-amber-900 dark:text-amber-100 min-w-[200px] border-b dark:border-gray-700 font-bold"
-              >
+              <Th className="bg-amber-50 dark:bg-amber-900 text-amber-900 dark:text-amber-100 min-w-[200px] border-b dark:border-gray-700 font-bold">
                 Vendedor
               </Th>
               <Th className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 min-w-[100px] border-b dark:border-gray-700 font-bold">
@@ -297,9 +294,8 @@ const Vendedores = () => {
                     className="hover:bg-gray-50 dark:hover:bg-[#1a2333]"
                   >
                     <Td
-                      stickyLeft
                       align="left"
-                      className="font-black text-xs sm:text-sm text-gray-800 dark:text-gray-200"
+                      className="font-black border-r border-gray-200 dark:border-gray-800 text-xs sm:text-sm text-gray-800 dark:text-gray-200"
                     >
                       {row.vendedor}
                     </Td>
