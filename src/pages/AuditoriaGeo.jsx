@@ -15,20 +15,19 @@ import {
   MapPin,
   AlertTriangle,
   CheckCircle,
-  XCircle,
-  Navigation,
+  Database,
+  ArrowRightLeft,
+  ExternalLink,
   Edit3,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  Database,
   Layers,
 } from "lucide-react";
 
 // --- HELPERS VISUALES ---
 
-// 1. StatCard (Nuevo componente para consistencia visual)
 const StatCard = ({ icon: Icon, label, value, colorClass, iconColor }) => (
   <div
     className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${colorClass} shadow-sm min-w-[140px]`}
@@ -45,65 +44,59 @@ const StatCard = ({ icon: Icon, label, value, colorClass, iconColor }) => (
   </div>
 );
 
-// 2. Lógica de Color de Fila
 const getRowColor = (status) => {
   switch (status) {
     case "MATCH":
       return "bg-green-50 hover:bg-green-100 dark:bg-green-900/10 dark:hover:bg-green-900/20";
-    case "CLOSE":
-      return "bg-yellow-50 hover:bg-yellow-100 dark:bg-yellow-900/10 dark:hover:bg-yellow-900/20";
-    case "MISSING_BOTH":
-    case "MISSING_PROFIT":
-    case "MISSING_BITRIX":
+    case "FAR":
       return "bg-red-50 hover:bg-red-100 dark:bg-red-900/10 dark:hover:bg-red-900/20";
+    case "MISSING_PROFIT":
+      return "bg-orange-50 hover:bg-orange-100 dark:bg-orange-900/10 dark:hover:bg-orange-900/20";
+    case "MISSING_BITRIX":
+      return "bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/10 dark:hover:bg-blue-900/20";
     default:
       return "bg-white hover:bg-slate-50 dark:bg-[#111827] dark:hover:bg-white/5";
   }
 };
 
-// 3. Badge de Estado
 const GeoStatusBadge = ({ status, distance }) => {
   let icon = <AlertTriangle size={14} />;
   let text = status;
-  let colorClass =
-    "bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700";
+  let colorClass = "bg-gray-100 text-gray-600 border-gray-200";
 
   switch (status) {
     case "MATCH":
       icon = <CheckCircle size={14} />;
-      text = "EXACTO";
+      text = "COINCIDEN";
       colorClass =
         "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800";
       break;
-    case "CLOSE": {
-      const metros = distance ? (distance * 1000).toFixed(0) : 0;
-      icon = <Navigation size={14} />;
-      text = `DIF: ${metros}m`;
-      colorClass =
-        "bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800";
-      break;
-    }
-    case "MISSING_BOTH":
-      icon = <XCircle size={14} />;
-      text = "SIN DATA";
+    case "FAR":
+      icon = <ArrowRightLeft size={14} />;
+      text = `DIF: ${distance}m`;
       colorClass =
         "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800";
       break;
     case "MISSING_PROFIT":
+      icon = <Database size={14} />;
       text = "FALTA PROFIT";
       colorClass =
         "bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800";
       break;
     case "MISSING_BITRIX":
+      icon = <Database size={14} />;
       text = "FALTA BITRIX";
       colorClass =
         "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800";
+      break;
+    default:
+      text = "SIN DATA";
       break;
   }
 
   return (
     <div
-      className={`flex items-center justify-center gap-1.5 px-2 py-0.5 rounded-full border text-[10px] font-bold w-full max-w-[120px] shadow-sm ${colorClass}`}
+      className={`flex items-center justify-center gap-1.5 px-2 py-0.5 rounded-full border text-[10px] font-bold w-full shadow-sm ${colorClass}`}
     >
       {icon}
       <span>{text}</span>
@@ -111,7 +104,6 @@ const GeoStatusBadge = ({ status, distance }) => {
   );
 };
 
-// 4. Input Editable
 const EditableCell = ({ value, onChange, placeholder = "..." }) => (
   <div className="relative w-full">
     <input
@@ -128,7 +120,6 @@ const EditableCell = ({ value, onChange, placeholder = "..." }) => (
   </div>
 );
 
-// --- COMPONENTE PRINCIPAL ---
 const AuditoriaGeo = () => {
   const {
     auditData,
@@ -138,6 +129,7 @@ const AuditoriaGeo = () => {
     totalPages,
     totalRecords,
     goToPage,
+    refresh,
   } = useAuditoriaGeo();
 
   const [jumpPage, setJumpPage] = useState("");
@@ -148,14 +140,46 @@ const AuditoriaGeo = () => {
     if (p >= 1 && p <= totalPages) {
       goToPage(p);
       setJumpPage("");
-    } else {
-      alert(`Por favor ingresa una página entre 1 y ${totalPages}`);
     }
   };
 
-  const problemCount = auditData.filter((r) =>
-    r.status.includes("MISSING"),
-  ).length;
+  // Función MEJORADA para abrir Google Maps
+  // Función INTELIGENTE para abrir mapas
+  const openSmartMap = (c1, c2, distance) => {
+    if (!c1 || !c2) return;
+
+    // 1. Limpieza estricta de espacios
+    const origin = String(c1).replace(/\s/g, "");
+    const dest = String(c2).replace(/\s/g, "");
+
+    // 2. Validar coordenadas basura (0,0)
+    if (origin.startsWith("0,0") || dest.startsWith("0,0")) {
+      alert("Coordenada inválida (0,0 detected).");
+      return;
+    }
+
+    // 3. LÓGICA DE DECISIÓN:
+
+    // CASO A: Son idénticas (o menos de 20 metros de diferencia)
+    // No tiene sentido trazar una ruta. Mostramos un PIN simple.
+    // Usamos el parámetro 'distance' que ya calculó tu hook.
+    if (distance < 20) {
+      // Abre el mapa centrado en el punto con un marcador rojo
+      const url = `https://www.google.com/maps/search/?api=1&query=${origin}`;
+      window.open(url, "_blank");
+    }
+
+    // CASO B: Son diferentes
+    // Trazamos la ruta para ver la diferencia visualmente.
+    else {
+      // Usamos la API oficial de "Directions" (dir)
+      // travelmode=driving es lo estándar.
+      const url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}&travelmode=driving`;
+      window.open(url, "_blank");
+    }
+  };
+
+  const problemCount = auditData.filter((r) => r.status !== "MATCH").length;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 min-h-screen bg-white dark:bg-[#0b1120]">
@@ -167,18 +191,17 @@ const AuditoriaGeo = () => {
           </div>
           <div>
             <h2 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">
-              Auditoría de{" "}
+              Comparativa{" "}
               <span className="text-[#1a9888] dark:text-teal-400">
-                Coordenadas
+                Profit vs Bitrix
               </span>
             </h2>
             <p className="text-sm text-slate-500 dark:text-slate-400 font-medium mt-1">
-              Validación cruzada entre Profit y Bitrix
+              Auditoría de integridad de coordenadas entre sistemas
             </p>
           </div>
         </div>
 
-        {/* --- STATS CARDS --- */}
         <div className="flex flex-wrap gap-3">
           <StatCard
             icon={Database}
@@ -188,19 +211,18 @@ const AuditoriaGeo = () => {
             iconColor="text-slate-500"
           />
           <StatCard
-            icon={Layers}
-            label="Páginas"
-            value={totalPages}
-            colorClass="bg-blue-50 border-blue-100 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300"
-            iconColor="text-blue-500"
-          />
-          <StatCard
             icon={AlertTriangle}
-            label="Problemas (Pag)"
+            label="Discrepancias"
             value={problemCount}
             colorClass="bg-red-50 border-red-100 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300"
             iconColor="text-red-500"
           />
+          <button
+            onClick={refresh}
+            className="flex items-center justify-center w-12 h-12 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
+          >
+            <RefreshCw size={20} />
+          </button>
         </div>
       </div>
 
@@ -208,82 +230,81 @@ const AuditoriaGeo = () => {
         {loading ? (
           <div className="p-10 flex flex-col items-center justify-center text-gray-500">
             <RefreshCw className="animate-spin w-8 h-8 mb-2 text-[#1a9888]" />
-            <span>Cargando página {page}...</span>
+            <span>Analizando bases de datos...</span>
           </div>
         ) : (
           <Table>
             <Thead>
-              {/* Nivel 1 Header */}
+              {/* Nivel 1 */}
               <Tr className="border-b-0">
                 <Th
                   colSpan={2}
                   stickyTop
-                  className="border-b border-r border-gray-200 dark:border-[#333] text-slate-700 dark:text-slate-300 bg-gray-100 dark:bg-[#1e1e1e] z-20 text-center"
+                  className="border-b border-r border-gray-200 dark:border-[#333] bg-gray-100 dark:bg-[#1e1e1e] text-center"
                 >
                   CLIENTE
                 </Th>
                 <Th
-                  colSpan={2}
+                  colSpan={1}
                   stickyTop
-                  className="border-b border-r border-gray-200 dark:border-[#333] bg-purple-50 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 z-20 text-center"
+                  className="border-b border-r border-gray-200 dark:border-[#333] bg-gray-50 dark:bg-[#1e1e1e] text-center"
                 >
                   UBICACIÓN
                 </Th>
                 <Th
                   colSpan={1}
                   stickyTop
-                  className="border-b border-r border-green-200 dark:border-green-900 bg-green-50 dark:bg-green-900/40 text-green-700 dark:text-green-300 z-20 text-center"
+                  className="border-b border-r border-green-200 dark:border-green-900 bg-green-50 dark:bg-green-900/40 text-green-700 text-center"
                 >
                   PROFIT
                 </Th>
                 <Th
-                  colSpan={2}
+                  colSpan={1}
                   stickyTop
-                  className="border-b border-r border-blue-200 dark:border-blue-900 text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/40 z-20 text-center"
+                  className="border-b border-r border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-900/40 text-blue-700 text-center"
                 >
                   BITRIX
                 </Th>
                 <Th
-                  colSpan={2}
+                  colSpan={3}
                   stickyTop
-                  className="border-b border-gray-200 dark:border-[#333] text-gray-600 dark:text-gray-400 font-bold bg-gray-100 dark:bg-gray-800 z-20 text-center"
+                  className="border-b border-gray-200 dark:border-[#333] bg-gray-100 dark:bg-gray-800 text-center"
                 >
                   AUDITORÍA
                 </Th>
               </Tr>
 
-              {/* Nivel 2 Header */}
+              {/* Nivel 2 */}
               <Tr className="border-b border-gray-200 dark:border-[#333]">
                 <Th className="min-w-[100px] bg-white dark:bg-[#1e1e1e] z-10 text-xs uppercase text-gray-500">
                   Código
                 </Th>
-                <Th className="min-w-[250px] text-left bg-white dark:bg-[#1e1e1e] shadow-md z-10 border-r border-gray-100 dark:border-gray-800 text-xs uppercase text-gray-500">
-                  Nombre Cliente
+                <Th className="min-w-[250px] text-left bg-white dark:bg-[#1e1e1e] shadow-md z-10 border-r border-gray-100 text-xs uppercase text-gray-500">
+                  Nombre
                 </Th>
 
-                <Th className="min-w-[150px] bg-white dark:bg-[#1e1e1e] text-xs uppercase text-gray-500">
+                <Th className="min-w-[150px] bg-white dark:bg-[#1e1e1e] border-r border-gray-100 text-xs uppercase text-gray-500">
                   Zona
                 </Th>
-                <Th className="min-w-[120px] bg-white dark:bg-[#1e1e1e] border-r border-gray-100 dark:border-gray-800 text-xs uppercase text-gray-500">
-                  Ruta
+
+                {/* Coords Profit - COLUMNA CLAVE */}
+                <Th className="min-w-[180px] bg-green-50 dark:bg-green-900 border-r border-green-100 text-xs uppercase text-green-700 text-center font-bold">
+                  Coords Profit
                 </Th>
 
-                <Th className="min-w-[180px] bg-green-50 dark:bg-green-900 border-r border-green-100 dark:border-green-900 text-xs uppercase text-green-700 dark:text-green-500 text-center">
-                  Coordenadas
+                {/* Coords Bitrix - COLUMNA CLAVE */}
+                <Th className="min-w-[180px] bg-blue-50 dark:bg-blue-900 border-r border-blue-100 text-xs uppercase text-blue-700 text-center font-bold">
+                  Coords Bitrix
                 </Th>
 
-                <Th className="min-w-[100px] bg-blue-50 dark:bg-blue-900 text-xs uppercase text-blue-700 dark:text-blue-500 text-center">
-                  ID
-                </Th>
-                <Th className="min-w-[180px] bg-blue-50 dark:bg-blue-900 border-r border-blue-100 dark:border-blue-900 text-xs uppercase text-blue-700 dark:text-blue-500 text-center">
-                  Coordenadas
-                </Th>
-
-                <Th className="min-w-[160px] text-center bg-gray-50 dark:bg-gray-800 text-xs uppercase text-gray-500">
+                <Th className="min-w-[140px] text-center bg-gray-50 dark:bg-gray-800 text-xs uppercase text-gray-500">
                   Estado
                 </Th>
-                <Th className="min-w-[200px] bg-gray-50 dark:bg-gray-800 text-xs uppercase text-gray-500">
-                  Observación
+                <Th className="min-w-[50px] text-center bg-gray-50 dark:bg-gray-800 text-xs uppercase text-gray-500">
+                  Mapa
+                </Th>
+                <Th className="min-w-[180px] bg-gray-50 dark:bg-gray-800 text-xs uppercase text-gray-500">
+                  Nota
                 </Th>
               </Tr>
             </Thead>
@@ -291,55 +312,82 @@ const AuditoriaGeo = () => {
             <Tbody>
               {auditData.map((row) => (
                 <Tr key={row.id_interno} className={getRowColor(row.status)}>
-                  {/* Sticky Columns */}
-                  <Td className="bg-slate-50 dark:bg-[#0b1120] text-xs font-mono font-bold text-slate-700 dark:text-slate-300 z-10 transition-colors">
-                    {row.codigo_profit}
+                  <Td className="bg-slate-50 dark:bg-[#0b1120] text-xs font-mono font-bold text-slate-700 dark:text-slate-300 z-10">
+                    {row.codigo}
                   </Td>
-                  <Td className="text-left font-semibold bg-white dark:bg-[#111827] border-r dark:border-white/5 shadow-md text-xs z-10 transition-colors">
+                  <Td className="text-left font-semibold bg-white dark:bg-[#111827] border-r dark:border-white/5 shadow-md text-xs z-10">
                     <div className="truncate max-w-[250px]" title={row.nombre}>
                       {row.nombre}
                     </div>
                   </Td>
 
-                  {/* Location */}
-                  <Td className="text-xs transition-colors">{row.zona}</Td>
-                  <Td className="transition-colors border-r border-gray-200 dark:border-white/5">
-                    <span
-                      className={`text-[10px] px-2 py-0.5 rounded-md font-bold border ${
-                        row.ruta && row.ruta.includes("CERRADO")
-                          ? "bg-red-50 text-red-600 border-red-100 dark:bg-red-900/20 dark:border-red-900 dark:text-red-300"
-                          : "bg-slate-50 text-slate-600 border-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400"
-                      }`}
-                    >
-                      {row.ruta}
-                    </span>
+                  <Td className="text-xs border-r border-gray-200 dark:border-white/5">
+                    {row.zona}
                   </Td>
 
-                  {/* Profit */}
-                  <Td className="font-mono text-[10px] text-center text-slate-500 bg-green-50 border-r border-green-100 dark:bg-green-900 dark:border-white/5 transition-colors">
-                    {row.coords_profit || "-"}
+                  {/* PROFIT */}
+                  <Td className="font-mono text-[10px] text-center text-green-700 bg-green-50 border-r border-green-100 dark:bg-green-900 dark:border-white/5">
+                    {row.coords_profit || (
+                      <span className="text-red-400 font-bold text-[9px] bg-red-50 px-1 py-0.5 rounded">
+                        VACÍO
+                      </span>
+                    )}
                   </Td>
 
-                  {/* Bitrix */}
-                  <Td className="font-mono text-xs text-center text-blue-600 font-bold bg-blue-50 dark:bg-blue-900 transition-colors">
-                    {row.id_bitrix}
-                  </Td>
-                  <Td className="font-mono text-[10px] text-center text-slate-500 bg-blue-50 border-r border-blue-100 dark:bg-blue-900 dark:border-white/5 transition-colors">
-                    {row.coords_bitrix || "-"}
+                  {/* BITRIX */}
+                  <Td className="font-mono text-[10px] text-center text-blue-600 bg-blue-50 border-r border-blue-100 dark:bg-blue-900 dark:border-white/5">
+                    {row.coords_bitrix || (
+                      <span className="text-red-400 font-bold text-[9px] bg-red-50 px-1 py-0.5 rounded">
+                        VACÍO
+                      </span>
+                    )}
                   </Td>
 
-                  {/* Auditoría */}
-                  <Td className="flex justify-center transition-colors py-2">
+                  {/* STATUS */}
+                  <Td className="flex justify-center py-2">
                     <GeoStatusBadge
                       status={row.status}
                       distance={row.distancia}
                     />
                   </Td>
-                  <Td className="bg-white dark:bg-[#111827] transition-colors">
+                  {/* Columna Mapa */}
+                  <Td className="text-center">
+                    {row.coords_profit && row.coords_bitrix && (
+                      <button
+                        // AQUI CAMBIAMOS: Pasamos (profit, bitrix, y la distancia)
+                        onClick={() =>
+                          openSmartMap(
+                            row.coords_profit,
+                            row.coords_bitrix,
+                            row.distancia,
+                          )
+                        }
+                        className={`p-1.5 rounded-md transition-colors ${
+                          // Cambiamos el color del botón según si coinciden o no
+                          row.status === "MATCH"
+                            ? "text-green-600 hover:bg-green-100 border border-green-200" // Verde si es igual
+                            : "text-blue-600 hover:bg-blue-100 border border-blue-200" // Azul si hay ruta
+                        }`}
+                        title={
+                          row.status === "MATCH"
+                            ? "Ver ubicación"
+                            : "Ver ruta de diferencia"
+                        }
+                      >
+                        {/* Cambiamos el icono visualmente también */}
+                        {row.status === "MATCH" ? (
+                          <MapPin size={16} />
+                        ) : (
+                          <ExternalLink size={16} />
+                        )}
+                      </button>
+                    )}
+                  </Td>
+                  <Td className="bg-white dark:bg-[#111827]">
                     <EditableCell
                       value={row.obs_auditor}
                       onChange={(val) => handleAuditChange(row.id_interno, val)}
-                      placeholder="Validar..."
+                      placeholder="Obs..."
                     />
                   </Td>
                 </Tr>
