@@ -10,9 +10,9 @@ import {
   User,
   Filter,
   X,
+  Download,
 } from "lucide-react";
 
-// --- HELPERS (Idealmente mover a src/utils/formatters.js) ---
 const formatDate = (dateString) => {
   if (!dateString) return "N/A";
   return new Date(dateString).toLocaleDateString("es-VE", {
@@ -67,6 +67,7 @@ const PlanificacionHeader = ({
   isExpanded,
   onClick,
   totalVencido,
+  onDownload, // <--- Nueva prop recibida
 }) => {
   const user = headerData.usuario || headerData.co_ven || "No Identificado";
 
@@ -77,7 +78,9 @@ const PlanificacionHeader = ({
     >
       <div className="flex items-center gap-4">
         <button
-          className={`p-1.5 rounded-full bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-600 text-gray-500 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+          className={`p-1.5 rounded-full bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-600 text-gray-500 transition-transform duration-200 ${
+            isExpanded ? "rotate-180" : ""
+          }`}
         >
           <ChevronDown size={16} />
         </button>
@@ -105,18 +108,33 @@ const PlanificacionHeader = ({
         </div>
       </div>
 
-      {totalVencido > 0 && (
-        <div className="mt-3 md:mt-0 flex items-center bg-white dark:bg-gray-800 px-3 py-2 rounded-lg border border-red-100 dark:border-red-900/30 shadow-sm">
-          <div className="flex flex-col items-end">
-            <span className="text-[10px] uppercase font-bold text-red-400">
-              Total Vencido
-            </span>
-            <span className="font-bold text-red-600 dark:text-red-400 font-mono text-sm">
-              {formatCurrency(totalVencido)}
-            </span>
+      {/* SECCIÓN DERECHA: Botón Descarga + Total Vencido */}
+      <div className="mt-3 md:mt-0 flex items-center gap-3 self-end md:self-auto">
+        {/* BOTÓN DESCARGAR INDIVIDUAL */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation(); // Evita que se colapse el acordeón
+            onDownload();
+          }}
+          className="p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-500 hover:text-red-600 hover:border-red-200 dark:hover:text-red-400 transition-colors shadow-sm"
+          title="Descargar PDF de esta planificación"
+        >
+          <Download size={18} />
+        </button>
+
+        {totalVencido > 0 && (
+          <div className="flex items-center bg-white dark:bg-gray-800 px-3 py-2 rounded-lg border border-red-100 dark:border-red-900/30 shadow-sm">
+            <div className="flex flex-col items-end">
+              <span className="text-[10px] uppercase font-bold text-red-400">
+                Total Vencido
+              </span>
+              <span className="font-bold text-red-600 dark:text-red-400 font-mono text-sm">
+                {formatCurrency(totalVencido)}
+              </span>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
@@ -235,16 +253,31 @@ const PlanificacionTable = ({ items }) => (
   </div>
 );
 
+// Asegúrate de importar la función generadora
+import { generatePlanificacionPDF } from "../utils/pdfGeneratorPlanificacion";
+
 const PlanificacionGroup = ({ items }) => {
   const [isExpanded, setIsExpanded] = useState(true);
 
   if (!items || items.length === 0) return null;
 
   const headerData = items[0];
+
+  // Calcular total vencido
   const totalVencido = items.reduce(
     (acc, item) => acc + (item.full_data?.saldo_vencido || 0),
     0,
   );
+
+  // MANEJADOR DE DESCARGA
+  const handleDownload = () => {
+    // 1. Extraemos la fecha de ESTE grupo específico
+    // Asegúrate que headerData.fecha_registro sea una fecha válida
+    const groupDate = new Date(headerData.fecha_registro);
+
+    // 2. Llamamos al generador pasando SOLO los items de este grupo
+    generatePlanificacionPDF(items, groupDate);
+  };
 
   return (
     <div className="bg-white dark:bg-[#1a1f2e] rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden transition-all hover:shadow-md">
@@ -254,6 +287,7 @@ const PlanificacionGroup = ({ items }) => {
         isExpanded={isExpanded}
         onClick={() => setIsExpanded(!isExpanded)}
         totalVencido={totalVencido}
+        onDownload={handleDownload} // <--- Pasamos la función
       />
       {isExpanded && <PlanificacionTable items={items} />}
     </div>
