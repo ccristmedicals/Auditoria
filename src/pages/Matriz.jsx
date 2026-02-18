@@ -17,9 +17,7 @@ import {
   CheckCircle,
   Loader,
   Lock,
-  // Agregué estos dos iconos para el nuevo header visual
-  Filter,
-  Calendar,
+  Download,
 } from "lucide-react";
 import {
   TableContainer,
@@ -31,7 +29,7 @@ import {
   Td,
 } from "../components/ui/Tabla";
 import { FilterMultiSelect } from "../components/ui/FilterMultiSelect";
-
+import { generateDailyAuditExcel } from "../utils/ExcelExporterMatriz";
 import { useToast } from "../components/ui/Toast";
 
 // --- COMPONENTES AUXILIARES (MODIFICADOS SOLO VISUALMENTE PARA EL HEADER) ---
@@ -895,7 +893,8 @@ const Matriz = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedZonas, setSelectedZonas] = useState([]); // Nuevo estado para filtro de Zonas
   const [selectedRutas, setSelectedRutas] = useState([]); // Nuevo estado para filtro de Rutas
-  const [showSinGestionOnly, setShowSinGestionOnly] = useState(false);
+  // --- CAMBIO 1: Estado para el filtro de gestión (Array en lugar de string)
+  const [selectedGestion, setSelectedGestion] = useState([]);
   const [page, setPage] = useState(1);
   const ITEMS_PER_PAGE = 25;
   const { showToast, ToastContainer } = useToast();
@@ -916,6 +915,9 @@ const Matriz = () => {
       .filter((r) => r && r !== "—");
     return [...new Set(rutas)].sort();
   }, [data]);
+
+  // --- CAMBIO 2: Opciones para el filtro de gestión
+  const gestionOptions = ["Con Gestión", "Sin Gestión"];
 
   // --- FUNCIÓN PARA GUARDAR FILA ---
   const handleSaveRow = useCallback(
@@ -981,10 +983,11 @@ const Matriz = () => {
 
   useEffect(() => {
     setPage(1);
-  }, [searchTerm, selectedZonas, selectedRutas, showSinGestionOnly]);
+  }, [searchTerm, selectedZonas, selectedRutas, selectedGestion]); // CAMBIO: Dependencia actualizada
 
   const filteredData = useMemo(() => {
     return data.filter((item) => {
+      // ... (Lógica de searchTerm, Zonas y Rutas se queda IGUAL) ...
       if (searchTerm) {
         const term = searchTerm.toLowerCase();
         const nombre = item.nombre?.toLowerCase() || "";
@@ -997,31 +1000,48 @@ const Matriz = () => {
       if (selectedRutas.length > 0) {
         if (!selectedRutas.includes(item.segmento)) return false;
       }
-      if (showSinGestionOnly) {
-        const day = item.auditoria?.[selectedDay];
-        if (!day) return true;
 
-        const hasCheck =
-          day.inicio_whatsapp?.e ||
-          day.inicio_whatsapp?.c ||
-          day.accion_venta?.e ||
-          day.accion_venta?.p ||
-          day.accion_venta?.n ||
-          day.accion_cobranza?.e ||
-          day.accion_cobranza?.p ||
-          day.accion_cobranza?.n ||
-          day.llamadas_venta?.e ||
-          day.llamadas_venta?.p ||
-          day.llamadas_venta?.n ||
-          day.llamadas_cobranza?.e ||
-          day.llamadas_cobranza?.p ||
-          day.llamadas_cobranza?.n;
+      // CAMBIO 3: Nueva lógica para el Select de Gestión (Array)
+      if (selectedGestion.length > 0) {
+        // Si están ambos seleccionados (o ninguno), mostramos todo.
+        // Solo filtramos si hay 1 seleccionado.
+        const isConGestionSelected = selectedGestion.includes("Con Gestión");
+        const isSinGestionSelected = selectedGestion.includes("Sin Gestión");
 
-        const hasObs =
-          day.observacion && day.observacion.toString().trim().length > 0;
+        // Si están los dos seleccionados, es como no filtrar nada, se muestra todo.
+        // Solo aplicamos lógica si hay UNO solo seleccionado.
+        if (isConGestionSelected !== isSinGestionSelected) {
+          const day = item.auditoria?.[selectedDay];
+          let hasManagement = false;
 
-        if (hasCheck || hasObs) return false;
+          if (day) {
+            const hasCheck =
+              day.inicio_whatsapp?.e ||
+              day.inicio_whatsapp?.c ||
+              day.accion_venta?.e ||
+              day.accion_venta?.p ||
+              day.accion_venta?.n ||
+              day.accion_cobranza?.e ||
+              day.accion_cobranza?.p ||
+              day.accion_cobranza?.n ||
+              day.llamadas_venta?.e ||
+              day.llamadas_venta?.p ||
+              day.llamadas_venta?.n ||
+              day.llamadas_cobranza?.e ||
+              day.llamadas_cobranza?.p ||
+              day.llamadas_cobranza?.n;
+
+            const hasObs =
+              day.observacion && day.observacion.toString().trim().length > 0;
+
+            hasManagement = hasCheck || hasObs;
+          }
+
+          if (isSinGestionSelected && hasManagement) return false;
+          if (isConGestionSelected && !hasManagement) return false;
+        }
       }
+
       return true;
     });
   }, [
@@ -1029,7 +1049,7 @@ const Matriz = () => {
     searchTerm,
     selectedZonas,
     selectedRutas,
-    showSinGestionOnly,
+    selectedGestion, // CAMBIO: Dependencia actualizada
     selectedDay,
   ]);
 
@@ -1242,9 +1262,11 @@ const Matriz = () => {
         </div>
 
         {/* BARRA DE HERRAMIENTAS DE FILTRO */}
-        <div className="flex flex-col sm:flex-row gap-3 w-full xl:w-auto items-end">
+        <div className="flex flex-col xl:flex-row gap-3 w-full xl:w-auto items-center">
+          {" "}
+          {/* Cambio: items-center */}
           {/* Selector Día (Estilo Pills) */}
-          <div className="flex bg-gray-100 dark:bg-[#1a2333] p-1 rounded-xl overflow-x-auto border border-gray-200 dark:border-gray-700">
+          <div className="flex bg-gray-100 dark:bg-[#1a2333] p-1 rounded-xl overflow-x-auto border border-gray-200 dark:border-gray-700 shrink-0">
             {[
               "lunes",
               "martes",
@@ -1266,9 +1288,8 @@ const Matriz = () => {
               </button>
             ))}
           </div>
-
-          {/* Inputs Filtros */}
-          <div className="flex gap-2 w-full sm:w-auto">
+          {/* Inputs Filtros, Buscador y Excel */}
+          <div className="flex flex-wrap sm:flex-nowrap gap-2 w-full sm:w-auto items-center justify-center sm:justify-end">
             <FilterMultiSelect
               label="Zonas"
               options={uniqueZonas}
@@ -1281,21 +1302,14 @@ const Matriz = () => {
               selected={selectedRutas}
               onChange={setSelectedRutas}
             />
-            <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-[#1a2333] border border-gray-200 dark:border-gray-700 rounded-xl transition-all hover:border-[#1a9888]/50">
-              <input
-                id="sinGestionFilter"
-                type="checkbox"
-                checked={showSinGestionOnly}
-                onChange={(e) => setShowSinGestionOnly(e.target.checked)}
-                className="w-4 h-4 accent-[#1a9888] cursor-pointer"
-              />
-              <label
-                htmlFor="sinGestionFilter"
-                className="text-xs font-bold text-slate-600 dark:text-slate-300 cursor-pointer whitespace-nowrap select-none"
-              >
-                Sin Gestión
-              </label>
-            </div>
+            <FilterMultiSelect
+              label="Gestión"
+              options={gestionOptions}
+              selected={selectedGestion}
+              onChange={setSelectedGestion}
+            />
+
+            {/* Buscador */}
             <div className="relative group w-full sm:w-64">
               <Search
                 size={16}
@@ -1317,6 +1331,23 @@ const Matriz = () => {
                 </button>
               )}
             </div>
+
+            {/* Botón Excel (FUERA del div relative del buscador) */}
+            <button
+              onClick={() => {
+                if (!filteredData.length) {
+                  showToast("No hay datos filtrados para exportar", "error");
+                  return;
+                }
+                generateDailyAuditExcel(filteredData, selectedDay);
+                showToast("Excel generado con éxito", "success");
+              }}
+              className="px-4 py-3 bg-[#1a9888] text-white rounded-xl hover:bg-[#158072] transition-all shadow-lg shadow-teal-900/20 flex items-center gap-2"
+              title="Descargar Excel"
+            >
+              <Download size={18} />
+              <span className="hidden sm:inline font-bold">Excel</span>
+            </button>
           </div>
         </div>
       </div>
