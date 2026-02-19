@@ -1001,20 +1001,24 @@ const Matriz = () => {
         if (!selectedRutas.includes(item.segmento)) return false;
       }
 
-      // CAMBIO 3: Nueva lógica para el Select de Gestión (Array)
+      // CAMBIO: Nueva lógica para el Select de Gestión (Semanal)
       if (selectedGestion.length > 0) {
-        // Si están ambos seleccionados (o ninguno), mostramos todo.
-        // Solo filtramos si hay 1 seleccionado.
         const isConGestionSelected = selectedGestion.includes("Con Gestión");
         const isSinGestionSelected = selectedGestion.includes("Sin Gestión");
 
-        // Si están los dos seleccionados, es como no filtrar nada, se muestra todo.
-        // Solo aplicamos lógica si hay UNO solo seleccionado.
         if (isConGestionSelected !== isSinGestionSelected) {
-          const day = item.auditoria?.[selectedDay];
-          let hasManagement = false;
-
-          if (day) {
+          // Revisar TODA la semana, no solo el día seleccionado
+          const dias = [
+            "lunes",
+            "martes",
+            "miercoles",
+            "jueves",
+            "viernes",
+            "sabado",
+          ];
+          const hasManagementThisWeek = dias.some((d) => {
+            const day = item.auditoria?.[d];
+            if (!day) return false;
             const hasCheck =
               day.inicio_whatsapp?.e ||
               day.inicio_whatsapp?.c ||
@@ -1030,15 +1034,13 @@ const Matriz = () => {
               day.llamadas_cobranza?.e ||
               day.llamadas_cobranza?.p ||
               day.llamadas_cobranza?.n;
-
             const hasObs =
               day.observacion && day.observacion.toString().trim().length > 0;
+            return hasCheck || hasObs;
+          });
 
-            hasManagement = hasCheck || hasObs;
-          }
-
-          if (isSinGestionSelected && hasManagement) return false;
-          if (isConGestionSelected && !hasManagement) return false;
+          if (isSinGestionSelected && hasManagementThisWeek) return false;
+          if (isConGestionSelected && !hasManagementThisWeek) return false;
         }
       }
 
@@ -1195,27 +1197,39 @@ const Matriz = () => {
           ? acc + 1
           : acc;
       }, 0),
+      // Sin Gestión SEMANAL: sin ninguna actividad en toda la semana
       sinGestion: filteredData.reduce((acc, row) => {
-        const day = row.auditoria?.[selectedDay];
-        if (!day) return acc + 1;
-        const hasCheck =
-          day.inicio_whatsapp?.e ||
-          day.inicio_whatsapp?.c ||
-          day.accion_venta?.e ||
-          day.accion_venta?.p ||
-          day.accion_venta?.n ||
-          day.accion_cobranza?.e ||
-          day.accion_cobranza?.p ||
-          day.accion_cobranza?.n ||
-          day.llamadas_venta?.e ||
-          day.llamadas_venta?.p ||
-          day.llamadas_venta?.n ||
-          day.llamadas_cobranza?.e ||
-          day.llamadas_cobranza?.p ||
-          day.llamadas_cobranza?.n;
-        const hasObs =
-          day.observacion && day.observacion.toString().trim().length > 0;
-        return !hasCheck && !hasObs ? acc + 1 : acc;
+        const dias = [
+          "lunes",
+          "martes",
+          "miercoles",
+          "jueves",
+          "viernes",
+          "sabado",
+        ];
+        const hasAnyActivity = dias.some((d) => {
+          const day = row.auditoria?.[d];
+          if (!day) return false;
+          const hasCheck =
+            day.inicio_whatsapp?.e ||
+            day.inicio_whatsapp?.c ||
+            day.accion_venta?.e ||
+            day.accion_venta?.p ||
+            day.accion_venta?.n ||
+            day.accion_cobranza?.e ||
+            day.accion_cobranza?.p ||
+            day.accion_cobranza?.n ||
+            day.llamadas_venta?.e ||
+            day.llamadas_venta?.p ||
+            day.llamadas_venta?.n ||
+            day.llamadas_cobranza?.e ||
+            day.llamadas_cobranza?.p ||
+            day.llamadas_cobranza?.n;
+          const hasObs =
+            day.observacion && day.observacion.toString().trim().length > 0;
+          return hasCheck || hasObs;
+        });
+        return !hasAnyActivity ? acc + 1 : acc;
       }, 0),
     };
   }, [filteredData, selectedDay]);

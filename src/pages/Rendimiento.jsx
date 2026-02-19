@@ -127,6 +127,7 @@ const Rendimiento = () => {
         let vend_efectivos = 0;
         let vend_no_efectivos = 0;
         let gestiones_reales_con_gestion = 0;
+        let clientes_sin_gestion = 0;
 
         clientesDelSegmento.forEach((cliente) => {
           const bitrixID = String(cliente.bitrix?.ID || "");
@@ -150,6 +151,7 @@ const Rendimiento = () => {
 
           const isEligible = purchaseYear >= 2024 && hasProfitCode;
           let cumpleConGestion = false;
+          let tieneActividadEnMatriz = false;
 
           // --- B. LÓGICA EJECUTIVA Y MATRIZ ---
           let auditData = matrizMap.get(bitrixID);
@@ -189,7 +191,7 @@ const Rendimiento = () => {
                   exec_no_efectivos++;
                 }
 
-                // 2. Lógica "CON GESTIÓN"
+                // 2. Lógica "CON GESTIÓN" (para Gest. Reales del consolidado)
                 if (isEligible) {
                   const hasWa =
                     diaLog.inicio_whatsapp?.e === true ||
@@ -203,8 +205,29 @@ const Rendimiento = () => {
                     cumpleConGestion = true;
                   }
                 }
+
+                // 3. Detectar CUALQUIER actividad en la semana (para Sin Gestión)
+                const anyCheck =
+                  diaLog.accion_venta?.e === true ||
+                  diaLog.accion_venta?.n === true ||
+                  diaLog.accion_venta?.p === true ||
+                  diaLog.accion_cobranza?.e === true ||
+                  diaLog.accion_cobranza?.n === true ||
+                  diaLog.accion_cobranza?.p === true ||
+                  diaLog.inicio_whatsapp?.e === true ||
+                  diaLog.inicio_whatsapp?.c === true ||
+                  diaLog.llamadas_venta?.e === true ||
+                  diaLog.llamadas_venta?.p === true ||
+                  diaLog.llamadas_venta?.n === true;
+                if (anyCheck) tieneActividadEnMatriz = true;
               }
             });
+          }
+
+          // --- E. CONTAR SIN GESTIÓN ---
+          // Clientes sin ningún checkbox marcado en toda la semana en la matriz
+          if (!tieneActividadEnMatriz) {
+            clientes_sin_gestion++;
           }
 
           // --- C. LÓGICA VENDEDOR ---
@@ -248,6 +271,7 @@ const Rendimiento = () => {
             no_efectivos: vend_no_efectivos,
           },
           gestiones_reales: gestiones_reales_con_gestion,
+          sin_gestiones: clientes_sin_gestion,
         };
       });
 
@@ -275,6 +299,7 @@ const Rendimiento = () => {
         acc.vendedor_efectivos += curr.vendedor.efectivos;
         acc.vendedor_no += curr.vendedor.no_efectivos;
         acc.gestiones_reales += curr.gestiones_reales || 0;
+        acc.sin_gestiones += curr.sin_gestiones || 0;
         return acc;
       },
       {
@@ -284,6 +309,7 @@ const Rendimiento = () => {
         vendedor_efectivos: 0,
         vendedor_no: 0,
         gestiones_reales: 0,
+        sin_gestiones: 0,
       },
     );
   }, [filteredData]);
@@ -442,9 +468,15 @@ const Rendimiento = () => {
               </Th>
               <Th
                 colSpan={2}
-                className="bg-purple-100 dark:bg-purple-900/50 text-purple-900 dark:text-purple-100 border-b dark:border-gray-700 text-center font-bold"
+                className="bg-purple-100 dark:bg-purple-900/50 text-purple-900 dark:text-purple-100 border-b border-r dark:border-gray-700 text-center font-bold"
               >
                 Consolidado
+              </Th>
+              <Th
+                rowSpan={2}
+                className="bg-rose-100 dark:bg-rose-900/50 text-rose-900 dark:text-rose-100 border-b dark:border-gray-700 text-center font-bold min-w-[110px]"
+              >
+                Sin Gestión
               </Th>
             </tr>
             <tr className="uppercase leading-tight text-[10px]">
@@ -469,7 +501,7 @@ const Rendimiento = () => {
               <Th className="bg-purple-50 dark:bg-purple-900/20 text-purple-800 dark:text-purple-200 border-b border-r dark:border-gray-700 text-center">
                 Gest. Reales
               </Th>
-              <Th className="bg-purple-50 dark:bg-purple-900/20 text-purple-800 dark:text-purple-200 border-b dark:border-gray-700 text-center font-bold">
+              <Th className="bg-purple-50 dark:bg-purple-900/20 text-purple-800 dark:text-purple-200 border-b border-r dark:border-gray-700 text-center font-bold">
                 % Cumpl.
               </Th>
             </tr>
@@ -543,8 +575,13 @@ const Rendimiento = () => {
                   <Td className="text-center text-purple-700 dark:text-purple-400 font-bold border-r dark:border-gray-800">
                     {gestionesVerdaderas}
                   </Td>
-                  <Td className="text-center bg-purple-50/30 dark:bg-purple-900/10">
+                  <Td className="text-center bg-purple-50/30 dark:bg-purple-900/10 border-r dark:border-gray-800">
                     <PercentBadge value={pctCumplimiento} />
+                  </Td>
+
+                  {/* --- SIN GESTIÓN --- */}
+                  <Td className="text-center font-bold text-rose-700 dark:text-rose-400 bg-rose-50/30 dark:bg-rose-900/10">
+                    {row.sin_gestiones || 0}
                   </Td>
                 </Tr>
               );
@@ -582,11 +619,14 @@ const Rendimiento = () => {
               <Td className="text-center text-purple-800 dark:text-purple-300 border-r dark:border-gray-700">
                 {formatNumber(totals.gestiones_reales)}
               </Td>
-              <Td className="text-center">
+              <Td className="text-center border-r dark:border-gray-700">
                 {formatPercent(
                   (totals.gestiones_reales / (totals.total_clientes || 1)) *
                     100,
                 )}
+              </Td>
+              <Td className="text-center text-rose-800 dark:text-rose-300">
+                {formatNumber(totals.sin_gestiones)}
               </Td>
             </tr>
           </Tbody>
