@@ -7,11 +7,13 @@ import {
   User,
   Container,
   Menu,
+  Upload,
   X as XIcon,
   ArrowUpDown,
   Users,
   CalendarClock,
   ClipboardList,
+
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -95,6 +97,12 @@ export default function Sidebar() {
         p?.editar_usuarios ||
         p?.ver_rutas ||
         role?.toLowerCase().trim() === "ejecutiva",
+    },
+    {
+      to: "/admin/import",
+      label: "Cargar Excel",
+      icon: <Upload />,
+      permission: (p) => p?.acceso_total || p?.editar_usuarios,
     },
     {
       to: "/rendimiento",

@@ -9,7 +9,7 @@ import AuditoriaGeo from "../pages/AuditoriaGeo";
 import Matriz from "../pages/Matriz";
 import Rendimiento from "../pages/Rendimiento";
 import Vendedores from "../pages/Vendedores";
-
+import AdminImport from "../pages/AdminImport";
 import Planificaciones from "../pages/Planificaciones";
 
 const AppRoutes = () => {
@@ -35,6 +35,7 @@ const AppRoutes = () => {
         <Route path="/rendimiento" element={<Rendimiento />} />
         <Route path="/vendedores" element={<Vendedores />} />
         <Route path="/planificaciones" element={<Planificaciones />} />
+        <Route path="/admin/import" element={<AdminImport />} />
       </Route>
 
       {/* Ruta para manejar páginas no encontradas */}
