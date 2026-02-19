@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useState, useEffect, useMemo, useRef } from "react";
 import { apiService } from "../services/apiService";
 import {
@@ -12,6 +13,7 @@ import {
   X,
   Download,
 } from "lucide-react";
+import StarRating from "../components/StarRating";
 
 const formatDate = (dateString) => {
   if (!dateString) return "N/A";
@@ -67,7 +69,9 @@ const PlanificacionHeader = ({
   isExpanded,
   onClick,
   totalVencido,
-  onDownload, // <--- Nueva prop recibida
+  onDownload,
+  rating,
+  onRate,
 }) => {
   const user = headerData.usuario || headerData.co_ven || "No Identificado";
 
@@ -104,6 +108,10 @@ const PlanificacionHeader = ({
                 {headerData.vendedor}
               </span>
             )}
+
+            <div className="flex items-center gap-1 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded-full border border-amber-100 dark:border-amber-800/30">
+              <StarRating rating={rating} onRate={onRate} />
+            </div>
           </div>
         </div>
       </div>
@@ -113,7 +121,7 @@ const PlanificacionHeader = ({
         {/* BOTÓN DESCARGAR INDIVIDUAL */}
         <button
           onClick={(e) => {
-            e.stopPropagation(); // Evita que se colapse el acordeón
+            e.stopPropagation();
             onDownload();
           }}
           className="p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-500 hover:text-red-600 hover:border-red-200 dark:hover:text-red-400 transition-colors shadow-sm"
@@ -257,11 +265,14 @@ const PlanificacionTable = ({ items }) => (
 import { generatePlanificacionPDF } from "../utils/pdfGeneratorPlanificacion";
 
 const PlanificacionGroup = ({ items }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const initialRating = items[0]?.rating_star || 0;
+  const [currentRating, setCurrentRating] = useState(initialRating);
 
   if (!items || items.length === 0) return null;
 
   const headerData = items[0];
+  const idPlanificacion = headerData.id_planificacion;
 
   // Calcular total vencido
   const totalVencido = items.reduce(
@@ -271,12 +282,19 @@ const PlanificacionGroup = ({ items }) => {
 
   // MANEJADOR DE DESCARGA
   const handleDownload = () => {
-    // 1. Extraemos la fecha de ESTE grupo específico
-    // Asegúrate que headerData.fecha_registro sea una fecha válida
     const groupDate = new Date(headerData.fecha_registro);
-
-    // 2. Llamamos al generador pasando SOLO los items de este grupo
     generatePlanificacionPDF(items, groupDate);
+  };
+
+  // MANEJADOR DE VALORACION
+  const handleRate = async (newRating) => {
+    setCurrentRating(newRating);
+    try {
+      await apiService.ratePlanificacion(idPlanificacion, newRating);
+    } catch (error) {
+      console.error("Error al valorar:", error);
+      setCurrentRating(initialRating);
+    }
   };
 
   return (
@@ -287,7 +305,9 @@ const PlanificacionGroup = ({ items }) => {
         isExpanded={isExpanded}
         onClick={() => setIsExpanded(!isExpanded)}
         totalVencido={totalVencido}
-        onDownload={handleDownload} // <--- Pasamos la función
+        onDownload={handleDownload}
+        rating={currentRating}
+        onRate={handleRate}
       />
       {isExpanded && <PlanificacionTable items={items} />}
     </div>
@@ -302,8 +322,9 @@ const Planificaciones = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRutas, setSelectedRutas] = useState([]);
-  const [rutaSearchTerm, setRutaSearchTerm] = useState("");
+  const [filterDate, setFilterDate] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [rutaSearchTerm, setRutaSearchTerm] = useState("");
 
   // Ref para cerrar el menú al hacer click fuera
   const menuRef = useRef(null);
@@ -313,7 +334,9 @@ const Planificaciones = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const response = await apiService.getPlanificacion();
+        const response = await apiService.getPlanificacion({
+          historico: "true",
+        });
         const cleanData = Array.isArray(response)
           ? response
           : response?.data || [];
@@ -358,6 +381,15 @@ const Planificaciones = () => {
 
   // Filtrado y Agrupamiento Principal (Memoizado)
   const groupedData = useMemo(() => {
+    // --- 1. DEBUG INICIAL ---
+    if (data.length > 0) {
+      console.log("🔍 Iniciando filtrado...");
+      console.log("   - Total datos entrada:", data.length);
+      console.log("   - Filtro Fecha activo:", filterDate);
+      console.log("   - Filtro Texto:", searchTerm);
+    }
+
+    // --- 2. FILTRADO ---
     const filtered = data.filter((item) => {
       const matchesSearch =
         item.nombre_cliente?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -366,9 +398,23 @@ const Planificaciones = () => {
       const matchesRuta =
         selectedRutas.length === 0 ||
         selectedRutas.includes(item.full_data?.segmento);
-      return matchesSearch && matchesRuta;
+
+      let matchesDate = true;
+      if (filterDate) {
+        // Ajuste de zona horaria (YYYY-MM-DD local)
+        const dateObj = new Date(item.fecha_registro);
+        const itemDate = dateObj.toLocaleDateString("en-CA");
+        matchesDate = itemDate === filterDate;
+      }
+
+      return matchesSearch && matchesRuta && matchesDate;
     });
 
+    if (data.length > 0) {
+      console.log("   - Datos después de filtrar:", filtered.length);
+    }
+
+    // --- 3. AGRUPAMIENTO ---
     const groups = filtered.reduce((acc, item) => {
       const id = item.id_planificacion || "sin-id";
       if (!acc[id]) acc[id] = [];
@@ -376,12 +422,38 @@ const Planificaciones = () => {
       return acc;
     }, {});
 
-    return Object.entries(groups).sort(([, itemsA], [, itemsB]) => {
-      const dateA = new Date(itemsA[0]?.fecha_registro || 0);
-      const dateB = new Date(itemsB[0]?.fecha_registro || 0);
-      return dateB - dateA;
-    });
-  }, [data, searchTerm, selectedRutas]);
+    // --- 4. ORDENAMIENTO (Guardamos en variable, no retornamos todavía) ---
+    const sortedGroups = Object.entries(groups).sort(
+      ([, itemsA], [, itemsB]) => {
+        const dateA = new Date(itemsA[0]?.fecha_registro || 0);
+        const dateB = new Date(itemsB[0]?.fecha_registro || 0);
+        return dateB - dateA;
+      },
+    );
+
+    // --- 5. DEBUG FINAL (MEJORADO) ---
+    if (data.length > 0) {
+      console.log("📦 Total Grupos:", sortedGroups.length);
+
+      // 1. Ver el PRIMERO (El más nuevo)
+      const firstGroup = sortedGroups[0];
+      console.log("🆕 Más reciente:", firstGroup?.[1][0]?.fecha_registro);
+
+      // 2. Ver el ÚLTIMO (El más viejo)
+      const lastGroup = sortedGroups[sortedGroups.length - 1];
+      console.log("👴 Más antiguo:", lastGroup?.[1][0]?.fecha_registro);
+
+      // 3. Listar todas las fechas únicas encontradas
+      const allDates = sortedGroups.map(
+        ([_, items]) => items[0]?.fecha_registro.split("T")[0],
+      );
+      const uniqueDates = [...new Set(allDates)]; // Quita duplicados
+      console.log("📅 Calendario disponible:", uniqueDates);
+    }
+
+    // --- 6. RETORNO FINAL ---
+    return sortedGroups;
+  }, [data, searchTerm, selectedRutas, filterDate]);
 
   if (loading) {
     return (
@@ -419,6 +491,27 @@ const Planificaciones = () => {
 
         {/* Filtros */}
         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+          <div className="relative w-full sm:w-auto group">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 group-focus-within:text-[#1a9888]">
+              <Calendar size={18} />
+            </div>
+            <input
+              type="date"
+              value={filterDate}
+              onChange={(e) => setFilterDate(e.target.value)}
+              className="w-full sm:w-40 pl-10 pr-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-[#1a1f2e] text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a9888] focus:border-transparent transition-all shadow-sm cursor-pointer"
+            />
+            {/* Botón X pequeña para limpiar fecha si está seleccionada */}
+            {filterDate && (
+              <button
+                onClick={() => setFilterDate("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-gray-200 dark:bg-gray-700 hover:bg-red-100 dark:hover:bg-red-900/30 text-gray-500 hover:text-red-500 rounded-full p-1 transition-colors"
+                title="Limpiar fecha"
+              >
+                <X size={12} />
+              </button>
+            )}
+          </div>
           {/* 1. Buscador de Texto */}
           <div className="relative w-full md:w-64 group">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-[#1a9888] transition-colors" />
@@ -557,6 +650,7 @@ const Planificaciones = () => {
               onClick={() => {
                 setSearchTerm("");
                 setSelectedRutas([]);
+                setFilterDate("");
               }}
               className="mt-6 text-sm font-medium text-[#1a9888] hover:text-[#158072] hover:underline"
             >

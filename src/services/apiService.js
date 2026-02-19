@@ -117,9 +117,18 @@ export const apiService = {
     });
   },
 
-  getPlanificacion: () => {
-    return fetchJson(`${BASE_URL}/planificacion`, {
+  getPlanificacion: (params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    const url = `${BASE_URL}/planificacion${queryString ? `?${queryString}` : ""}`;
+    return fetchJson(url, {
       method: "GET",
+    });
+  },
+
+  ratePlanificacion: (idPlanificacion, stars) => {
+    return fetchJson(`${BASE_URL}/planificacion/${idPlanificacion}/rating`, {
+      method: "PATCH",
+      body: JSON.stringify({ rating_star: stars }),
     });
   },
 
