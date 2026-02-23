@@ -139,6 +139,13 @@ export const apiService = {
     });
   },
 
+  uploadExcel: (data) => {
+    return fetchJson(`${BASE_URL}/matrix/upload`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
   getVendedoresApp: () => {
     return fetchJson(`${BASE_URL}/usuarios/vendedores-app`, {
       method: "GET",
