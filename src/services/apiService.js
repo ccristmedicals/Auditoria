@@ -125,10 +125,10 @@ export const apiService = {
     });
   },
 
-  ratePlanificacion: (idPlanificacion, stars) => {
+  ratePlanificacion: (idPlanificacion, stars, userName) => {
     return fetchJson(`${BASE_URL}/planificacion/${idPlanificacion}/rating`, {
       method: "PATCH",
-      body: JSON.stringify({ rating_star: stars }),
+      body: JSON.stringify({ rating_star: stars, rating_user: userName }),
     });
   },
 
