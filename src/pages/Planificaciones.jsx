@@ -12,6 +12,7 @@ import {
   Filter,
   X,
   Download,
+  Lock,
 } from "lucide-react";
 import StarRating from "../components/StarRating";
 
@@ -82,6 +83,7 @@ const PlanificacionHeader = ({
       onClick={onClick}
       className="flex flex-col md:flex-row md:items-center justify-between p-4 bg-gray-50 dark:bg-[#151926] border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-100 dark:hover:bg-[#1e2436] transition-all group"
     >
+      {/* --- SECCIÓN IZQUIERDA: Info del Plan --- */}
       <div className="flex items-center gap-4">
         <button
           className={`p-1.5 rounded-full bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-600 text-gray-500 transition-transform duration-200 ${
@@ -97,7 +99,7 @@ const PlanificacionHeader = ({
               {formatDate(headerData.fecha_registro)}
             </span>
           </h3>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-1 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
             <span className="flex items-center gap-1 bg-white dark:bg-gray-800 px-2 py-0.5 rounded-full border border-gray-100 dark:border-gray-700">
               <User size={12} /> {user}
             </span>
@@ -110,29 +112,41 @@ const PlanificacionHeader = ({
                 {headerData.vendedor}
               </span>
             )}
-
-            <div className="flex flex-col items-center">
-              <div className="flex items-center gap-1 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded-full border border-amber-100 dark:border-amber-800/30">
-                <StarRating
-                  rating={rating}
-                  onRate={onRate}
-                  disabled={disabled}
-                />
-              </div>
-
-              {/* Si hay un usuario, mostramos su nombre en pequeñito */}
-              {ratingUser && rating > 0 && (
-                <span className="text-[9px] text-amber-600 dark:text-amber-400 font-medium mt-0.5 leading-none">
-                  Evaluado por: {ratingUser.toLowerCase()}
-                </span>
-              )}
-            </div>
           </div>
         </div>
       </div>
 
-      {/* SECCIÓN DERECHA: Botón Descarga + Total Vencido */}
-      <div className="mt-3 md:mt-0 flex items-center gap-3 self-end md:self-auto">
+      {/* --- SECCIÓN DERECHA: Valoración + Botón Descarga + Total Vencido --- */}
+      <div className="mt-4 md:mt-0 flex flex-wrap sm:flex-nowrap items-center gap-3 self-end md:self-auto">
+        {/* ZONA DE VALORACIÓN (MEJORADA Y VISIBLE) */}
+        <div
+          className={`flex flex-col items-center sm:items-end justify-center px-3 py-1.5 rounded-lg border transition-all ${
+            disabled
+              ? "bg-slate-50 border-slate-200 dark:bg-[#1a1f2e] dark:border-slate-700"
+              : "bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800/50 shadow-sm ring-1 ring-amber-100 dark:ring-amber-900/30"
+          }`}
+        >
+          <StarRating rating={rating} onRate={onRate} disabled={disabled} />
+          {ratingUser && rating > 0 ? (
+            <div className="flex items-center gap-1 mt-1">
+              <Lock size={10} className="text-slate-400 dark:text-slate-500" />
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium leading-none">
+                Por:{" "}
+                <span className="font-bold text-slate-700 dark:text-slate-300 capitalize">
+                  {ratingUser}
+                </span>
+              </span>
+            </div>
+          ) : (
+            <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold mt-1 leading-none animate-pulse">
+              Pendiente de evaluar
+            </span>
+          )}
+        </div>
+
+        {/* LÍNEA DIVISORIA (Opcional, para separar las estrellas de los botones) */}
+        <div className="hidden sm:block w-px h-10 bg-gray-200 dark:bg-gray-700 mx-1"></div>
+
         {/* BOTÓN DESCARGAR INDIVIDUAL */}
         <button
           onClick={(e) => {
@@ -145,6 +159,7 @@ const PlanificacionHeader = ({
           <Download size={18} />
         </button>
 
+        {/* TOTAL VENCIDO */}
         {totalVencido > 0 && (
           <div className="flex items-center bg-white dark:bg-gray-800 px-3 py-2 rounded-lg border border-red-100 dark:border-red-900/30 shadow-sm">
             <div className="flex flex-col items-end">
