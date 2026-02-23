@@ -71,7 +71,9 @@ const PlanificacionHeader = ({
   totalVencido,
   onDownload,
   rating,
+  ratingUser,
   onRate,
+  disabled,
 }) => {
   const user = headerData.usuario || headerData.co_ven || "No Identificado";
 
@@ -109,8 +111,21 @@ const PlanificacionHeader = ({
               </span>
             )}
 
-            <div className="flex items-center gap-1 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded-full border border-amber-100 dark:border-amber-800/30">
-              <StarRating rating={rating} onRate={onRate} />
+            <div className="flex flex-col items-center">
+              <div className="flex items-center gap-1 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded-full border border-amber-100 dark:border-amber-800/30">
+                <StarRating
+                  rating={rating}
+                  onRate={onRate}
+                  disabled={disabled}
+                />
+              </div>
+
+              {/* Si hay un usuario, mostramos su nombre en pequeñito */}
+              {ratingUser && rating > 0 && (
+                <span className="text-[9px] text-amber-600 dark:text-amber-400 font-medium mt-0.5 leading-none">
+                  Evaluado por: {ratingUser.toLowerCase()}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -267,7 +282,11 @@ import { generatePlanificacionPDF } from "../utils/pdfGeneratorPlanificacion";
 const PlanificacionGroup = ({ items }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const initialRating = items[0]?.rating_star || 0;
+  const initialRatingUser = items[0]?.rating_user || null;
   const [currentRating, setCurrentRating] = useState(initialRating);
+  const [currentRatingUser, setCurrentRatingUser] = useState(initialRatingUser);
+
+  const isLocked = currentRating > 0;
 
   if (!items || items.length === 0) return null;
 
@@ -288,12 +307,30 @@ const PlanificacionGroup = ({ items }) => {
 
   // MANEJADOR DE VALORACION
   const handleRate = async (newRating) => {
-    setCurrentRating(newRating);
+    let evaluadorActual = "Usuario";
     try {
-      await apiService.ratePlanificacion(idPlanificacion, newRating);
+      const userStr = localStorage.getItem("user");
+      if (userStr) {
+        const userObj = JSON.parse(userStr);
+        evaluadorActual = userObj.usuario || "Usuario";
+      }
+    } catch (error) {
+      evaluadorActual = localStorage.getItem("user") || "Usuario";
+    }
+
+    setCurrentRating(newRating);
+    setCurrentRatingUser(evaluadorActual);
+
+    try {
+      await apiService.ratePlanificacion(
+        idPlanificacion,
+        newRating,
+        evaluadorActual,
+      );
     } catch (error) {
       console.error("Error al valorar:", error);
       setCurrentRating(initialRating);
+      setCurrentRatingUser(initialRatingUser);
     }
   };
 
@@ -307,7 +344,9 @@ const PlanificacionGroup = ({ items }) => {
         totalVencido={totalVencido}
         onDownload={handleDownload}
         rating={currentRating}
+        ratingUser={currentRatingUser}
         onRate={handleRate}
+        disabled={isLocked}
       />
       {isExpanded && <PlanificacionTable items={items} />}
     </div>
@@ -425,16 +464,10 @@ const Planificaciones = () => {
     // --- 4. ORDENAMIENTO (Guardamos en variable, no retornamos todavía) ---
     const sortedGroups = Object.entries(groups).sort(
       ([, itemsA], [, itemsB]) => {
-        // Extraemos la fecha del primer elemento de cada grupo
         const fechaA = itemsA[0]?.fecha_registro;
         const fechaB = itemsB[0]?.fecha_registro;
-
-        // Usamos .getTime() para convertirlas en milisegundos (números)
-        // Si no hay fecha, usamos 0 como seguridad
         const timeA = fechaA ? new Date(fechaA).getTime() : 0;
         const timeB = fechaB ? new Date(fechaB).getTime() : 0;
-
-        // dateB - dateA ordena de forma DESCENDENTE (Más nuevo primero)
         return timeB - timeA;
       },
     );
@@ -443,19 +476,16 @@ const Planificaciones = () => {
     if (data.length > 0) {
       console.log("📦 Total Grupos:", sortedGroups.length);
 
-      // 1. Ver el PRIMERO (El más nuevo)
       const firstGroup = sortedGroups[0];
       console.log("🆕 Más reciente:", firstGroup?.[1][0]?.fecha_registro);
 
-      // 2. Ver el ÚLTIMO (El más viejo)
       const lastGroup = sortedGroups[sortedGroups.length - 1];
       console.log("👴 Más antiguo:", lastGroup?.[1][0]?.fecha_registro);
 
-      // 3. Listar todas las fechas únicas encontradas
       const allDates = sortedGroups.map(
         ([_, items]) => items[0]?.fecha_registro.split("T")[0],
       );
-      const uniqueDates = [...new Set(allDates)]; // Quita duplicados
+      const uniqueDates = [...new Set(allDates)];
       console.log("📅 Calendario disponible:", uniqueDates);
     }
 
