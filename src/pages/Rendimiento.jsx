@@ -352,7 +352,7 @@ const Rendimiento = () => {
       {/* HEADER */}
       <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 mb-8 border-b border-gray-200 dark:border-white/5 pb-6">
         <div className="flex items-center gap-4">
-          <div className="bg-teal-50 dark:bg-teal-900/20 p-3 rounded-2xl">
+          <div className="bg-teal-50 dark:bg-teal-900 p-3 rounded-2xl">
             <TrendingUp
               size={32}
               className="text-[#1a9888] dark:text-teal-400"
@@ -381,7 +381,7 @@ const Rendimiento = () => {
             </button>
             <button
               onClick={handleExport} // <--- USAR EL NUEVO HANDLER
-              className="px-4 py-3 bg-[#1a9888] text-white rounded-xl hover:bg-[#158072] transition-all shadow-lg shadow-teal-900/20 flex items-center gap-2"
+              className="px-4 py-3 bg-[#1a9888] text-white rounded-xl hover:bg-[#158072] transition-all shadow-lg shadow-teal-900 flex items-center gap-2"
             >
               <Download size={18} />
               <span className="hidden sm:inline font-bold">Excel</span>
@@ -397,7 +397,7 @@ const Rendimiento = () => {
               placeholder="Buscar ruta..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-11 pr-4 py-3 bg-gray-50 dark:bg-[#1a2333] border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-[#1a9888]/20 dark:text-white text-sm font-medium transition-all"
+              className="w-full pl-11 pr-4 py-3 bg-gray-50 dark:bg-[#1a2333] border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-[#1a9888] dark:text-white text-sm font-medium transition-all"
             />
           </div>
         </div>
@@ -437,71 +437,74 @@ const Rendimiento = () => {
       </div>
 
       {/* TABLA */}
-      <TableContainer className="shadow-none border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden bg-white dark:bg-[#111827]">
+      {/* CAMBIO AQUÍ: Se reemplaza overflow-hidden por overflow-auto y max-h-[75vh] para permitir scroll interno */}
+      <TableContainer className="shadow-none border border-gray-200 dark:border-gray-800 rounded-xl overflow-auto max-h-[75vh] bg-white dark:bg-[#111827]">
         <Table>
-          <Thead>
+          {/* CAMBIO AQUÍ: Se agrega sticky top-0 y z-30 al thead */}
+          <Thead className="sticky top-0 z-30 shadow-sm">
             <tr className="uppercase leading-tight">
               <Th
                 rowSpan={2}
                 stickyLeft
-                className="bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 min-w-[180px] border-b border-r dark:border-gray-700 font-bold z-20"
+                /* CAMBIO AQUÍ: z-index sube a 40 para no ser solapado por el thead sticky */
+                className="bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 min-w-[180px] border-b border-r dark:border-gray-700 font-bold z-40"
               >
                 Compañía / Segmento
               </Th>
               <Th
                 rowSpan={2}
-                className="bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 min-w-[100px] border-b border-r dark:border-gray-700 text-center font-bold"
+                className="bg-blue-50 dark:bg-blue-900 text-blue-800 dark:text-blue-200 min-w-[100px] border-b border-r dark:border-gray-700 text-center font-bold"
               >
                 Total Clientes
               </Th>
               <Th
                 colSpan={3}
-                className="bg-emerald-100 dark:bg-emerald-900/50 text-emerald-900 dark:text-emerald-100 border-b border-r dark:border-gray-700 text-center font-bold"
+                className="bg-emerald-100 dark:bg-emerald-900 text-emerald-900 dark:text-emerald-100 border-b border-r dark:border-gray-700 text-center font-bold"
               >
                 Gestión Ejecutiva
               </Th>
               <Th
                 colSpan={3}
-                className="bg-amber-100 dark:bg-amber-900/50 text-amber-900 dark:text-amber-100 border-b border-r dark:border-gray-700 text-center font-bold"
+                className="bg-amber-100 dark:bg-amber-900 text-amber-900 dark:text-amber-100 border-b border-r dark:border-gray-700 text-center font-bold"
               >
                 Gestión Vendedor
               </Th>
               <Th
                 colSpan={2}
-                className="bg-purple-100 dark:bg-purple-900/50 text-purple-900 dark:text-purple-100 border-b border-r dark:border-gray-700 text-center font-bold"
+                className="bg-purple-100 dark:bg-purple-900 text-purple-900 dark:text-purple-100 border-b border-r dark:border-gray-700 text-center font-bold"
               >
                 Consolidado
               </Th>
               <Th
                 rowSpan={2}
-                className="bg-rose-100 dark:bg-rose-900/50 text-rose-900 dark:text-rose-100 border-b dark:border-gray-700 text-center font-bold min-w-[110px]"
+                className="bg-rose-100 dark:bg-rose-900 text-rose-900 dark:text-rose-100 border-b dark:border-gray-700 text-center font-bold min-w-[110px]"
               >
                 Sin Gestión
               </Th>
             </tr>
             <tr className="uppercase leading-tight text-[10px]">
-              <Th className="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-200 border-b border-r dark:border-gray-700 text-center">
+              <Th className="bg-emerald-50 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 border-b border-r dark:border-gray-700 text-center">
                 Efectivos
               </Th>
-              <Th className="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-200 border-b border-r dark:border-gray-700 text-center">
+              <Th className="bg-emerald-50 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 border-b border-r dark:border-gray-700 text-center">
                 Neg/Proc
               </Th>
-              <Th className="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-200 border-b border-r dark:border-gray-700 text-center font-bold">
+              <Th className="bg-emerald-50 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 border-b border-r dark:border-gray-700 text-center font-bold">
                 % Efec.
               </Th>
-              <Th className="bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 border-b border-r dark:border-gray-700 text-center">
+              <Th className="bg-amber-50 dark:bg-amber-900 text-amber-800 dark:text-amber-200 border-b border-r dark:border-gray-700 text-center">
                 Efectivos
               </Th>
-              <Th className="bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 border-b border-r dark:border-gray-700 text-center">
+              <Th className="bg-amber-50 dark:bg-amber-900 text-amber-800 dark:text-amber-200 border-b border-r dark:border-gray-700 text-center">
                 Neg/Proc
               </Th>
-              <Th className="bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 border-b border-r dark:border-gray-700 text-center font-bold">
+              <Th className="bg-amber-50 dark:bg-amber-900 text-amber-800 dark:text-amber-200 border-b border-r dark:border-gray-700 text-center font-bold">
                 % Efec.
               </Th>
-              <Th className="bg-purple-50 dark:bg-purple-900/20 text-purple-800 dark:text-purple-200 border-b border-r dark:border-gray-700 text-center">
+              <Th className="bg-purple-50 dark:bg-purple-900 text-purple-800 dark:text-purple-200 border-b border-r dark:border-gray-700 text-center">
                 Gest. Reales
               </Th>
-              <Th className="bg-purple-50 dark:bg-purple-900/20 text-purple-800 dark:text-purple-200 border-b border-r dark:border-gray-700 text-center font-bold">
+              <Th className="bg-purple-50 dark:bg-purple-900 text-purple-800 dark:text-purple-200 border-b border-r dark:border-gray-700 text-center font-bold">
                 % Cumpl.
               </Th>
             </tr>

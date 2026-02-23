@@ -425,9 +425,17 @@ const Planificaciones = () => {
     // --- 4. ORDENAMIENTO (Guardamos en variable, no retornamos todavía) ---
     const sortedGroups = Object.entries(groups).sort(
       ([, itemsA], [, itemsB]) => {
-        const dateA = new Date(itemsA[0]?.fecha_registro || 0);
-        const dateB = new Date(itemsB[0]?.fecha_registro || 0);
-        return dateB - dateA;
+        // Extraemos la fecha del primer elemento de cada grupo
+        const fechaA = itemsA[0]?.fecha_registro;
+        const fechaB = itemsB[0]?.fecha_registro;
+
+        // Usamos .getTime() para convertirlas en milisegundos (números)
+        // Si no hay fecha, usamos 0 como seguridad
+        const timeA = fechaA ? new Date(fechaA).getTime() : 0;
+        const timeB = fechaB ? new Date(fechaB).getTime() : 0;
+
+        // dateB - dateA ordena de forma DESCENDENTE (Más nuevo primero)
+        return timeB - timeA;
       },
     );
 

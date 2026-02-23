@@ -8,6 +8,7 @@ import { obtenerDireccionBDC } from "../utils/obtenerDireccion";
 
 export const useTableroVendedores = () => {
   const [rawData, setRawData] = useState([]);
+  const [metasData, setMetasData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [direcciones, setDirecciones] = useState({});
@@ -18,7 +19,6 @@ export const useTableroVendedores = () => {
     return saved ? JSON.parse(saved) : {};
   });
 
-  // Función para actualizar y guardar en localStorage
   const actualizarObservacion = (vendedorId, texto) => {
     const nuevasObs = { ...observacionesManuales, [vendedorId]: texto };
     setObservacionesManuales(nuevasObs);
@@ -29,15 +29,36 @@ export const useTableroVendedores = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await apiService.getPlanificacion();
+        // Hacemos ambas llamadas en paralelo
+        const [planificacionResponse, metasResponse] = await Promise.all([
+          apiService.getPlanificacion(),
+          fetch("https://98.94.185.164.nip.io/api/auditoria/kpi-metas").then(
+            (res) => res.json(),
+          ),
+        ]);
+
+        // Guardar datos de planificación asegurando el array
         let dataArray = [];
-        if (response && Array.isArray(response.data)) {
-          dataArray = response.data;
-        } else if (Array.isArray(response)) {
-          dataArray = response;
+        if (
+          planificacionResponse &&
+          Array.isArray(planificacionResponse.data)
+        ) {
+          dataArray = planificacionResponse.data;
+        } else if (Array.isArray(planificacionResponse)) {
+          dataArray = planificacionResponse;
         }
         setRawData(dataArray);
+
+        // Guardar datos de metas asegurando el array
+        let metasArray = [];
+        if (Array.isArray(metasResponse)) {
+          metasArray = metasResponse;
+        } else if (metasResponse && Array.isArray(metasResponse.data)) {
+          metasArray = metasResponse.data;
+        }
+        setMetasData(metasArray);
       } catch (err) {
+        console.error("Error cargando tablero:", err);
         setError(err);
       } finally {
         setLoading(false);
@@ -49,6 +70,22 @@ export const useTableroVendedores = () => {
   const vendedoresFinal = useMemo(() => {
     if (!rawData.length) return [];
     const agrupado = {};
+
+    // 1. Determinar qué día es HOY
+    const diasSemana = [
+      "diaDomingo",
+      "diaLunes",
+      "diaMartes",
+      "diaMiercoles",
+      "diaJueves",
+      "diaViernes",
+      "diaSabado",
+    ];
+    const hoy = new Date().getDay();
+    const campoDiaActual = diasSemana[hoy];
+
+    // Helper para limpiar strings
+    const cleanStr = (str) => (str ? String(str).trim().toLowerCase() : "");
 
     rawData.forEach((item) => {
       const nombreVendedor = item.vendedor || "Sin Asignar";
@@ -64,11 +101,31 @@ export const useTableroVendedores = () => {
         coordsCliente.length === 2 ? parseFloat(coordsCliente[1]) : null;
 
       if (!agrupado[nombreVendedor]) {
+        // 2. Buscar la meta de este vendedor con string parsing robusto
+        const nombreLimpio = cleanStr(nombreVendedor);
+        const codigoLimpio = cleanStr(fullData.co_ven);
+
+        const metaVendedor = metasData.find((m) => {
+          const mNombre = cleanStr(m.nombre);
+          const mCoVen = cleanStr(m.co_ven);
+          return (
+            (mNombre && mNombre === nombreLimpio) ||
+            (mCoVen && mCoVen === codigoLimpio)
+          );
+        });
+
+        // 3. Extraer la meta del día actual
+        let metaDelDia = 0;
+        if (metaVendedor && metaVendedor[campoDiaActual]) {
+          metaDelDia = metaVendedor[campoDiaActual];
+        }
+
         agrupado[nombreVendedor] = {
           id: nombreVendedor,
           vendedor: nombreVendedor,
-          reportesEstablecidos: 0,
-          reportesLogrados: 0,
+          reportesEstablecidos: Number(metaDelDia) || 0, // META DE LA API (Columna "Plan")
+          reportesLogrados: 0, // VISITAS REALES (Columna "Real")
+          gestionesPlanificacion: 0, // ASIGNADAS POR EJECUTIVA (Columna "Planif.")
           ventas: 0,
           geoTotalGps: 0,
           geoEnSitio: 0,
@@ -80,18 +137,22 @@ export const useTableroVendedores = () => {
           distancia: 0,
           negociaciones: 0,
           cobradoDia: 0,
-          metaCobranza: 1000,
+          metaCobranza: metaVendedor?.metaCobranza || 1000,
           carteraActiva: 0,
-          metaMensual: 100,
+          metaMensual: metaVendedor?.metaVentas || 100,
           nuevosRecuperados: 0,
         };
       }
 
       const v = agrupado[nombreVendedor];
-      v.reportesEstablecidos += 1;
+
+      // --- AQUÍ REINCORPORAMOS EL CONTADOR DE LA EJECUTIVA ---
+      // Cada registro encontrado en la data cruda cuenta como un cliente asignado
+      v.gestionesPlanificacion += 1;
 
       if (gestiones.length > 0) {
         v.reportesLogrados += 1;
+
         const venta = parseFloat(fullData.ventas_actual);
         if (!isNaN(venta)) v.ventas += venta;
 
@@ -126,7 +187,6 @@ export const useTableroVendedores = () => {
                   );
                   v.distancia = Math.round(dist);
                 }
-                // NOTA: Eliminamos la lógica de obsList porque ya no la mostrarás
               }
             }
           }
@@ -161,13 +221,12 @@ export const useTableroVendedores = () => {
         horaLlegada,
         pctGeocerca,
         direccionTexto,
-        // Insertamos el valor guardado manualmente
         observacionManual: observacionesManuales[v.vendedor] || "",
       };
     });
-  }, [rawData, direcciones, observacionesManuales]);
+  }, [rawData, metasData, direcciones, observacionesManuales]);
 
-  // --- SOLUCIÓN QUEUE (ANTI-BLOQUEO) ---
+  // Queue para direcciones
   useEffect(() => {
     if (vendedoresFinal.length === 0) return;
     const faltantes = vendedoresFinal.filter(
@@ -196,7 +255,6 @@ export const useTableroVendedores = () => {
     return () => clearTimeout(timer);
   }, [vendedoresFinal, direcciones]);
 
-  // Retornamos también la función para actualizar
   return {
     vendedores: vendedoresFinal,
     loading,
