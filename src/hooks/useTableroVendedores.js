@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useState, useEffect, useMemo } from "react";
 import { apiService } from "../services/apiService";
 import {
@@ -6,17 +7,56 @@ import {
 } from "../utils/geolocalizacion";
 import { obtenerDireccionBDC } from "../utils/obtenerDireccion";
 
+// --- HELPER ROBUSTO PARA FECHAS ---
+const esSemanaActual = (fechaString) => {
+  if (!fechaString) return true; // Si no hay fecha, asumimos que sí para no ocultar datos por error
+
+  // Intentamos convertir la fecha
+  let fecha = new Date(fechaString);
+
+  // Si da error (Invalid Date), intentamos parsear formato DD-MM-YYYY común en latam
+  if (isNaN(fecha.getTime())) {
+    const partes = String(fechaString).split(/[-/]/); // Separa por - o /
+    if (partes.length === 3) {
+      // Asumimos DD/MM/YYYY -> Convertimos a YYYY-MM-DD para JS
+      // OJO: Ajustar índices según venga tu API (Dia:0, Mes:1, Año:2)
+      const fechaISO = `${partes[2]}-${partes[1]}-${partes[0]}`;
+      fecha = new Date(fechaISO);
+    }
+  }
+
+  if (isNaN(fecha.getTime())) return true; // Si sigue siendo inválida, mostrar el dato
+
+  const hoy = new Date();
+
+  // Calcular Lunes de esta semana
+  const primerDiaSemana = new Date(hoy);
+  const diaSemana = hoy.getDay() || 7; // Domingo es 0, lo volvemos 7
+  primerDiaSemana.setHours(0, 0, 0, 0);
+  primerDiaSemana.setDate(hoy.getDate() - diaSemana + 1);
+
+  // Calcular Domingo de esta semana
+  const ultimoDiaSemana = new Date(primerDiaSemana);
+  ultimoDiaSemana.setDate(primerDiaSemana.getDate() + 6);
+  ultimoDiaSemana.setHours(23, 59, 59, 999);
+
+  return fecha >= primerDiaSemana && fecha <= ultimoDiaSemana;
+};
+
 export const useTableroVendedores = () => {
   const [rawData, setRawData] = useState([]);
   const [metasData, setMetasData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [direcciones, setDirecciones] = useState({});
 
-  // ESTADO PARA OBSERVACIONES MANUALES (Cargamos de localStorage al inicio)
+  // ESTADO PARA OBSERVACIONES
   const [observacionesManuales, setObservacionesManuales] = useState(() => {
-    const saved = localStorage.getItem("tablero_observaciones");
-    return saved ? JSON.parse(saved) : {};
+    try {
+      const saved = localStorage.getItem("tablero_observaciones");
+      return saved ? JSON.parse(saved) : {};
+    } catch (e) {
+      return {};
+    }
   });
 
   const actualizarObservacion = (vendedorId, texto) => {
@@ -29,7 +69,6 @@ export const useTableroVendedores = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // Hacemos ambas llamadas en paralelo
         const [planificacionResponse, metasResponse] = await Promise.all([
           apiService.getPlanificacion(),
           fetch("https://98.94.185.164.nip.io/api/auditoria/kpi-metas").then(
@@ -37,29 +76,33 @@ export const useTableroVendedores = () => {
           ),
         ]);
 
-        // Guardar datos de planificación asegurando el array
+        // Manejo seguro de arrays
         let dataArray = [];
         if (
-          planificacionResponse &&
+          planificacionResponse?.data &&
           Array.isArray(planificacionResponse.data)
         ) {
           dataArray = planificacionResponse.data;
         } else if (Array.isArray(planificacionResponse)) {
           dataArray = planificacionResponse;
         }
+
+        // --- DEBUG: Ver qué trae el primer ítem para saber el nombre de la fecha ---
+        if (dataArray.length > 0) {
+          console.log("🔍 ESTRUCTURA DE UN ITEM:", dataArray[0]);
+        }
+
         setRawData(dataArray);
 
-        // Guardar datos de metas asegurando el array
         let metasArray = [];
-        if (Array.isArray(metasResponse)) {
-          metasArray = metasResponse;
-        } else if (metasResponse && Array.isArray(metasResponse.data)) {
+        if (metasResponse?.data && Array.isArray(metasResponse.data)) {
           metasArray = metasResponse.data;
+        } else if (Array.isArray(metasResponse)) {
+          metasArray = metasResponse;
         }
         setMetasData(metasArray);
       } catch (err) {
         console.error("Error cargando tablero:", err);
-        setError(err);
       } finally {
         setLoading(false);
       }
@@ -71,7 +114,6 @@ export const useTableroVendedores = () => {
     if (!rawData.length) return [];
     const agrupado = {};
 
-    // 1. Determinar qué día es HOY
     const diasSemana = [
       "diaDomingo",
       "diaLunes",
@@ -83,15 +125,30 @@ export const useTableroVendedores = () => {
     ];
     const hoy = new Date().getDay();
     const campoDiaActual = diasSemana[hoy];
-
-    // Helper para limpiar strings
     const cleanStr = (str) => (str ? String(str).trim().toLowerCase() : "");
 
     rawData.forEach((item) => {
+      // -----------------------------------------------------
+      // 1. FILTRO DE SEMANA (Permisivo)
+      // -----------------------------------------------------
+      // Buscamos la fecha en varios lugares posibles
+      const fechaRegistro =
+        item.created_at ||
+        item.fecha ||
+        item.fecha_asignacion ||
+        item.full_data?.fecha ||
+        item.full_data?.created_at;
+
+      // Si existe fecha y NO es de esta semana, lo saltamos.
+      // Si no existe fecha (undefined), esSemanaActual devuelve true para mostrarlo por seguridad.
+      if (!esSemanaActual(fechaRegistro)) {
+        return;
+      }
+      // -----------------------------------------------------
+
       const nombreVendedor = item.vendedor || "Sin Asignar";
       const fullData = item.full_data || {};
       const gestiones = Array.isArray(fullData.gestion) ? fullData.gestion : [];
-
       const coordsCliente = fullData.coordenadas
         ? fullData.coordenadas.split(",")
         : [];
@@ -101,32 +158,24 @@ export const useTableroVendedores = () => {
         coordsCliente.length === 2 ? parseFloat(coordsCliente[1]) : null;
 
       if (!agrupado[nombreVendedor]) {
-        // 2. Buscar la meta de este vendedor con string parsing robusto
         const nombreLimpio = cleanStr(nombreVendedor);
         const codigoLimpio = cleanStr(fullData.co_ven);
 
-        const metaVendedor = metasData.find((m) => {
-          const mNombre = cleanStr(m.nombre);
-          const mCoVen = cleanStr(m.co_ven);
-          return (
-            (mNombre && mNombre === nombreLimpio) ||
-            (mCoVen && mCoVen === codigoLimpio)
-          );
-        });
-
-        // 3. Extraer la meta del día actual
-        let metaDelDia = 0;
-        if (metaVendedor && metaVendedor[campoDiaActual]) {
-          metaDelDia = metaVendedor[campoDiaActual];
-        }
+        const metaVendedor =
+          metasData.find((m) => {
+            const mNombre = cleanStr(m.nombre);
+            const mCoVen = cleanStr(m.co_ven);
+            return (
+              (mNombre && mNombre.includes(nombreLimpio)) ||
+              (mCoVen && mCoVen === codigoLimpio)
+            );
+          }) || {};
 
         agrupado[nombreVendedor] = {
           id: nombreVendedor,
           vendedor: nombreVendedor,
-          reportesEstablecidos: Number(metaDelDia) || 0, // META DE LA API (Columna "Plan")
-          reportesLogrados: 0, // VISITAS REALES (Columna "Real")
-          gestionesPlanificacion: 0, // ASIGNADAS POR EJECUTIVA (Columna "Planif.")
-          ventas: 0,
+          reportesEstablecidos: Number(metaVendedor[campoDiaActual]) || 0,
+          reportesLogrados: 0,
           geoTotalGps: 0,
           geoEnSitio: 0,
           horas: [],
@@ -135,27 +184,22 @@ export const useTableroVendedores = () => {
           ultimaLng: null,
           ultimoCliente: "N/A",
           distancia: 0,
-          negociaciones: 0,
-          cobradoDia: 0,
-          metaCobranza: metaVendedor?.metaCobranza || 1000,
-          carteraActiva: 0,
-          metaMensual: metaVendedor?.metaVentas || 100,
-          nuevosRecuperados: 0,
+          negociaciones: Number(metaVendedor.negociacion) || 0,
+          cobradoDia: Number(metaVendedor.valorCobranza) || 0,
+          metaCobranza: Number(metaVendedor.metaCobranza) || 1,
+          ventas: Number(metaVendedor.ventas_factura_sum) || 0,
+          carteraActiva: Number(metaVendedor.clientes_activos_factura) || 0,
+          metaVentasMensual: Number(metaVendedor.metaVentas) || 1,
+          nuevosRecuperados: Number(metaVendedor.clientes_recuperados) || 0,
+          gestionesPlanificacion: 0,
         };
       }
 
       const v = agrupado[nombreVendedor];
-
-      // --- AQUÍ REINCORPORAMOS EL CONTADOR DE LA EJECUTIVA ---
-      // Cada registro encontrado en la data cruda cuenta como un cliente asignado
       v.gestionesPlanificacion += 1;
 
       if (gestiones.length > 0) {
         v.reportesLogrados += 1;
-
-        const venta = parseFloat(fullData.ventas_actual);
-        if (!isNaN(venta)) v.ventas += venta;
-
         const analisis = analizarGeocerca(item);
         if (
           analisis.status !== "SIN_GPS_VENDEDOR" &&
@@ -169,7 +213,6 @@ export const useTableroVendedores = () => {
           if (g.fecha_registro) {
             const fechaSafe = new Date(g.fecha_registro.replace(" ", "T"));
             const time = fechaSafe.getTime();
-
             if (!isNaN(time)) {
               v.horas.push(fechaSafe);
               if (time > v.ultimoRegistroTime) {
@@ -226,16 +269,14 @@ export const useTableroVendedores = () => {
     });
   }, [rawData, metasData, direcciones, observacionesManuales]);
 
-  // Queue para direcciones
   useEffect(() => {
     if (vendedoresFinal.length === 0) return;
     const faltantes = vendedoresFinal.filter(
       (v) => v.ultimaLat && v.ultimaLng && !direcciones[v.vendedor],
     );
-
     if (faltantes.length === 0) return;
 
-    const cargarSecuencialmente = async () => {
+    const timer = setTimeout(async () => {
       const vendedor = faltantes[0];
       try {
         const dir = await obtenerDireccionBDC(
@@ -244,21 +285,11 @@ export const useTableroVendedores = () => {
         );
         setDirecciones((prev) => ({ ...prev, [vendedor.vendedor]: dir }));
       } catch (e) {
-        console.error("Error queue", e);
+        console.error(e);
       }
-    };
-
-    const timer = setTimeout(() => {
-      cargarSecuencialmente();
     }, 1200);
-
     return () => clearTimeout(timer);
   }, [vendedoresFinal, direcciones]);
 
-  return {
-    vendedores: vendedoresFinal,
-    loading,
-    error,
-    actualizarObservacion,
-  };
+  return { vendedores: vendedoresFinal, loading, actualizarObservacion };
 };

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import React, { useMemo, useState, useEffect } from "react";
 import {
   Users,
@@ -6,14 +7,12 @@ import {
   Target,
   CheckCircle2,
   MapPin,
-  Navigation,
   Store,
   Loader2,
+  Navigation,
 } from "lucide-react";
 
-// 1. Importamos el Toast
 import { useToast } from "../components/ui/Toast";
-
 import { useTableroVendedores } from "../hooks/useTableroVendedores";
 import {
   TableContainer,
@@ -52,48 +51,31 @@ const StatCard = ({ label, value, icon: Icon, colorHex }) => (
   </div>
 );
 
-// --- CELDA EDITABLE OPTIMIZADA ---
 const ObservacionCell = ({ valorInicial, onGuardar }) => {
   const [valor, setValor] = useState(valorInicial);
-
-  useEffect(() => {
-    setValor(valorInicial);
-  }, [valorInicial]);
-
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      // Al hacer blur, se dispara automáticamente el evento handleBlur de abajo
-      e.target.blur();
-    }
-  };
+  useEffect(() => setValor(valorInicial), [valorInicial]);
 
   const handleBlur = () => {
-    // Solo guardamos (y mostramos el toast) si el valor realmente cambió
-    if (valor !== valorInicial) {
-      onGuardar(valor);
-    }
+    if (valor !== valorInicial) onGuardar(valor);
   };
 
   return (
     <textarea
-      className="w-full h-20 p-2 text-xs border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 focus:ring-2 focus:ring-[#1a9888] focus:border-transparent outline-none resize-none placeholder-gray-300 dark:text-white transition-all"
-      placeholder="Escribir nota..."
+      className="w-full h-16 p-2 text-xs border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 focus:ring-2 focus:ring-[#1a9888] focus:border-transparent outline-none resize-none placeholder-gray-300 dark:text-white transition-all"
+      placeholder="Nota..."
       value={valor}
       onChange={(e) => setValor(e.target.value)}
-      onKeyDown={handleKeyDown}
       onBlur={handleBlur}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" && !e.shiftKey) e.target.blur();
+      }}
     />
   );
 };
 
-// --- COMPONENTE PRINCIPAL ---
 const Vendedores = () => {
   const [searchTerm, setSearchTerm] = useState("");
-
-  // 2. Destructuramos el hook del Toast
   const { showToast, ToastContainer } = useToast();
-
   const {
     vendedores: rawData,
     loading,
@@ -129,7 +111,7 @@ const Vendedores = () => {
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-12 h-12 text-[#1a9888] animate-spin" />
           <p className="text-slate-600 dark:text-slate-300 font-medium animate-pulse">
-            Sincronizando tablero...
+            Sincronizando Profit & Planificación...
           </p>
         </div>
       </div>
@@ -151,7 +133,7 @@ const Vendedores = () => {
               </span>
             </h2>
             <p className="text-sm text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-              Auditoría Profit &bull; Geolocalización en tiempo real
+              Auditoría Profit • Geolocalización en tiempo real
             </p>
           </div>
         </div>
@@ -198,61 +180,77 @@ const Vendedores = () => {
         <Table>
           <Thead>
             <tr className="uppercase leading-tight">
-              <Th className="bg-amber-50 dark:bg-amber-900 text-amber-900 dark:text-amber-100 min-w-[200px] border-b dark:border-gray-700 font-bold">
-                Vendedor
+              {/* 1. VENDEDOR */}
+              <Th className="bg-amber-50 dark:bg-amber-900/30 text-amber-900 dark:text-amber-100 min-w-[200px] border-b dark:border-gray-700 font-bold">
+                Vendedores_P Profit
               </Th>
-              <Th className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 min-w-[100px] border-b dark:border-gray-700 font-bold">
+              {/* 2. SALIDA */}
+              <Th className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-900 dark:text-emerald-100 border-b dark:border-gray-700 font-bold">
                 Salida
               </Th>
-              <Th className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 min-w-[100px] border-b dark:border-gray-700 font-bold">
+              {/* 3. LLEGADA */}
+              <Th className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-900 dark:text-emerald-100 border-b dark:border-gray-700 font-bold">
                 Llegada
               </Th>
-              <Th className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-b dark:border-gray-700 font-bold">
-                Plan
+              {/* 4. PLAN */}
+              <Th className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-900 dark:text-emerald-100 border-b dark:border-gray-700 font-bold">
+                Rep. Establecidos
               </Th>
-              <Th className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-b dark:border-gray-700 font-bold">
-                Real
+              {/* 5. REAL */}
+              <Th className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-900 dark:text-emerald-100 border-b dark:border-gray-700 font-bold">
+                Rep. Logrados
               </Th>
-              <Th className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 min-w-[100px] border-b dark:border-gray-700 font-bold">
+              {/* 6. % CUMPLIMIENTO */}
+              <Th className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-900 dark:text-emerald-100 border-b dark:border-gray-700 font-bold">
                 % Visitas
               </Th>
-              <Th className="bg-emerald-100 dark:bg-emerald-900 text-emerald-900 dark:text-emerald-100 min-w-[100px] border-b dark:border-gray-700 font-bold">
-                Faltantes
+              {/* 7. LOGRADO (Faltante) */}
+              <Th className="bg-emerald-100 dark:bg-emerald-900/50 text-emerald-900 dark:text-emerald-100 border-b dark:border-gray-700 font-bold">
+                Logrado (Resta)
               </Th>
-              <Th className="bg-indigo-100 dark:bg-indigo-900 text-indigo-900 dark:text-indigo-100 min-w-[280px] text-center border-b dark:border-gray-700 font-bold">
-                <div className="flex items-center gap-1 justify-center">
-                  <MapPin size={12} /> Última Ubicación
-                </div>
+              {/* 8. GEOCERCA */}
+              <Th className="bg-yellow-50 dark:bg-yellow-900/30 text-yellow-900 dark:text-yellow-100 min-w-[220px] text-center border-b dark:border-gray-700 font-bold">
+                Geocerca
               </Th>
-              <Th className="bg-blue-50 dark:bg-blue-900 text-blue-900 dark:text-blue-100 min-w-[110px] border-b dark:border-gray-700 font-bold">
+              {/* 9. NEGOCIACIONES */}
+              <Th className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-900 dark:text-emerald-100 border-b dark:border-gray-700 font-bold">
                 Negoc.
               </Th>
-              <Th className="bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100 min-w-[130px] border-b dark:border-gray-700 font-bold">
-                Cobrado
+              {/* 10. COBRADO */}
+              <Th className="bg-orange-50 dark:bg-orange-900/30 text-orange-900 dark:text-orange-100 min-w-[120px] border-b dark:border-gray-700 font-bold">
+                Cobrado Día
               </Th>
-              <Th className="bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100 min-w-[110px] border-b dark:border-gray-700 font-bold">
-                % Cobro
+              {/* 11. % COBRANZA */}
+              <Th className="bg-orange-50 dark:bg-orange-900/30 text-orange-900 dark:text-orange-100 border-b dark:border-gray-700 font-bold">
+                % Cobranza del Día
               </Th>
-              <Th className="bg-amber-100 dark:bg-amber-900 text-amber-900 dark:text-amber-100 min-w-[130px] border-b dark:border-gray-700 font-bold">
+              {/* 12. VENTAS */}
+              <Th className="bg-amber-50 dark:bg-amber-900/30 text-amber-900 dark:text-amber-100 min-w-[120px] border-b dark:border-gray-700 font-bold">
                 Ventas
               </Th>
-              <Th className="bg-cyan-100 dark:bg-cyan-900 text-cyan-900 dark:text-cyan-100 min-w-[100px] border-b dark:border-gray-700 font-bold">
-                Cartera
+              {/* 13. CARTERA */}
+              <Th className="bg-cyan-50 dark:bg-cyan-900/30 text-cyan-900 dark:text-cyan-100 border-b dark:border-gray-700 font-bold">
+                Cartera Activa
               </Th>
-              <Th className="bg-cyan-100 dark:bg-cyan-900 text-cyan-900 dark:text-cyan-100 min-w-[100px] border-b dark:border-gray-700 font-bold">
+              {/* 14. % META */}
+              <Th className="bg-cyan-50 dark:bg-cyan-900/30 text-cyan-900 dark:text-cyan-100 border-b dark:border-gray-700 font-bold">
                 % Meta
               </Th>
-              <Th className="bg-purple-100 dark:bg-purple-900 text-purple-900 dark:text-purple-100 min-w-[110px] border-b dark:border-gray-700 font-bold">
+              {/* 15. NUEVOS */}
+              <Th className="bg-blue-50 dark:bg-blue-900/30 text-blue-900 dark:text-blue-100 border-b dark:border-gray-700 font-bold">
                 Nuevos
               </Th>
-              <Th className="bg-rose-100 dark:bg-rose-900 text-rose-900 dark:text-rose-100 min-w-[110px] border-b dark:border-gray-700 font-bold">
-                Planif.
+              {/* 16. GESTIONES PLANIF */}
+              <Th className="bg-rose-50 dark:bg-rose-900/30 text-rose-900 dark:text-rose-100 border-b dark:border-gray-700 font-bold">
+                Gest. Planif.
               </Th>
-              <Th className="bg-rose-100 dark:bg-rose-900 text-rose-900 dark:text-rose-100 min-w-[100px] border-b dark:border-gray-700 font-bold">
-                % Plan
+              {/* 17. CUMPLIMIENTO PLANIF */}
+              <Th className="bg-rose-50 dark:bg-rose-900/30 text-rose-900 dark:text-rose-100 border-b dark:border-gray-700 font-bold">
+                % Planif.
               </Th>
-              <Th className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 min-w-[250px] border-b dark:border-gray-700 font-bold">
-                Observación Manual
+              {/* 18. OBSERVACION */}
+              <Th className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 min-w-[200px] border-b dark:border-gray-700 font-bold">
+                Observación
               </Th>
             </tr>
           </Thead>
@@ -260,7 +258,7 @@ const Vendedores = () => {
           <Tbody>
             {filteredData.length === 0 ? (
               <Tr>
-                <Td colSpan={19} className="py-20 text-center text-slate-400">
+                <Td colSpan={18} className="py-20 text-center text-slate-400">
                   <div className="flex flex-col items-center justify-center gap-2">
                     <Search size={40} strokeWidth={1} />
                     <p className="font-medium">No se encontraron vendedores</p>
@@ -279,13 +277,15 @@ const Vendedores = () => {
                   row.metaCobranza > 0
                     ? (row.cobradoDia / row.metaCobranza) * 100
                     : 0;
-                const percPlanificado =
-                  row.visitasALograr > 0
-                    ? (row.gestionesPlanificacion / row.visitasALograr) * 100
-                    : 0;
                 const percMetaMensual =
-                  row.metaMensual > 0
-                    ? (row.carteraActiva / row.metaMensual) * 100
+                  row.metaVentasMensual > 0
+                    ? (row.ventas / row.metaVentasMensual) * 100
+                    : 0;
+                // CORRECCIÓN APLICADA: LOGRADO / PLANIFICADO
+                // Muestra qué porcentaje de la ruta asignada fue cubierta realmente.
+                const percPlanificado =
+                  row.gestionesPlanificacion > 0
+                    ? (row.reportesLogrados / row.gestionesPlanificacion) * 100
                     : 0;
 
                 return (
@@ -293,56 +293,57 @@ const Vendedores = () => {
                     key={row.id}
                     className="hover:bg-gray-50 dark:hover:bg-[#1a2333]"
                   >
+                    {/* 1. VENDEDOR */}
                     <Td
                       align="left"
-                      className="font-black border-r border-gray-200 dark:border-gray-800 text-xs sm:text-sm text-gray-800 dark:text-gray-200"
+                      className="font-black border-r border-gray-200 dark:border-gray-800 text-xs text-gray-800 dark:text-gray-200"
                     >
                       {row.vendedor}
                     </Td>
+                    {/* 2. SALIDA */}
                     <Td>{row.horaSalida}</Td>
+                    {/* 3. LLEGADA */}
                     <Td>{row.horaLlegada}</Td>
-                    <Td className="font-medium">{row.reportesEstablecidos}</Td>
-                    <Td className="font-bold text-slate-900 dark:text-white">
+                    {/* 4. ESTABLECIDOS */}
+                    <Td className="font-medium text-center">
+                      {row.reportesEstablecidos}
+                    </Td>
+                    {/* 5. LOGRADOS */}
+                    <Td className="font-bold text-center text-slate-900 dark:text-white">
                       {row.reportesLogrados}
                     </Td>
-                    <Td>
+                    {/* 6. % VISITAS */}
+                    <Td className="text-center">
                       <span
                         className={`px-2 py-1 rounded-md text-[11px] font-bold border ${percVisitas >= 90 ? "bg-emerald-100 text-emerald-800 border-emerald-200" : "bg-rose-100 text-rose-800 border-rose-200"}`}
                       >
                         {formatPercent(percVisitas)}
                       </span>
                     </Td>
+                    {/* 7. RESTA */}
                     <Td className="font-bold text-center text-emerald-700 dark:text-emerald-400">
                       {restaLogrado}
                     </Td>
 
-                    {/* CELDA GEOLOCALIZACION */}
+                    {/* 8. GEOCERCA */}
                     <Td className="text-center p-2 align-middle">
                       {row.direccionTexto === "Sin actividad" ? (
-                        <span className="text-xs text-gray-400 italic">
-                          -- Sin GPS --
+                        <span className="text-[10px] text-gray-400 italic">
+                          -- Inactivo --
                         </span>
                       ) : (
-                        <div className="flex flex-col items-center gap-1.5 py-1">
-                          <div
-                            className={`inline-flex items-center px-2 py-0.5 rounded text-[9px] font-extrabold border ${row.pctGeocerca >= 80 ? "bg-green-100 text-green-700 border-green-200" : row.pctGeocerca >= 50 ? "bg-yellow-100 text-yellow-700 border-yellow-200" : "bg-red-100 text-red-700 border-red-200"}`}
-                          >
-                            {row.pctGeocerca}% EN RANGO
-                          </div>
-                          <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
-                            Dist: {row.distancia || 0}m
-                          </span>
-                          <div className="flex items-center gap-1.5 text-blue-700 dark:text-blue-400 font-bold text-[11px] leading-tight">
+                        <div className="flex flex-col items-center gap-1 py-1">
+                          <div className="flex items-center gap-1.5 text-blue-700 dark:text-blue-400 font-bold text-[11px]">
                             <Store size={12} className="shrink-0" />
                             <span
-                              className="truncate max-w-[200px]"
+                              className="truncate max-w-[150px]"
                               title={row.ultimoCliente}
                             >
-                              {row.ultimoCliente || "Cliente Desconocido"}
+                              {row.ultimoCliente}
                             </span>
                           </div>
-                          <div className="flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400 max-w-[200px]">
-                            <Navigation
+                          <div className="flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400 max-w-[180px]">
+                            <MapPin
                               size={10}
                               className="shrink-0 text-slate-400"
                             />
@@ -353,46 +354,64 @@ const Vendedores = () => {
                               {row.direccionTexto}
                             </span>
                           </div>
+                          {row.pctGeocerca > 0 && (
+                            <div
+                              className={`text-[9px] font-bold px-1.5 rounded border ${row.pctGeocerca >= 80 ? "bg-green-100 text-green-700 border-green-200" : "bg-red-100 text-red-700 border-red-200"}`}
+                            >
+                              {row.pctGeocerca}% OK
+                            </div>
+                          )}
                         </div>
                       )}
                     </Td>
 
-                    <Td>{row.negociaciones}</Td>
-                    <Td className="text-blue-600 dark:text-blue-400 font-bold">
+                    {/* 9. NEGOCIACIONES */}
+                    <Td className="text-center">{row.negociaciones}</Td>
+
+                    {/* 10. COBRADO */}
+                    <Td className="text-right text-blue-600 dark:text-blue-400 font-bold text-xs">
                       {formatCurrency(row.cobradoDia)}
                     </Td>
-                    <Td className="font-black">
+
+                    {/* 11. % COBRO */}
+                    <Td className="text-center font-bold">
                       {formatPercent(percCobranza)}
                     </Td>
-                    <Td className="text-emerald-600 dark:text-emerald-400 font-black">
+
+                    {/* 12. VENTAS */}
+                    <Td className="text-right text-emerald-600 dark:text-emerald-400 font-bold text-xs">
                       {formatCurrency(row.ventas)}
                     </Td>
-                    <Td>{row.carteraActiva}</Td>
-                    <Td className="font-black">
+
+                    {/* 13. CARTERA */}
+                    <Td className="text-center">{row.carteraActiva}</Td>
+
+                    {/* 14. % META */}
+                    <Td className="text-center font-bold">
                       {formatPercent(percMetaMensual)}
                     </Td>
-                    <Td>{row.nuevosRecuperados}</Td>
-                    <Td>{row.gestionesPlanificacion}</Td>
-                    <Td className="font-black text-rose-600 dark:text-rose-400">
+
+                    {/* 15. NUEVOS */}
+                    <Td className="text-center text-blue-500 font-bold">
+                      {row.nuevosRecuperados}
+                    </Td>
+
+                    {/* 16. GESTIONES PLANIF */}
+                    <Td className="text-center">
+                      {row.gestionesPlanificacion}
+                    </Td>
+
+                    {/* 17. % PLANIF */}
+                    <Td className="text-center font-bold text-rose-600 dark:text-rose-400">
                       {formatPercent(percPlanificado)}
                     </Td>
 
-                    {/* --- CELDA DE OBSERVACIÓN CON TOAST --- */}
-                    <Td align="left" className="p-2">
+                    {/* 18. OBSERVACION */}
+                    <Td className="p-2">
                       <ObservacionCell
                         valorInicial={row.observacionManual}
                         onGuardar={(nuevoTexto) => {
-                          // 1. AQUÍ AGREGAMOS EL LOG
-                          console.log("📤 DATOS A ENVIAR AL BACKEND:", {
-                            vendedor: row.vendedor,
-                            observacion: nuevoTexto,
-                            // Si quieres ver toda la fila completa:
-                            datosCompletos: row,
-                          });
-
-                          // 2. Ejecutamos la lógica normal
                           actualizarObservacion(row.vendedor, nuevoTexto);
-
                           showToast(
                             "Observación guardada correctamente",
                             "success",
@@ -407,8 +426,6 @@ const Vendedores = () => {
           </Tbody>
         </Table>
       </TableContainer>
-
-      {/* 3. Renderizamos el contenedor de Toasts */}
       <ToastContainer />
     </div>
   );
