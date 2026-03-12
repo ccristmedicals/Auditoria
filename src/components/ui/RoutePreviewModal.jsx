@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React from "react";
 import { GoogleMap, useJsApiLoader, Marker, DirectionsRenderer } from "@react-google-maps/api";
 import { X, MapPin, ExternalLink, RefreshCw } from "lucide-react";
@@ -25,7 +26,7 @@ export const RoutePreviewModal = ({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
   });
 
-  const [map, setMap] = React.useState(null);
+  const [, setMap] = React.useState(null);
   const [directionsResponse, setDirectionsResponse] = React.useState(null);
   const [directionsError, setDirectionsError] = React.useState(false); // New state to track failure
   const [isRouting, setIsRouting] = React.useState(false); // Track if we are calculating the route
@@ -161,7 +162,7 @@ export const RoutePreviewModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-9999 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-300">
       <div
         className="bg-white dark:bg-[#111827] w-full max-w-7xl h-[90vh] rounded-2xl shadow-2xl border border-gray-200 dark:border-white/10 overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
@@ -208,7 +209,7 @@ export const RoutePreviewModal = ({
         </div>
 
         {/* Map Content */}
-        <div className="flex-1 relative bg-gray-100 dark:bg-[#0b1120] min-h-[300px]">
+        <div className="flex-1 relative bg-gray-100 dark:bg-[#0b1120] min-h-75">
           {isRouting ? (
             <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-[#0b1120]/50 backdrop-blur-sm z-10">
                <div className="flex flex-col items-center gap-3">

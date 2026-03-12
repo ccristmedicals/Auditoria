@@ -27,7 +27,7 @@ const TextCell = ({ value, onChange }) => (
       type="text"
       value={value || ""}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full min-w-[120px] p-1.5 text-sm bg-gray-50 dark:bg-[#333] border border-gray-300 dark:border-[#555] rounded dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1a9888]"
+      className="w-full min-w-30 p-1.5 text-sm bg-gray-50 dark:bg-[#333] border border-gray-300 dark:border-[#555] rounded dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1a9888]"
     />
   </Td>
 );
@@ -63,7 +63,7 @@ const MultiSelectCell = ({ value = [], onChange, options, isLoading }) => {
       <div ref={containerRef} className="relative">
         <div
           onClick={() => !isLoading && setIsOpen(!isOpen)}
-          className={`w-full min-w-[200px] min-h-[38px] p-1.5 text-sm bg-gray-50 dark:bg-[#333] border border-gray-300 dark:border-[#555] rounded dark:text-white cursor-pointer flex flex-wrap gap-1 items-center transition-all ${isOpen ? "ring-2 ring-[#1a9888] border-transparent" : ""
+          className={`w-full min-w-50 min-h-9.5 p-1.5 text-sm bg-gray-50 dark:bg-[#333] border border-gray-300 dark:border-[#555] rounded dark:text-white cursor-pointer flex flex-wrap gap-1 items-center transition-all ${isOpen ? "ring-2 ring-[#1a9888] border-transparent" : ""
             }`}
         >
           {isLoading ? (
@@ -76,7 +76,7 @@ const MultiSelectCell = ({ value = [], onChange, options, isLoading }) => {
               return (
                 <span
                   key={idx}
-                  className="bg-teal-100 text-teal-800 text-xs px-2 py-0.5 rounded-full flex items-center gap-1 border border-teal-200 dark:bg-teal-900/50 dark:text-teal-100 dark:border-teal-800 cursor-help truncate max-w-[150px]"
+                  className="bg-teal-100 text-teal-800 text-xs px-2 py-0.5 rounded-full flex items-center gap-1 border border-teal-200 dark:bg-teal-900/50 dark:text-teal-100 dark:border-teal-800 cursor-help truncate max-w-37.5"
                   title={itemCode}
                 >
                   {itemCode}
@@ -141,7 +141,7 @@ const SelectCell = ({ value, onChange, options, colorMap = {} }) => {
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={`w-full min-w-[140px] p-1.5 text-sm border border-gray-300 dark:border-[#555] rounded dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1a9888] ${colorClass}`}
+        className={`w-full min-w-35 p-1.5 text-sm border border-gray-300 dark:border-[#555] rounded dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1a9888] ${colorClass}`}
       >
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>
@@ -268,7 +268,7 @@ const GestionUsuarios = () => {
           <Thead>
             <Tr>
               <Th align="left">Usuario</Th>
-              <Th align="left" className="min-w-[200px]">
+              <Th align="left" className="min-w-50">
                 Segmento/Ruta
               </Th>
               <Th align="left">Contraseña</Th>

@@ -181,7 +181,7 @@ const Vendedores = () => {
           <Thead>
             <tr className="uppercase leading-tight">
               {/* 1. VENDEDOR */}
-              <Th className="bg-amber-50 dark:bg-amber-900/30 text-amber-900 dark:text-amber-100 min-w-[200px] border-b dark:border-gray-700 font-bold">
+              <Th className="bg-amber-50 dark:bg-amber-900/30 text-amber-900 dark:text-amber-100 min-w-50 border-b dark:border-gray-700 font-bold">
                 Vendedores_P Profit
               </Th>
               {/* 2. SALIDA */}
@@ -209,7 +209,7 @@ const Vendedores = () => {
                 Logrado (Resta)
               </Th>
               {/* 8. GEOCERCA */}
-              <Th className="bg-yellow-50 dark:bg-yellow-900/30 text-yellow-900 dark:text-yellow-100 min-w-[220px] text-center border-b dark:border-gray-700 font-bold">
+              <Th className="bg-yellow-50 dark:bg-yellow-900/30 text-yellow-900 dark:text-yellow-100 min-w-55 text-center border-b dark:border-gray-700 font-bold">
                 Geocerca
               </Th>
               {/* 9. NEGOCIACIONES */}
@@ -217,7 +217,7 @@ const Vendedores = () => {
                 Negoc.
               </Th>
               {/* 10. COBRADO */}
-              <Th className="bg-orange-50 dark:bg-orange-900/30 text-orange-900 dark:text-orange-100 min-w-[120px] border-b dark:border-gray-700 font-bold">
+              <Th className="bg-orange-50 dark:bg-orange-900/30 text-orange-900 dark:text-orange-100 min-w-30 border-b dark:border-gray-700 font-bold">
                 Cobrado Día
               </Th>
               {/* 11. % COBRANZA */}
@@ -225,7 +225,7 @@ const Vendedores = () => {
                 % Cobranza del Día
               </Th>
               {/* 12. VENTAS */}
-              <Th className="bg-amber-50 dark:bg-amber-900/30 text-amber-900 dark:text-amber-100 min-w-[120px] border-b dark:border-gray-700 font-bold">
+              <Th className="bg-amber-50 dark:bg-amber-900/30 text-amber-900 dark:text-amber-100 min-w-30 border-b dark:border-gray-700 font-bold">
                 Ventas
               </Th>
               {/* 13. CARTERA */}
@@ -249,7 +249,7 @@ const Vendedores = () => {
                 % Planif.
               </Th>
               {/* 18. OBSERVACION */}
-              <Th className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 min-w-[200px] border-b dark:border-gray-700 font-bold">
+              <Th className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 min-w-50 border-b dark:border-gray-700 font-bold">
                 Observación
               </Th>
             </tr>
@@ -336,13 +336,13 @@ const Vendedores = () => {
                           <div className="flex items-center gap-1.5 text-blue-700 dark:text-blue-400 font-bold text-[11px]">
                             <Store size={12} className="shrink-0" />
                             <span
-                              className="truncate max-w-[150px]"
+                              className="truncate max-w-37.5"
                               title={row.ultimoCliente}
                             >
                               {row.ultimoCliente}
                             </span>
                           </div>
-                          <div className="flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400 max-w-[180px]">
+                          <div className="flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400 max-w-45">
                             <MapPin
                               size={10}
                               className="shrink-0 text-slate-400"

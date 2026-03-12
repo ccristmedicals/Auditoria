@@ -42,7 +42,7 @@ export const FilterSingleSelect = ({ label, options, selected, onChange }) => {
                     }`}
             >
                 <User size={16} />
-                <span className="max-w-[150px] truncate">{selectedLabel || label}</span>
+                <span className="max-w-37.5 truncate">{selectedLabel || label}</span>
                 {selected && (
                     <button
                         onClick={(e) => {
@@ -112,7 +112,7 @@ export const FilterSingleSelect = ({ label, options, selected, onChange }) => {
                                                 : "hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-400"
                                                 }`}
                                         >
-                                            <span className="leading-snug break-words">{labelStr}</span>
+                                            <span className="leading-snug wrap-break-word">{labelStr}</span>
                                             {isSelected && <Check size={16} className="text-[#1a9888]" />}
                                         </div>
                                     );

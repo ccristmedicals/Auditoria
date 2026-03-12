@@ -30,7 +30,7 @@ import {
 
 const StatCard = ({ icon: Icon, label, value, colorClass, iconColor }) => (
   <div
-    className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${colorClass} shadow-sm min-w-[140px]`}
+    className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${colorClass} shadow-sm min-w-35`}
   >
     <div className={`p-2 rounded-lg ${iconColor}`}>
       <Icon size={18} />
@@ -111,7 +111,7 @@ const EditableCell = ({ value, onChange, placeholder = "..." }) => (
       value={value || ""}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="w-full min-w-[100px] bg-white dark:bg-[#262626] border border-gray-300 dark:border-gray-600 rounded px-2 py-1.5 text-xs outline-none transition-all placeholder-gray-400 focus:ring-2 focus:ring-[#1a9888] focus:border-transparent dark:text-gray-200 shadow-sm"
+      className="w-full min-w-25 bg-white dark:bg-[#262626] border border-gray-300 dark:border-gray-600 rounded px-2 py-1.5 text-xs outline-none transition-all placeholder-gray-400 focus:ring-2 focus:ring-[#1a9888] focus:border-transparent dark:text-gray-200 shadow-sm"
     />
     <Edit3
       size={12}
@@ -276,34 +276,34 @@ const AuditoriaGeo = () => {
 
               {/* Nivel 2 */}
               <Tr className="border-b border-gray-200 dark:border-[#333]">
-                <Th className="min-w-[100px] bg-white dark:bg-[#1e1e1e] z-10 text-xs uppercase text-gray-500">
+                <Th className="min-w-25 bg-white dark:bg-[#1e1e1e] z-10 text-xs uppercase text-gray-500">
                   Código
                 </Th>
-                <Th className="min-w-[250px] text-left bg-white dark:bg-[#1e1e1e] shadow-md z-10 border-r border-gray-100 text-xs uppercase text-gray-500">
+                <Th className="min-w-62.5 text-left bg-white dark:bg-[#1e1e1e] shadow-md z-10 border-r border-gray-100 text-xs uppercase text-gray-500">
                   Nombre
                 </Th>
 
-                <Th className="min-w-[150px] bg-white dark:bg-[#1e1e1e] border-r border-gray-100 text-xs uppercase text-gray-500">
+                <Th className="min-w-37.5 bg-white dark:bg-[#1e1e1e] border-r border-gray-100 text-xs uppercase text-gray-500">
                   Zona
                 </Th>
 
                 {/* Coords Profit - COLUMNA CLAVE */}
-                <Th className="min-w-[180px] bg-green-50 dark:bg-green-900 border-r border-green-100 text-xs uppercase text-green-700 text-center font-bold">
+                <Th className="min-w-45 bg-green-50 dark:bg-green-900 border-r border-green-100 text-xs uppercase text-green-700 text-center font-bold">
                   Coords Profit
                 </Th>
 
                 {/* Coords Bitrix - COLUMNA CLAVE */}
-                <Th className="min-w-[180px] bg-blue-50 dark:bg-blue-900 border-r border-blue-100 text-xs uppercase text-blue-700 text-center font-bold">
+                <Th className="min-w-45 bg-blue-50 dark:bg-blue-900 border-r border-blue-100 text-xs uppercase text-blue-700 text-center font-bold">
                   Coords Bitrix
                 </Th>
 
-                <Th className="min-w-[140px] text-center bg-gray-50 dark:bg-gray-800 text-xs uppercase text-gray-500">
+                <Th className="min-w-35 text-center bg-gray-50 dark:bg-gray-800 text-xs uppercase text-gray-500">
                   Estado
                 </Th>
-                <Th className="min-w-[50px] text-center bg-gray-50 dark:bg-gray-800 text-xs uppercase text-gray-500">
+                <Th className="min-w-12.5 text-center bg-gray-50 dark:bg-gray-800 text-xs uppercase text-gray-500">
                   Mapa
                 </Th>
-                <Th className="min-w-[180px] bg-gray-50 dark:bg-gray-800 text-xs uppercase text-gray-500">
+                <Th className="min-w-45 bg-gray-50 dark:bg-gray-800 text-xs uppercase text-gray-500">
                   Nota
                 </Th>
               </Tr>
@@ -316,7 +316,7 @@ const AuditoriaGeo = () => {
                     {row.codigo}
                   </Td>
                   <Td className="text-left font-semibold bg-white dark:bg-[#111827] border-r dark:border-white/5 shadow-md text-xs z-10">
-                    <div className="truncate max-w-[250px]" title={row.nombre}>
+                    <div className="truncate max-w-62.5" title={row.nombre}>
                       {row.nombre}
                     </div>
                   </Td>

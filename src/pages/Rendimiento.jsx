@@ -447,13 +447,13 @@ const Rendimiento = () => {
                 rowSpan={2}
                 stickyLeft
                 /* CAMBIO AQUÍ: z-index sube a 40 para no ser solapado por el thead sticky */
-                className="bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 min-w-[180px] border-b border-r dark:border-gray-700 font-bold z-40"
+                className="bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 min-w-45 border-b border-r dark:border-gray-700 font-bold z-40"
               >
                 Compañía / Segmento
               </Th>
               <Th
                 rowSpan={2}
-                className="bg-blue-50 dark:bg-blue-900 text-blue-800 dark:text-blue-200 min-w-[100px] border-b border-r dark:border-gray-700 text-center font-bold"
+                className="bg-blue-50 dark:bg-blue-900 text-blue-800 dark:text-blue-200 min-w-25 border-b border-r dark:border-gray-700 text-center font-bold"
               >
                 Total Clientes
               </Th>
@@ -477,7 +477,7 @@ const Rendimiento = () => {
               </Th>
               <Th
                 rowSpan={2}
-                className="bg-rose-100 dark:bg-rose-900 text-rose-900 dark:text-rose-100 border-b dark:border-gray-700 text-center font-bold min-w-[110px]"
+                className="bg-rose-100 dark:bg-rose-900 text-rose-900 dark:text-rose-100 border-b dark:border-gray-700 text-center font-bold min-w-27.5"
               >
                 Sin Gestión
               </Th>
