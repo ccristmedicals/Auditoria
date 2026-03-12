@@ -76,40 +76,55 @@ export const generatePlanificacionPDF = (items, datePlanificacion) => {
       codigo: item.codigo_profit || "-",
       ruta: item.full_data?.segmento || "-",
       vencido: currency(item.full_data?.saldo_vencido),
-      // Guardamos el valor crudo para validación en didParseCell
       _vencidoRaw: item.full_data?.saldo_vencido || 0,
     };
 
     // Lógica para cada día
     days.forEach((day) => {
-      const dayData = item.semana?.[day];
+      // Intentar obtener datos del día desde el objeto anidado o plano
+      const dayData = item.semana?.[day] || {};
 
       let content = "-";
-      let cellStyles = { halign: "center", fontSize: 7 };
+      let cellStyles = {
+        halign: "center",
+        fontSize: 7,
+        valign: "middle",
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+      };
 
-      if (dayData) {
-        const tarea = dayData.tarea ? `P: ${dayData.tarea}` : "";
-        const accion = dayData.accion ? `H: ${dayData.accion}` : "";
+      // --- 1. TAREA (Planificado) ---
+      // Puede venir en item.semana[day].tarea o item[day + '_tarea']
+      const tareaVal = dayData.tarea ?? item[`${day}_tarea`];
+      const tarea = tareaVal ? `P: ${tareaVal}` : "";
 
-        // Combinar textos (P: Planificado, H: Hecho)
-        if (tarea || accion) {
-          content = [tarea, accion].filter(Boolean).join("\n");
-        }
+      // --- 2. ACCIÓN (Hecho/Visitado) ---
+      const accionVal = dayData.accion ?? item[`${day}_accion`];
+      const accion = accionVal ? `H: ${accionVal}` : "";
 
-        // --- LÓGICA DE COLORES ---
-        if (dayData.accion) {
-          // CASO 1: VISITADO (Tiene acción) -> VERDE
-          cellStyles.fillColor = [220, 252, 231]; // Verde claro
-          cellStyles.textColor = [20, 83, 45]; // Verde oscuro
-          cellStyles.fontStyle = "bold";
-        } else if (dayData.tarea && !dayData.accion) {
-          // CASO 2: NO VISITADO (Tiene tarea pero no acción) -> ROJO
-          cellStyles.fillColor = [254, 226, 226]; // Rojo claro
-          cellStyles.textColor = [127, 29, 29]; // Rojo oscuro
-        }
+      // --- 3. OBSERVACIÓN ---
+      const obsVal = dayData.observacion ?? item[`${day}_observacion`];
+      const observacion = obsVal ? `Obs: ${obsVal}` : "";
+
+      // Combinar textos
+      const parts = [tarea, accion, observacion].filter(Boolean);
+
+      if (parts.length > 0) {
+        content = parts.join("\n");
       }
 
-      // Asignar objeto de celda (contenido + estilos)
+      // --- LÓGICA DE COLORES ---
+      if (accionVal) {
+        // CASO 1: VISITADO (Tiene acción) -> VERDE CLARO
+        cellStyles.fillColor = [220, 252, 231];
+        cellStyles.textColor = [20, 83, 45];
+      } else if (tareaVal) {
+        // CASO 2: SOLO PLANIFICADO (Sin acción) -> ROJO CLARO
+        cellStyles.fillColor = [254, 226, 226];
+        cellStyles.textColor = [127, 29, 29];
+      }
+
+      // Asignar celda
       row[day] = { content: content, styles: cellStyles };
     });
 
@@ -119,7 +134,17 @@ export const generatePlanificacionPDF = (items, datePlanificacion) => {
   // --- 5. GENERAR TABLA ---
   autoTable(doc, {
     startY: 35,
-    columns: columns,
+    columns: [
+      { header: "Cliente", dataKey: "cliente" },
+      { header: "Cód.", dataKey: "codigo" },
+      { header: "Ruta", dataKey: "ruta" },
+      { header: "Vencido", dataKey: "vencido" },
+      { header: "Lun", dataKey: "lunes" },
+      { header: "Mar", dataKey: "martes" },
+      { header: "Mie", dataKey: "miercoles" },
+      { header: "Jue", dataKey: "jueves" },
+      { header: "Vie", dataKey: "viernes" },
+    ],
     body: body,
     theme: "grid",
     headStyles: {

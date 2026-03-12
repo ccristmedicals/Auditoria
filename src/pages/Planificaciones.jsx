@@ -13,8 +13,10 @@ import {
   X,
   Download,
   Lock,
+  AlertCircle,
 } from "lucide-react";
 import StarRating from "../components/StarRating";
+import { RoutePreviewModal } from "../components/ui/RoutePreviewModal"; // Importar RoutePreviewModal
 
 const formatDate = (dateString) => {
   if (!dateString) return "N/A";
@@ -75,8 +77,17 @@ const PlanificacionHeader = ({
   ratingUser,
   onRate,
   disabled,
+  cumplimiento,
 }) => {
   const user = headerData.usuario || headerData.co_ven || "No Identificado";
+
+  // Determinar color cumplimiento
+  let colorCumplimiento = "text-red-700 bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300";
+  if (cumplimiento?.porcentaje >= 80) {
+    colorCumplimiento = "text-emerald-700 bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-300";
+  } else if (cumplimiento?.porcentaje >= 50) {
+    colorCumplimiento = "text-amber-700 bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-300";
+  }
 
   return (
     <div
@@ -159,6 +170,21 @@ const PlanificacionHeader = ({
           <Download size={18} />
         </button>
 
+        {/* CUMPLIMIENTO (NUEVO) */}
+        {cumplimiento && (
+          <div
+            className={`flex flex-col items-center justify-center px-3 py-1.5 rounded-lg border shadow-sm ${colorCumplimiento}`}
+            title={`Gestiones Realizadas: ${cumplimiento.gestionesRealizadas} / Total Clientes: ${cumplimiento.clientesPlanificados}`}
+          >
+            <span className="text-[10px] uppercase font-bold opacity-80 leading-none mb-1">
+              Cumplimiento
+            </span>
+            <span className="text-sm font-bold leading-none">
+              {cumplimiento.porcentaje}%
+            </span>
+          </div>
+        )}
+
         {/* TOTAL VENCIDO */}
         {totalVencido > 0 && (
           <div className="flex items-center bg-white dark:bg-gray-800 px-3 py-2 rounded-lg border border-red-100 dark:border-red-900/30 shadow-sm">
@@ -188,104 +214,125 @@ const PlanificacionTable = ({ items }) => (
         </tr>
       </thead>
       <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-        {items.map((item) => (
-          <tr
-            key={item.id}
-            className="hover:bg-gray-50 dark:hover:bg-[#1e2436]/50 transition-colors"
-          >
-            {/* Columna Cliente */}
-            <td className="p-4 align-top">
-              <div className="flex flex-col gap-1">
-                <span className="font-bold text-slate-800 dark:text-white text-sm line-clamp-2">
-                  {item.nombre_cliente}
-                </span>
-                <div className="flex items-center gap-2">
-                  <span className="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-xs text-slate-600 dark:text-slate-300 font-mono font-bold">
-                    {item.codigo_profit}
-                  </span>
-                </div>
-                {item.full_data?.segmento && (
-                  <span className="flex items-center gap-1 text-[11px] text-teal-600 dark:text-teal-400 mt-1 font-medium bg-teal-50 dark:bg-teal-900/20 w-fit px-2 py-0.5 rounded-full">
-                    <MapPin size={10} />
-                    {item.full_data.segmento}
-                  </span>
-                )}
-              </div>
-            </td>
+        {items.map((item) => {
+          const hasGestion =
+            Array.isArray(item.full_data?.gestion) &&
+            item.full_data.gestion.length > 0;
 
-            {/* Columna Finanzas */}
-            <td className="p-4 align-top">
-              <div className="flex flex-col gap-2 text-xs">
-                {item.full_data?.saldo_vencido > 0 ? (
-                  <div className="flex justify-between items-center p-1.5 bg-red-50 dark:bg-red-900/10 rounded border border-red-100 dark:border-red-900/20 text-red-700 dark:text-red-400">
-                    <span className="font-semibold">Vencido</span>
-                    <span className="font-mono font-bold">
-                      {formatCurrency(item.full_data.saldo_vencido)}
+          return (
+            <tr
+              key={item.id}
+              className={`transition-colors ${
+                !hasGestion
+                  ? "bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/40"
+                  : "hover:bg-gray-50 dark:hover:bg-[#1e2436]/50"
+              }`}
+            >
+              {/* Columna Cliente */}
+              <td className="p-4 align-top">
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="font-bold text-slate-800 dark:text-white text-sm line-clamp-2">
+                      {item.nombre_cliente}
                     </span>
-                  </div>
-                ) : (
-                  <span className="text-gray-400 italic text-[10px]">
-                    Sin saldo vencido
-                  </span>
-                )}
-
-                {item.full_data?.saldo_transito > 0 && (
-                  <div className="flex justify-between items-center text-blue-600 dark:text-blue-400 px-1">
-                    <span>Tránsito:</span>
-                    <span className="font-mono">
-                      {formatCurrency(item.full_data.saldo_transito)}
-                    </span>
-                  </div>
-                )}
-                {item.full_data?.limite_credito && (
-                  <div className="flex justify-between items-center text-gray-500 px-1">
-                    <span>Límite:</span>
-                    <span className="font-mono">
-                      {formatCurrency(Number(item.full_data.limite_credito))}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </td>
-
-            {/* Columna Semana */}
-            <td className="p-4 align-top">
-              {item.semana ? (
-                <div className="grid grid-cols-5 gap-2">
-                  {["lunes", "martes", "miercoles", "jueves", "viernes"].map(
-                    (day) => (
-                      <div key={day} className="min-w-[60px]">
-                        {item.semana[day]?.tarea || item.semana[day]?.accion ? (
-                          <DayCard
-                            day={day.slice(0, 3)}
-                            data={item.semana[day]}
-                          />
-                        ) : (
-                          <div className="h-full min-h-[40px] rounded bg-gray-50 dark:bg-gray-800/50 border border-dashed border-gray-100 dark:border-gray-700 flex items-center justify-center">
-                            <span className="text-gray-300 dark:text-gray-600 text-[10px]">
-                              •
-                            </span>
-                          </div>
-                        )}
+                    {!hasGestion && (
+                      <div
+                        title="Vendedor no registró visita"
+                        className="shrink-0 flex items-center gap-1 text-[10px] uppercase font-bold text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400 px-1.5 py-0.5 rounded border border-red-200 dark:border-red-800"
+                      >
+                        <AlertCircle size={10} />
+                        Sin Visita
                       </div>
-                    ),
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-xs text-slate-600 dark:text-slate-300 font-mono font-bold">
+                      {item.codigo_profit}
+                    </span>
+                  </div>
+                  {item.full_data?.segmento && (
+                    <span className="flex items-center gap-1 text-[11px] text-teal-600 dark:text-teal-400 mt-1 font-medium bg-teal-50 dark:bg-teal-900/20 w-fit px-2 py-0.5 rounded-full">
+                      <MapPin size={10} />
+                      {item.full_data.segmento}
+                    </span>
                   )}
                 </div>
-              ) : (
-                <span className="text-gray-400 text-xs italic">
-                  Sin agenda registrada
-                </span>
-              )}
+              </td>
 
-              {item.obs_ejecutiva && (
-                <div className="mt-3 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 p-2 rounded-lg flex gap-2 items-start">
-                  <span className="font-bold">Nota:</span>
-                  <span className="italic">"{item.obs_ejecutiva}"</span>
+              {/* Columna Finanzas */}
+              <td className="p-4 align-top">
+                <div className="flex flex-col gap-2 text-xs">
+                  {item.full_data?.saldo_vencido > 0 ? (
+                    <div className="flex justify-between items-center p-1.5 bg-red-50 dark:bg-red-900/10 rounded border border-red-100 dark:border-red-900/20 text-red-700 dark:text-red-400">
+                      <span className="font-semibold">Vencido</span>
+                      <span className="font-mono font-bold">
+                        {formatCurrency(item.full_data.saldo_vencido)}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-gray-400 italic text-[10px]">
+                      Sin saldo vencido
+                    </span>
+                  )}
+
+                  {item.full_data?.saldo_transito > 0 && (
+                    <div className="flex justify-between items-center text-blue-600 dark:text-blue-400 px-1">
+                      <span>Tránsito:</span>
+                      <span className="font-mono">
+                        {formatCurrency(item.full_data.saldo_transito)}
+                      </span>
+                    </div>
+                  )}
+                  {item.full_data?.limite_credito && (
+                    <div className="flex justify-between items-center text-gray-500 px-1">
+                      <span>Límite:</span>
+                      <span className="font-mono">
+                        {formatCurrency(Number(item.full_data.limite_credito))}
+                      </span>
+                    </div>
+                  )}
                 </div>
-              )}
-            </td>
-          </tr>
-        ))}
+              </td>
+
+              {/* Columna Semana */}
+              <td className="p-4 align-top">
+                {item.semana ? (
+                  <div className="grid grid-cols-5 gap-2">
+                    {["lunes", "martes", "miercoles", "jueves", "viernes"].map(
+                      (day) => (
+                        <div key={day} className="min-w-[60px]">
+                          {item.semana[day]?.tarea || item.semana[day]?.accion ? (
+                            <DayCard
+                              day={day.slice(0, 3)}
+                              data={item.semana[day]}
+                            />
+                          ) : (
+                            <div className="h-full min-h-[40px] rounded bg-gray-50 dark:bg-gray-800/50 border border-dashed border-gray-100 dark:border-gray-700 flex items-center justify-center">
+                              <span className="text-gray-300 dark:text-gray-600 text-[10px]">
+                                •
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      ),
+                    )}
+                  </div>
+                ) : (
+                  <span className="text-gray-400 text-xs italic">
+                    Sin agenda registrada
+                  </span>
+                )}
+
+                {item.obs_ejecutiva && (
+                  <div className="mt-3 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 p-2 rounded-lg flex gap-2 items-start">
+                    <span className="font-bold">Nota:</span>
+                    <span className="italic">"{item.obs_ejecutiva}"</span>
+                  </div>
+                )}
+              </td>
+            </tr>
+          );
+        })}
       </tbody>
     </table>
   </div>
@@ -300,6 +347,7 @@ const PlanificacionGroup = ({ items }) => {
   const initialRatingUser = items[0]?.rating_user || null;
   const [currentRating, setCurrentRating] = useState(initialRating);
   const [currentRatingUser, setCurrentRatingUser] = useState(initialRatingUser);
+  const [showRouteModal, setShowRouteModal] = useState(false); // Estado para el modal del mapa
 
   const isLocked = currentRating > 0;
 
@@ -314,8 +362,37 @@ const PlanificacionGroup = ({ items }) => {
     0,
   );
 
+  // --- CALCULAR CUMPLIMIENTO (NUEVO) ---
+  const cumplimientoData = useMemo(() => {
+    let gestionesRealizadas = 0;
+    
+    // Total de Clientes Planificados
+    const clientesPlanificados = items.length;
+
+    items.forEach((item) => {
+      // Revisamos si existen gestiones reales
+      const gestiones = item.full_data?.gestion || [];
+      if (Array.isArray(gestiones) && gestiones.length > 0) {
+        gestionesRealizadas++;
+      }
+    });
+
+    const porcentaje = clientesPlanificados > 0 
+      ? Math.round((gestionesRealizadas / clientesPlanificados) * 100) 
+      : 0;
+      
+    return { gestionesRealizadas, clientesPlanificados, porcentaje };
+  }, [items]);
+
   // MANEJADOR DE DESCARGA
   const handleDownload = () => {
+    // Abrir el modal en lugar de descargar directamente
+    setShowRouteModal(true);
+  };
+  
+  // Función que se ejecuta al confirmar en el mapa
+  const handleConfirmDownload = () => {
+    setShowRouteModal(false);
     const groupDate = new Date(headerData.fecha_registro);
     generatePlanificacionPDF(items, groupDate);
   };
@@ -362,8 +439,24 @@ const PlanificacionGroup = ({ items }) => {
         ratingUser={currentRatingUser}
         onRate={handleRate}
         disabled={isLocked}
+        cumplimiento={cumplimientoData} // Pasando la prop
       />
       {isExpanded && <PlanificacionTable items={items} />}
+      
+      {/* Modal de Mapa */}
+      {showRouteModal && (
+        <RoutePreviewModal
+          isOpen={showRouteModal}
+          onClose={() => setShowRouteModal(false)}
+          onConfirm={handleConfirmDownload}
+          clientData={items.map((item) => ({
+            ...item,
+            nombre: item.nombre_cliente,
+            coordenadas: item.full_data?.coordenadas, // Asegurarse de tener las coordenadas aquí
+          }))}
+          vendorName={headerData.vendedor || "Vendedor"}
+        />
+      )}
     </div>
   );
 };
@@ -643,8 +736,15 @@ const Planificaciones = () => {
                 <div className="p-1 overflow-y-auto custom-scrollbar">
                   {filteredUniqueRutas.length > 0 ? (
                     filteredUniqueRutas.map((ruta) => (
-                      <label
+                      <div
                         key={ruta}
+                        onClick={() => {
+                          setSelectedRutas((prev) =>
+                            prev.includes(ruta)
+                              ? prev.filter((r) => r !== ruta)
+                              : [...prev, ruta]
+                          );
+                        }}
                         className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-teal-50 dark:hover:bg-teal-900/20 cursor-pointer group transition-colors"
                       >
                         <div
@@ -667,7 +767,7 @@ const Planificaciones = () => {
                         >
                           {ruta}
                         </span>
-                      </label>
+                      </div>
                     ))
                   ) : (
                     <div className="p-4 text-center text-xs text-gray-400 italic">

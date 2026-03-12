@@ -46,6 +46,7 @@ import { FilterSingleSelect } from "../components/ui/FilterSingleSelect";
 import { generateVendorPDF } from "../utils/pdfGenerator";
 import { useToast } from "../components/ui/Toast";
 import { ConfirmModal } from "../components/ui/ConfirmModal";
+import { RoutePreviewModal } from "../components/ui/RoutePreviewModal"; // Importar el modal nuevo
 
 const ErrorAwareCell = React.memo(({ value, isError, icon = false }) => {
   if (isError) {
@@ -125,7 +126,15 @@ const ClassificationBadge = React.memo(({ value }) => {
 
 // --- COMPONENTE FILA ---
 const CompanyRow = React.memo(
-  ({ row, isSelected, toggleSelect, handleCompanyChange, formatCurrency }) => {
+  ({
+    row,
+    isSelected,
+    toggleSelect,
+    handleCompanyChange,
+    handleSave,
+    onTaskDayEdit,
+    formatCurrency,
+  }) => {
     // --- HELPER PARA RENDERIZAR TEXTO CON COLORES ---
     const renderStyledContent = (textString) => {
       if (!textString) return "-";
@@ -174,6 +183,7 @@ const CompanyRow = React.memo(
       if (!isVisible) return null;
 
       const onTaskChange = (val) => {
+        onTaskDayEdit?.(dayPrefix);
         // 1. Actualiza estado local
         handleCompanyChange(row.id_interno, `${dayPrefix}_tarea`, val);
         // 2. Dispara guardado inmediato para verificar si inhabilita
@@ -199,7 +209,7 @@ const CompanyRow = React.memo(
             className={`${bgColorClass} min-w-[150px] align-middle text-center`}
           >
             <div className="px-2 py-1.5">
-              {renderStyledContent(row[`${dayPrefix}_accion`])}
+              {renderStyledContent(row[`${dayPrefix}_accion`] || "-")}
             </div>
           </Td>
 
@@ -208,7 +218,7 @@ const CompanyRow = React.memo(
             className={`${bgColorClass} min-w-[150px] align-middle text-center`}
           >
             <div className="px-2 py-1.5 italic">
-              {renderStyledContent(row[`${dayPrefix}_observacion`])}
+              {renderStyledContent(row[`${dayPrefix}_observacion`] || "-")}
             </div>
           </Td>
         </>
@@ -218,9 +228,9 @@ const CompanyRow = React.memo(
     return (
       <Tr
         className={
-          row.isManagedToday
+          /*row.isManagedToday
             ? "bg-gray-100 dark:bg-gray-800/50 opacity-60"
-            : isSelected
+            :*/ isSelected
               ? "bg-teal-50/30 dark:bg-teal-900/10"
               : "hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
         }
@@ -231,7 +241,7 @@ const CompanyRow = React.memo(
             type="checkbox"
             className="w-4 h-4 accent-[#1a9888] cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
             checked={isSelected}
-            disabled={row.isManagedToday}
+            // disabled={row.isManagedToday}
             onChange={() => toggleSelect(row.id_interno)}
           />
         </Td>
@@ -407,6 +417,30 @@ const CompanyRow = React.memo(
   },
 );
 
+// Función auxiliar para obtener la fecha del día de la semana actual
+const getFormattedDateForDay = (dayIndex) => {
+  const today = new Date();
+  const currentDay = today.getDay(); // 0=Domingo, 1=Lunes, ..., 6=Sábado
+  
+  // Calcular la diferencia de días para llegar al día deseado (dayIndex: 1=Lunes, ..., 5=Viernes)
+  // Ajuste: si hoy es sábado (6) o domingo (0), calculamos respecto al lunes próximo o pasado según lógica de negocio.
+  // Asumiremos que se muestra la semana en curso.
+  
+  // Primero, llevamos la fecha al Lunes de la semana actual
+  const monday = new Date(today);
+  const dayShift = currentDay === 0 ? -6 : 1 - currentDay; // Si es domingo, restamos 6 para ir al lunes pasado. Si es otro día, restamos (currentDay - 1)
+  monday.setDate(today.getDate() + dayShift);
+
+  // Ahora calculamos la fecha del día solicitado
+  const targetDate = new Date(monday);
+  targetDate.setDate(monday.getDate() + (dayIndex - 1));
+
+  // Formato DD-MM
+  const day = String(targetDate.getDate()).padStart(2, '0');
+  const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+  return `${day}-${month}`;
+};
+
 // --- COMPONENTE PRINCIPAL ---
 const BaseDatosBitrix = () => {
   const {
@@ -447,9 +481,25 @@ const BaseDatosBitrix = () => {
   const [selectedIds, setSelectedIds] = useState([]);
   const [showOnlySelected, setShowOnlySelected] = useState(false);
   const [isBulkSaving, setIsBulkSaving] = useState(false);
+  const [lastPlannedDay, setLastPlannedDay] = useState(null);
+
+  const WEEK_DAYS = ["lunes", "martes", "miercoles", "jueves", "viernes"];
+
+  const detectLastPlannedDay = useCallback((entities) => {
+    for (let i = WEEK_DAYS.length - 1; i >= 0; i -= 1) {
+      const dayKey = WEEK_DAYS[i];
+      const hasTask = entities.some((entity) => {
+        const value = entity?.[`${dayKey}_tarea`];
+        return String(value || "").trim().length > 0;
+      });
+      if (hasTask) return dayKey;
+    }
+    return null;
+  }, []);
 
   // --- MODAL DE CONFIRMACIÓN ---
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showRouteModal, setShowRouteModal] = useState(false); // Estado para el modal de ruta
   const [confirmData, setConfirmData] = useState({
     title: "",
     message: "",
@@ -537,10 +587,8 @@ const BaseDatosBitrix = () => {
   const toggleSelectAll = useCallback(
     (checked) => {
       if (checked) {
-        // Seleccionar solo los que NO están gestionados hoy
-        const availableIds = companies
-          .filter((c) => !c.isManagedToday)
-          .map((c) => c.id_interno);
+        // Seleccionar todos, INCLUYENDO los gestionados hoy
+        const availableIds = companies.map((c) => c.id_interno);
         setSelectedIds(availableIds);
       } else {
         setSelectedIds([]);
@@ -628,39 +676,10 @@ const BaseDatosBitrix = () => {
         const response = await apiService.savePlanificacion(payload);
 
         if (response) {
-          // <--- CAMBIO IMPORTANTE: Lógica de inhabilitación inmediata
-          const todayIndex = new Date().getDay();
-          const dayMap = {
-            1: "lunes",
-            2: "martes",
-            3: "miercoles",
-            4: "jueves",
-            5: "viernes",
-          };
-          const currentDayKey = dayMap[todayIndex];
-
-          // Si hoy es día laboral, verificamos si hay TAREA para HOY
-          if (currentDayKey) {
-            const task = payload.gestion.semana[currentDayKey]?.tarea;
-
-            // Si hay texto en la tarea, inhabilitar.
-            if (task && task.trim().length > 0) {
-              handleCompanyChange(
-                companyData.id_interno,
-                "isManagedToday",
-                true,
-              );
-              // Quitar de seleccionados si estaba
-              setSelectedIds((prev) =>
-                prev.filter((id) => id !== companyData.id_interno),
-              );
-              showToast(
-                "Tarea guardada. Cliente inhabilitado por hoy.",
-                "success",
-              );
-              return true;
-            }
-          }
+          showToast(
+            "Tarea guardada.",
+            "success",
+          );
           return true;
         }
       } catch (error) {
@@ -673,7 +692,8 @@ const BaseDatosBitrix = () => {
 
   const executeBulkSave = async (selectedEntities, vendor) => {
     setIsBulkSaving(true);
-    setShowConfirm(false);
+    setShowConfirm(false); // Cerrar cualquier modal previo
+    setShowRouteModal(false); // Cerrar modal de ruta
     try {
       // Construir array de payloads
       const bulkPayload = selectedEntities.map((entity) => ({
@@ -687,35 +707,12 @@ const BaseDatosBitrix = () => {
       // Enviar una sola petición con el array
       await apiService.savePlanificacion(bulkPayload);
 
-      generateVendorPDF(vendor.label, selectedEntities);
+      const dayForPdf = lastPlannedDay || detectLastPlannedDay(selectedEntities);
+      generateVendorPDF(vendor.label, selectedEntities, dayForPdf);
 
       showToast(
         `Proceso completado. ${selectedEntities.length} clientes guardados y PDF generado.`,
       );
-
-      const todayIndex = new Date().getDay();
-      const dayMap = {
-        1: "lunes",
-        2: "martes",
-        3: "miercoles",
-        4: "jueves",
-        5: "viernes",
-      };
-      const currentDayKey = dayMap[todayIndex];
-      const idsToDisable = [];
-
-      if (currentDayKey) {
-        selectedEntities.forEach((e) => {
-          const t = e[`${currentDayKey}_tarea`];
-          if (t && t.trim().length > 0) {
-            idsToDisable.push(e.id_interno);
-          }
-        });
-      }
-
-      if (idsToDisable.length > 0) {
-        handleCompanyChange(null, "bulk_update_managed", idsToDisable);
-      }
 
       // --- REFRESCAR DATOS PARA ACTUALIZAR isManagedToday ---
       await refresh();
@@ -727,6 +724,7 @@ const BaseDatosBitrix = () => {
       setFilterZona("");
       setSelectedSegments([]);
       setShowOnlySelected(false);
+      setLastPlannedDay(null);
     } catch (error) {
       console.error("Error en proceso masivo:", error);
       showToast(
@@ -764,12 +762,13 @@ const BaseDatosBitrix = () => {
       return;
     }
 
+    // Configurar datos para el modal de ruta en lugar del ConfirmModal simple
     setConfirmData({
-      title: "Confirmar Solicitud",
-      message: `¿Deseas guardar los cambios de ${selectedEntities.length} clientes y generar el PDF para "${vendor.label}"?`,
-      onConfirm: () => executeBulkSave(selectedEntities, vendor),
+        clientData: selectedEntities,
+        vendorName: vendor.label,
+        onConfirm: () => executeBulkSave(selectedEntities, vendor),
     });
-    setShowConfirm(true);
+    setShowRouteModal(true); // Mostrar el nuevo modal
   };
 
   const handleJumpSubmit = (e) => {
@@ -1333,7 +1332,7 @@ const BaseDatosBitrix = () => {
                 {columnVisibility.lunes && (
                   <>
                     <Th className="min-w-[150px] bg-indigo-50 dark:bg-indigo-900">
-                      Lun-Tar
+                      Lun {getFormattedDateForDay(1)}
                     </Th>
                     <Th className="min-w-[150px] bg-indigo-50 dark:bg-indigo-900">
                       Lun-Acc
@@ -1348,7 +1347,7 @@ const BaseDatosBitrix = () => {
                 {columnVisibility.martes && (
                   <>
                     <Th className="min-w-[150px] bg-white dark:bg-[#1e1e1e]">
-                      Mar-Tar
+                      Mar {getFormattedDateForDay(2)}
                     </Th>
                     <Th className="min-w-[150px] bg-white dark:bg-[#1e1e1e]">
                       Mar-Acc
@@ -1363,7 +1362,7 @@ const BaseDatosBitrix = () => {
                 {columnVisibility.miercoles && (
                   <>
                     <Th className="min-w-[150px] bg-indigo-50 dark:bg-indigo-900">
-                      Mie-Tar
+                      Mie {getFormattedDateForDay(3)}
                     </Th>
                     <Th className="min-w-[150px] bg-indigo-50 dark:bg-indigo-900">
                       Mie-Acc
@@ -1378,7 +1377,7 @@ const BaseDatosBitrix = () => {
                 {columnVisibility.jueves && (
                   <>
                     <Th className="min-w-[150px] bg-white dark:bg-[#1e1e1e]">
-                      Jue-Tar
+                      Jue {getFormattedDateForDay(4)}
                     </Th>
                     <Th className="min-w-[150px] bg-white dark:bg-[#1e1e1e]">
                       Jue-Acc
@@ -1393,7 +1392,7 @@ const BaseDatosBitrix = () => {
                 {columnVisibility.viernes && (
                   <>
                     <Th className="min-w-[150px] bg-indigo-50 dark:bg-indigo-900">
-                      Vie-Tar
+                      Vie {getFormattedDateForDay(5)}
                     </Th>
                     <Th className="min-w-[150px] bg-indigo-50 dark:bg-indigo-900">
                       Vie-Acc
@@ -1416,6 +1415,7 @@ const BaseDatosBitrix = () => {
                     toggleSelect={toggleSelect}
                     handleCompanyChange={handleCompanyChange}
                     handleSave={handleSave}
+                    onTaskDayEdit={setLastPlannedDay}
                     formatCurrency={formatCurrency}
                   />
                 ))
@@ -1495,6 +1495,17 @@ const BaseDatosBitrix = () => {
         confirmLabel="Confirmar"
         cancelLabel="Cancelar"
       />
+
+      {/* MODAL DE RUTA */}
+      {showRouteModal && (
+        <RoutePreviewModal
+          isOpen={showRouteModal}
+          onClose={() => setShowRouteModal(false)}
+          onConfirm={confirmData.onConfirm}
+          clientData={confirmData.clientData}
+          vendorName={confirmData.vendorName}
+        />
+      )}
 
       <ToastContainer />
     </div>
