@@ -236,7 +236,7 @@ const RegisterForm = () => {
               !loading &&
               setIsSegmentMenuOpen(!isSegmentMenuOpen)
             }
-            className={`w-full min-h-[52px] pl-12 pr-10 py-3 border border-slate-200 dark:border-slate-700 rounded-2xl cursor-pointer bg-slate-50 dark:bg-[#0b1120] flex flex-wrap gap-2 items-center transition-all duration-300 ${
+            className={`w-full min-h-13 pl-12 pr-10 py-3 border border-slate-200 dark:border-slate-700 rounded-2xl cursor-pointer bg-slate-50 dark:bg-[#0b1120] flex flex-wrap gap-2 items-center transition-all duration-300 ${
               isSegmentMenuOpen
                 ? "ring-4 ring-teal-500/10 border-teal-500 shadow-lg"
                 : ""

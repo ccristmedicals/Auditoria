@@ -37,7 +37,7 @@ import { useToast } from "../components/ui/Toast";
 // 1. StatBadge: Rediseñado para el estilo "Clean" (Tarjetas)
 const StatBadge = React.memo(({ label, value, colorClass }) => (
   <div
-    className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg border ${colorClass} min-w-[90px] shadow-sm`}
+    className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg border ${colorClass} min-w-22.5 shadow-sm`}
   >
     <span className="text-[10px] uppercase font-bold opacity-80 leading-none mb-1 text-center">
       {label}
@@ -237,7 +237,7 @@ const EditableCell = React.memo(
             }
           }}
           placeholder={disabled ? "" : placeholder}
-          className={`w-full min-w-[120px] bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded px-2 py-1.5 text-sm outline-none ${
+          className={`w-full min-w-30 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded px-2 py-1.5 text-sm outline-none ${
             disabled
               ? "text-gray-500 cursor-not-allowed bg-gray-50/50 dark:bg-slate-900/50"
               : "focus:ring-2 focus:ring-[#1a9888] dark:text-gray-200"
@@ -471,17 +471,17 @@ const AuditRow = React.memo(
         {/* BITRIX */}
         <Td
           stickyLeft={false}
-          className="font-bold border-r text-xs max-w-[180px] truncate bg-white dark:bg-slate-900 z-10"
+          className="font-bold border-r text-xs max-w-45 truncate bg-white dark:bg-slate-900 z-10"
           title={row.nombre}
         >
           {row.nombre}
         </Td>
         <Td className="text-xs text-gray-500">{row.id_bitrix}</Td>
         <Td className="text-xs font-mono">{row.codigo}</Td>
-        <Td className="text-xs truncate max-w-[120px]" title={row.zona}>
+        <Td className="text-xs truncate max-w-30" title={row.zona}>
           {row.zona}
         </Td>
-        <Td className="text-xs truncate max-w-[120px]" title={row.diasVisita}>
+        <Td className="text-xs truncate max-w-30" title={row.diasVisita}>
           {row.diasVisita}
         </Td>
         {/* PROFIT */}
@@ -711,7 +711,7 @@ const AuditRow = React.memo(
 
         {/* --- ACCIÓN (TAREA) --- */}
         <Td className="text-xs text-center p-2 border-r border-gray-200 dark:border-slate-800">
-          <span className="text-gray-700 dark:text-gray-300 font-medium wrap-break-word leading-tight block max-w-[150px] mx-auto">
+          <span className="text-gray-700 dark:text-gray-300 font-medium wrap-break-word leading-tight block max-w-37.5 mx-auto">
             {assignedTask || "-"}
           </span>
         </Td>
@@ -733,7 +733,7 @@ const AuditRow = React.memo(
             <div className="flex flex-col gap-1">
               {logDelDia?.venta_descripcion && (
                 <span
-                  className="text-green-600 block truncate max-w-[180px]"
+                  className="text-green-600 block truncate max-w-45"
                   title={logDelDia.venta_descripcion}
                 >
                   V: {logDelDia.venta_descripcion}
@@ -741,7 +741,7 @@ const AuditRow = React.memo(
               )}
               {logDelDia?.cobranza_descripcion && (
                 <span
-                  className="text-blue-600 block truncate max-w-[180px]"
+                  className="text-blue-600 block truncate max-w-45"
                   title={logDelDia.cobranza_descripcion}
                 >
                   C: {logDelDia.cobranza_descripcion}
@@ -765,7 +765,7 @@ const AuditRow = React.memo(
             <div className="flex flex-col gap-1">
               {logDelDia?.venta_descripcion && (
                 <span
-                  className="text-green-600 block truncate max-w-[180px]"
+                  className="text-green-600 block truncate max-w-45"
                   title={logDelDia.venta_descripcion}
                 >
                   V: {logDelDia.venta_descripcion}
@@ -773,7 +773,7 @@ const AuditRow = React.memo(
               )}
               {logDelDia?.cobranza_descripcion && (
                 <span
-                  className="text-blue-600 block truncate max-w-[180px]"
+                  className="text-blue-600 block truncate max-w-45"
                   title={logDelDia.cobranza_descripcion}
                 >
                   C: {logDelDia.cobranza_descripcion}
@@ -782,7 +782,7 @@ const AuditRow = React.memo(
             </div>
           )}
         </Td>
-        <Td className="min-w-[350px]">
+        <Td className="min-w-87.5">
           <EditableCell
             value={auditData?.observacion || ""}
             disabled={!isEditable} // <--- CAMBIO
@@ -1600,63 +1600,63 @@ const Matriz = () => {
                 >
                   DATOS FINANCIEROS (PROFIT)
                 </Th>
-                <Th className="min-w-[30px] bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
+                <Th className="min-w-7.5 bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
                   <HeaderCountInput value={headerCounts.inicio_whatsapp.e} />
                 </Th>
-                <Th className="min-w-[30px] bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
+                <Th className="min-w-7.5 bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
                   <HeaderCountInput value={headerCounts.inicio_whatsapp.c} />
                 </Th>
-                <Th className="min-w-[30px] bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
+                <Th className="min-w-7.5 bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
                   <HeaderCountInput value={headerCounts.accion_venta.e} />
                 </Th>
-                <Th className="min-w-[30px] bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
+                <Th className="min-w-7.5 bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
                   <HeaderCountInput value={headerCounts.accion_venta.p} />
                 </Th>
-                <Th className="min-w-[30px] bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
+                <Th className="min-w-7.5 bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
                   <HeaderCountInput value={headerCounts.accion_venta.n} />
                 </Th>
-                <Th className="min-w-[30px] bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
+                <Th className="min-w-7.5 bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
                   <HeaderCountInput value={headerCounts.accion_cobranza.e} />
                 </Th>
-                <Th className="min-w-[30px] bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
+                <Th className="min-w-7.5 bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
                   <HeaderCountInput value={headerCounts.accion_cobranza.p} />
                 </Th>
-                <Th className="min-w-[30px] bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
+                <Th className="min-w-7.5 bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
                   <HeaderCountInput value={headerCounts.accion_cobranza.n} />
                 </Th>
-                <Th className="min-w-[30px] bg-slate-300 dark:bg-slate-800 p-0 border-l border-white dark:border-slate-700">
+                <Th className="min-w-7.5 bg-slate-300 dark:bg-slate-800 p-0 border-l border-white dark:border-slate-700">
                   <HeaderCountInput value={headerCounts.cp} />
                 </Th>
-                <Th className="min-w-[30px] bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
+                <Th className="min-w-7.5 bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
                   <HeaderCountInput value={headerCounts.llamadas_venta.e} />
                 </Th>
-                <Th className="min-w-[30px] bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
+                <Th className="min-w-7.5 bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
                   <HeaderCountInput value={headerCounts.llamadas_venta.p} />
                 </Th>
-                <Th className="min-w-[30px] bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
+                <Th className="min-w-7.5 bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
                   <HeaderCountInput value={headerCounts.llamadas_venta.n} />
                 </Th>
-                <Th className="min-w-[30px] bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
+                <Th className="min-w-7.5 bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
                   <HeaderCountInput value={headerCounts.llamadas_cobranza.e} />
                 </Th>
-                <Th className="min-w-[30px] bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
+                <Th className="min-w-7.5 bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
                   <HeaderCountInput value={headerCounts.llamadas_cobranza.p} />
                 </Th>
-                <Th className="min-w-[30px] bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
+                <Th className="min-w-7.5 bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
                   <HeaderCountInput value={headerCounts.llamadas_cobranza.n} />
                 </Th>
 
                 {/* --- 4 CELDAS DE TOTALES (Reemplazan a las de llamadas repetidas) --- */}
-                <Th className="min-w-[30px] bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
+                <Th className="min-w-7.5 bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
                   <HeaderCountInput value={headerCounts.puestas_total} />
                 </Th>
-                <Th className="min-w-[30px] bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
+                <Th className="min-w-7.5 bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
                   <HeaderCountInput value={headerCounts.cumplidos_total} />
                 </Th>
-                <Th className="min-w-[30px] bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
+                <Th className="min-w-7.5 bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
                   <HeaderCountInput value={headerCounts.visitas_dia_total} />
                 </Th>
-                <Th className="min-w-[30px] bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
+                <Th className="min-w-7.5 bg-white dark:bg-slate-900 p-0 border-l border-white dark:border-slate-800">
                   <HeaderCountInput value={`${headerCounts.percent_avg}%`} />
                 </Th>
 
@@ -1681,7 +1681,7 @@ const Matriz = () => {
                 <Th className="bg-white dark:bg-slate-900 border-l dark:border-slate-800 border-gray-200 text-[10px] uppercase font-bold text-center dark:text-slate-300">
                   CON GESTIÓN
                 </Th>
-                <Th className="min-w-[40px] bg-white dark:bg-slate-900 p-0 border-l border-r border-white dark:border-slate-800">
+                <Th className="min-w-10 bg-white dark:bg-slate-900 p-0 border-l border-r border-white dark:border-slate-800">
                   <HeaderCountInput
                     value={headerCounts.efectividad_30d_total}
                   />
@@ -1816,97 +1816,97 @@ const Matriz = () => {
               <Tr>
                 <Th
                   stickyLeft={false}
-                  className="min-w-[180px] w-[180px] bg-white dark:bg-slate-900 z-20 shadow-md border-t dark:border-slate-800 dark:text-slate-200"
+                  className="min-w-45 w-45 bg-white dark:bg-slate-900 z-20 shadow-md border-t dark:border-slate-800 dark:text-slate-200"
                 >
                   Cliente
                 </Th>
-                <Th className="min-w-[60px] bg-white dark:bg-slate-900 text-xs border-t dark:border-slate-800 dark:text-slate-200">
+                <Th className="min-w-15 bg-white dark:bg-slate-900 text-xs border-t dark:border-slate-800 dark:text-slate-200">
                   Compañia ID
                 </Th>
-                <Th className="min-w-[80px] bg-white dark:bg-slate-900 text-xs border-t dark:border-slate-800 dark:text-slate-200">
+                <Th className="min-w-20 bg-white dark:bg-slate-900 text-xs border-t dark:border-slate-800 dark:text-slate-200">
                   Código
                 </Th>
-                <Th className="min-w-[120px] bg-white dark:bg-slate-900 text-xs border-t dark:border-slate-800 dark:text-slate-200">
+                <Th className="min-w-30 bg-white dark:bg-slate-900 text-xs border-t dark:border-slate-800 dark:text-slate-200">
                   Zona
                 </Th>
-                <Th className="min-w-[120px] bg-white dark:bg-slate-900 text-xs border-t dark:border-slate-800 dark:text-slate-200">
+                <Th className="min-w-30 bg-white dark:bg-slate-900 text-xs border-t dark:border-slate-800 dark:text-slate-200">
                   Días
                 </Th>
-                <Th className="min-w-[100px] text-xs border-t dark:border-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900">
+                <Th className="min-w-25 text-xs border-t dark:border-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900">
                   Límite Créd.
                 </Th>
-                <Th className="min-w-[100px] text-xs border-t dark:border-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900">
+                <Th className="min-w-25 text-xs border-t dark:border-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900">
                   Saldo Tránsito
                 </Th>
-                <Th className="min-w-[100px] text-xs border-t dark:border-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900">
+                <Th className="min-w-25 text-xs border-t dark:border-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900">
                   Saldo Vencido
                 </Th>
-                <Th className="min-w-[90px] text-xs border-t dark:border-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900">
+                <Th className="min-w-22.5 text-xs border-t dark:border-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900">
                   Fecha Últ. Compra
                 </Th>
-                <Th className="min-w-[110px] text-xs border-t dark:border-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900">
+                <Th className="min-w-27.5 text-xs border-t dark:border-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900">
                   Fact. Mayor Morosidad
                 </Th>
-                <Th className="min-w-[90px] text-xs border-t dark:border-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900">
+                <Th className="min-w-22.5 text-xs border-t dark:border-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900">
                   Fecha Últ. Cobro
                 </Th>
-                <Th className="min-w-[70px] text-xs border-t dark:border-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900">
+                <Th className="min-w-17.5 text-xs border-t dark:border-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900">
                   Clasif.
                 </Th>
-                <Th className="min-w-[80px] text-xs border-t dark:border-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900">
+                <Th className="min-w-20 text-xs border-t dark:border-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900">
                   Posee Convenio
                 </Th>
-                <Th className="min-w-[100px] text-xs border-t dark:border-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900">
+                <Th className="min-w-25 text-xs border-t dark:border-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900">
                   Venta Mes Actual
                 </Th>
-                <Th className="min-w-[100px] text-xs border-t dark:border-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900">
+                <Th className="min-w-25 text-xs border-t dark:border-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900">
                   Venta Mes Anterior
                 </Th>
 
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-green-50 dark:bg-emerald-950 dark:text-emerald-300 text-[10px] border-l border-green-200 dark:border-emerald-800"
+                  className="min-w-7.5 font-bold text-center bg-green-50 dark:bg-emerald-950 dark:text-emerald-300 text-[10px] border-l border-green-200 dark:border-emerald-800"
                   title="Enviado"
                 >
                   EJECUTIVA
                 </Th>
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-green-50 dark:bg-emerald-950 dark:text-emerald-300 text-[10px] border-r border-green-200 dark:border-emerald-800"
+                  className="min-w-7.5 font-bold text-center bg-green-50 dark:bg-emerald-950 dark:text-emerald-300 text-[10px] border-r border-green-200 dark:border-emerald-800"
                   title="Contestado"
                 >
                   CLIENTE
                 </Th>
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-blue-50 dark:bg-blue-950 dark:text-blue-300 text-[10px] border-l border-blue-200 dark:border-blue-900"
+                  className="min-w-7.5 font-bold text-center bg-blue-50 dark:bg-blue-950 dark:text-blue-300 text-[10px] border-l border-blue-200 dark:border-blue-900"
                   title="Venta Enviado"
                 >
                   E
                 </Th>
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-blue-50 dark:bg-blue-950 dark:text-blue-300 text-[10px] dark:border-blue-900"
+                  className="min-w-7.5 font-bold text-center bg-blue-50 dark:bg-blue-950 dark:text-blue-300 text-[10px] dark:border-blue-900"
                   title="Venta Pendiente"
                 >
                   P
                 </Th>
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-blue-50 dark:bg-blue-950 dark:text-blue-300 text-[10px] border-r border-blue-200 dark:border-blue-900"
+                  className="min-w-7.5 font-bold text-center bg-blue-50 dark:bg-blue-950 dark:text-blue-300 text-[10px] border-r border-blue-200 dark:border-blue-900"
                   title="Venta Negada"
                 >
                   N
                 </Th>
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-blue-50 dark:bg-blue-950 dark:text-blue-300 text-[10px] dark:border-blue-900"
+                  className="min-w-7.5 font-bold text-center bg-blue-50 dark:bg-blue-950 dark:text-blue-300 text-[10px] dark:border-blue-900"
                   title="Cobranza Enviado"
                 >
                   E
                 </Th>
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-blue-50 dark:bg-blue-950 dark:text-blue-300 text-[10px] dark:border-blue-900"
+                  className="min-w-7.5 font-bold text-center bg-blue-50 dark:bg-blue-950 dark:text-blue-300 text-[10px] dark:border-blue-900"
                   title="Cobranza Pendiente"
                 >
                   P
                 </Th>
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-blue-50 dark:bg-blue-950 dark:text-blue-300 text-[10px] border-r border-blue-200 dark:border-blue-900"
+                  className="min-w-7.5 font-bold text-center bg-blue-50 dark:bg-blue-950 dark:text-blue-300 text-[10px] border-r border-blue-200 dark:border-blue-900"
                   title="Cobranza Negada"
                 >
                   N
@@ -1918,37 +1918,37 @@ const Matriz = () => {
                   CP
                 </Th>
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-teal-50 dark:bg-teal-950 dark:text-teal-300 text-[10px] border-l border-teal-200 dark:border-teal-900"
+                  className="min-w-7.5 font-bold text-center bg-teal-50 dark:bg-teal-950 dark:text-teal-300 text-[10px] border-l border-teal-200 dark:border-teal-900"
                   title="Llamada Venta E"
                 >
                   E
                 </Th>
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-teal-50 dark:bg-teal-950 dark:text-teal-300 text-[10px] dark:border-teal-900"
+                  className="min-w-7.5 font-bold text-center bg-teal-50 dark:bg-teal-950 dark:text-teal-300 text-[10px] dark:border-teal-900"
                   title="Llamada Venta P"
                 >
                   P
                 </Th>
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-teal-50 dark:bg-teal-950 dark:text-teal-300 text-[10px] border-r border-teal-200 dark:border-teal-900"
+                  className="min-w-7.5 font-bold text-center bg-teal-50 dark:bg-teal-950 dark:text-teal-300 text-[10px] border-r border-teal-200 dark:border-teal-900"
                   title="Llamada Venta N"
                 >
                   N
                 </Th>
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-teal-50 dark:bg-teal-950 dark:text-teal-300 text-[10px] dark:border-teal-900"
+                  className="min-w-7.5 font-bold text-center bg-teal-50 dark:bg-teal-950 dark:text-teal-300 text-[10px] dark:border-teal-900"
                   title="Llamada Cobranza E"
                 >
                   E
                 </Th>
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-teal-50 dark:bg-teal-950 dark:text-teal-300 text-[10px] dark:border-teal-900"
+                  className="min-w-7.5 font-bold text-center bg-teal-50 dark:bg-teal-950 dark:text-teal-300 text-[10px] dark:border-teal-900"
                   title="Llamada Cobranza P"
                 >
                   P
                 </Th>
                 <Th
-                  className="min-w-[30px] font-bold text-center bg-teal-50 dark:bg-teal-950 dark:text-teal-300 text-[10px] dark:border-teal-900"
+                  className="min-w-7.5 font-bold text-center bg-teal-50 dark:bg-teal-950 dark:text-teal-300 text-[10px] dark:border-teal-900"
                   title="Llamada Cobranza N"
                 >
                   N

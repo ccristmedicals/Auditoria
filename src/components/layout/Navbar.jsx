@@ -7,7 +7,7 @@ export default function Navbar({ nombreNegocio = "CristMedicals Auditoria" }) {
 
   return (
     <header className="bg-white dark:bg-[#0b1120] backdrop-blur-xl shadow-sm py-2 px-6 sm:px-10 flex items-center justify-between dark:border-b dark:border-white/10 sticky top-0 z-50 rounded-b-4xl transition-all duration-500">
-      <div className="flex-1 min-w-[50px]"></div>
+      <div className="flex-1 min-w-12.5"></div>
 
       <div className="flex items-center gap-3 grow justify-center">
         <img src={Logo} alt="CristMedical Logo" className="h-14" />

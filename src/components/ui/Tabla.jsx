@@ -158,6 +158,6 @@ export const TableInput = ({
     type={type}
     value={value}
     onChange={onChange}
-    className={`w-full min-w-[80px] p-1 text-sm bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-center ${className}`}
+    className={`w-full min-w-20 p-1 text-sm bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-center ${className}`}
   />
 );

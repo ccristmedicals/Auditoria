@@ -1,4 +1,3 @@
-/* eslint-disable no-undef */
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, {
   useState,
@@ -195,7 +194,7 @@ const CompanyRow = React.memo(
         <>
           {/* TAREA (Editable) - AHORA PRIMERO */}
           <Td
-            className={`${bgColorClass} ${borderClass} min-w-[150px] align-middle`}
+            className={`${bgColorClass} ${borderClass} min-w-37.5 align-middle`}
           >
             <EditableCell
               value={row[`${dayPrefix}_tarea`]}
@@ -206,7 +205,7 @@ const CompanyRow = React.memo(
 
           {/* ACCIÓN (Solo Lectura) */}
           <Td
-            className={`${bgColorClass} min-w-[150px] align-middle text-center`}
+            className={`${bgColorClass} min-w-37.5 align-middle text-center`}
           >
             <div className="px-2 py-1.5">
               {renderStyledContent(row[`${dayPrefix}_accion`] || "-")}
@@ -215,7 +214,7 @@ const CompanyRow = React.memo(
 
           {/* OBSERVACIÓN (Solo Lectura) */}
           <Td
-            className={`${bgColorClass} min-w-[150px] align-middle text-center`}
+            className={`${bgColorClass} min-w-37.5 align-middle text-center`}
           >
             <div className="px-2 py-1.5 italic">
               {renderStyledContent(row[`${dayPrefix}_observacion`] || "-")}
@@ -252,7 +251,7 @@ const CompanyRow = React.memo(
         </Td>
         <Td className="text-left font-semibold bg-white dark:bg-[#111827] border-r dark:border-white/5 shadow-md">
           <div
-            className="flex items-center gap-2 truncate max-w-[280px]"
+            className="flex items-center gap-2 truncate max-w-70"
             title={row.nombre}
           >
             {row.nombre}
@@ -287,7 +286,7 @@ const CompanyRow = React.memo(
         )}
         {row.visibility?.dias_visita && (
           <Td
-            className="text-xs truncate max-w-[140px]"
+            className="text-xs truncate max-w-35"
             title={row.dias_visita}
           >
             {row.dias_visita || "-"}
@@ -320,7 +319,7 @@ const CompanyRow = React.memo(
         )}
         {row.visibility?.morosidad && (
           <Td
-            className="text-xs text-red-500 truncate max-w-[120px]"
+            className="text-xs text-red-500 truncate max-w-30"
             title={row.factura_morosidad}
           >
             {row.factura_morosidad}
@@ -357,7 +356,7 @@ const CompanyRow = React.memo(
 
         {/* --- SECCIÓN GESTIÓN --- */}
         {row.visibility?.bitacora && (
-          <Td className="bg-gray-50 dark:bg-gray-800 border-l border-gray-200 dark:border-[#333] min-w-[300px]">
+          <Td className="bg-gray-50 dark:bg-gray-800 border-l border-gray-200 dark:border-[#333] min-w-75">
             <EditableCell
               value={row.bitacora}
               onChange={(val) =>
@@ -368,7 +367,7 @@ const CompanyRow = React.memo(
           </Td>
         )}
         {row.visibility?.obs_ejecutiva && (
-          <Td className="bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-[#333] min-w-[300px]">
+          <Td className="bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-[#333] min-w-75">
             <EditableCell
               value={row.obs_ejecutiva}
               onChange={(val) =>
@@ -1195,32 +1194,32 @@ const BaseDatosBitrix = () => {
               {/* Nivel 2 Header */}
               <Tr>
                 <Th className="bg-white dark:bg-[#111827] border-r dark:border-white/5"></Th>
-                <Th className="min-w-[60px] bg-white dark:bg-[#111827]">ID</Th>
-                <Th className="min-w-[200px] text-left bg-white dark:bg-[#111827] shadow-md">
+                <Th className="min-w-15 bg-white dark:bg-[#111827]">ID</Th>
+                <Th className="min-w-50 text-left bg-white dark:bg-[#111827] shadow-md">
                   Nombre
                 </Th>
                 {columnVisibility.codigo_profit && (
-                  <Th className="min-w-[120px] bg-blue-50 dark:bg-blue-800 font-bold">
+                  <Th className="min-w-30 bg-blue-50 dark:bg-blue-800 font-bold">
                     Cód. Profit
                   </Th>
                 )}
                 {columnVisibility.ciudad && (
-                  <Th className="min-w-[140px] bg-blue-50 dark:bg-blue-800 font-bold">
+                  <Th className="min-w-35 bg-blue-50 dark:bg-blue-800 font-bold">
                     Ciudad
                   </Th>
                 )}
                 {columnVisibility.segmento && (
-                  <Th className="min-w-[140px] bg-blue-50 dark:bg-blue-800 font-bold">
+                  <Th className="min-w-35 bg-blue-50 dark:bg-blue-800 font-bold">
                     Segmento
                   </Th>
                 )}
                 {columnVisibility.coordenadas && (
-                  <Th className="min-w-[160px] bg-blue-50 dark:bg-blue-800 font-bold">
+                  <Th className="min-w-40 bg-blue-50 dark:bg-blue-800 font-bold">
                     Coordenadas
                   </Th>
                 )}
                 {columnVisibility.dias_visita && (
-                  <Th className="min-w-[200px] bg-blue-50 dark:bg-blue-800 font-bold align-bottom">
+                  <Th className="min-w-50 bg-blue-50 dark:bg-blue-800 font-bold align-bottom">
                     <div className="flex flex-col gap-1 w-full">
                       <span>Días Visita</span>
                       <select
@@ -1241,28 +1240,28 @@ const BaseDatosBitrix = () => {
                   </Th>
                 )}
                 {columnVisibility.convenio && (
-                  <Th className="min-w-[100px] bg-blue-50 dark:bg-blue-800 font-bold">
+                  <Th className="min-w-25 bg-blue-50 dark:bg-blue-800 font-bold">
                     Convenio
                   </Th>
                 )}
                 {columnVisibility.limite && (
-                  <Th className="min-w-[110px] bg-green-50 dark:bg-green-800 font-bold">
+                  <Th className="min-w-27.5 bg-green-50 dark:bg-green-800 font-bold">
                     Límite
                   </Th>
                 )}
                 {columnVisibility.transito && (
-                  <Th className="min-w-[110px] bg-green-50 dark:bg-green-800 font-bold">
+                  <Th className="min-w-27.5 bg-green-50 dark:bg-green-800 font-bold">
                     Tránsito
                   </Th>
                 )}
                 {columnVisibility.vencido && (
-                  <Th className="min-w-[110px] bg-green-50 dark:bg-green-800 font-bold">
+                  <Th className="min-w-27.5 bg-green-50 dark:bg-green-800 font-bold">
                     Vencido
                   </Th>
                 )}
                 {columnVisibility.fecha_compra && (
                   <Th
-                    className="min-w-[120px] bg-green-50 dark:bg-green-800 font-bold cursor-pointer hover:bg-green-100 transition-colors select-none group"
+                    className="min-w-30 bg-green-50 dark:bg-green-800 font-bold cursor-pointer hover:bg-green-100 transition-colors select-none group"
                     onClick={() => handleSort("fecha_compra")}
                     title="Click para ordenar"
                   >
@@ -1284,32 +1283,32 @@ const BaseDatosBitrix = () => {
                   </Th>
                 )}
                 {columnVisibility.morosidad && (
-                  <Th className="min-w-[200px] bg-green-50 dark:bg-green-800 font-bold">
+                  <Th className="min-w-50 bg-green-50 dark:bg-green-800 font-bold">
                     F. Morosidad
                   </Th>
                 )}
                 {columnVisibility.ultimo_cobro && (
-                  <Th className="min-w-[110px] bg-indigo-200 dark:bg-indigo-800 font-bold">
+                  <Th className="min-w-27.5 bg-indigo-200 dark:bg-indigo-800 font-bold">
                     Últ. Cobro
                   </Th>
                 )}
                 {columnVisibility.sku && (
-                  <Th className="min-w-[70px] bg-indigo-200 dark:bg-indigo-800 font-bold">
+                  <Th className="min-w-17.5 bg-indigo-200 dark:bg-indigo-800 font-bold">
                     SKU
                   </Th>
                 )}
                 {columnVisibility.clasif && (
-                  <Th className="min-w-[70px] bg-indigo-200 dark:bg-indigo-800 font-bold">
+                  <Th className="min-w-17.5 bg-indigo-200 dark:bg-indigo-800 font-bold">
                     Clasif.
                   </Th>
                 )}
                 {columnVisibility.actual && (
-                  <Th className="min-w-[110px] bg-indigo-200 dark:bg-indigo-800 font-bold">
+                  <Th className="min-w-27.5 bg-indigo-200 dark:bg-indigo-800 font-bold">
                     Actual
                   </Th>
                 )}
                 {columnVisibility.anterior && (
-                  <Th className="min-w-[110px] bg-indigo-200 dark:bg-indigo-800 font-bold">
+                  <Th className="min-w-27.5 bg-indigo-200 dark:bg-indigo-800 font-bold">
                     Anterior
                   </Th>
                 )}
@@ -1317,12 +1316,12 @@ const BaseDatosBitrix = () => {
                 {/* GESTIÓN */}
                 {/* GESTIÓN */}
                 {columnVisibility.bitacora && (
-                  <Th className="min-w-[300px] text-orange-600 font-bold bg-orange-200 dark:bg-orange-800">
+                  <Th className="min-w-75 text-orange-600 font-bold bg-orange-200 dark:bg-orange-800">
                     Bitácora
                   </Th>
                 )}
                 {columnVisibility.obs_ejecutiva && (
-                  <Th className="min-w-[300px] text-orange-600 font-bold bg-orange-200 dark:bg-orange-800">
+                  <Th className="min-w-75 text-orange-600 font-bold bg-orange-200 dark:bg-orange-800">
                     Obs. Ejec.
                   </Th>
                 )}
@@ -1331,13 +1330,13 @@ const BaseDatosBitrix = () => {
                 {/* LUNES */}
                 {columnVisibility.lunes && (
                   <>
-                    <Th className="min-w-[150px] bg-indigo-50 dark:bg-indigo-900">
+                    <Th className="min-w-37.5 bg-indigo-50 dark:bg-indigo-900">
                       Lun {getFormattedDateForDay(1)}
                     </Th>
-                    <Th className="min-w-[150px] bg-indigo-50 dark:bg-indigo-900">
+                    <Th className="min-w-37.5 bg-indigo-50 dark:bg-indigo-900">
                       Lun-Acc
                     </Th>
-                    <Th className="min-w-[150px] bg-indigo-50 dark:bg-indigo-900">
+                    <Th className="min-w-37.5 bg-indigo-50 dark:bg-indigo-900">
                       Lun-Obs
                     </Th>
                   </>
@@ -1346,13 +1345,13 @@ const BaseDatosBitrix = () => {
                 {/* MARTES */}
                 {columnVisibility.martes && (
                   <>
-                    <Th className="min-w-[150px] bg-white dark:bg-[#1e1e1e]">
+                    <Th className="min-w-37.5 bg-white dark:bg-[#1e1e1e]">
                       Mar {getFormattedDateForDay(2)}
                     </Th>
-                    <Th className="min-w-[150px] bg-white dark:bg-[#1e1e1e]">
+                    <Th className="min-w-37.5 bg-white dark:bg-[#1e1e1e]">
                       Mar-Acc
                     </Th>
-                    <Th className="min-w-[150px] bg-white dark:bg-[#1e1e1e]">
+                    <Th className="min-w-37.5 bg-white dark:bg-[#1e1e1e]">
                       Mar-Obs
                     </Th>
                   </>
@@ -1361,13 +1360,13 @@ const BaseDatosBitrix = () => {
                 {/* MIERCOLES */}
                 {columnVisibility.miercoles && (
                   <>
-                    <Th className="min-w-[150px] bg-indigo-50 dark:bg-indigo-900">
+                    <Th className="min-w-37.5 bg-indigo-50 dark:bg-indigo-900">
                       Mie {getFormattedDateForDay(3)}
                     </Th>
-                    <Th className="min-w-[150px] bg-indigo-50 dark:bg-indigo-900">
+                    <Th className="min-w-37.5 bg-indigo-50 dark:bg-indigo-900">
                       Mie-Acc
                     </Th>
-                    <Th className="min-w-[150px] bg-indigo-50 dark:bg-indigo-900">
+                    <Th className="min-w-37.5 bg-indigo-50 dark:bg-indigo-900">
                       Mie-Obs
                     </Th>
                   </>
@@ -1376,13 +1375,13 @@ const BaseDatosBitrix = () => {
                 {/* JUEVES */}
                 {columnVisibility.jueves && (
                   <>
-                    <Th className="min-w-[150px] bg-white dark:bg-[#1e1e1e]">
+                    <Th className="min-w-37.5 bg-white dark:bg-[#1e1e1e]">
                       Jue {getFormattedDateForDay(4)}
                     </Th>
-                    <Th className="min-w-[150px] bg-white dark:bg-[#1e1e1e]">
+                    <Th className="min-w-37.5 bg-white dark:bg-[#1e1e1e]">
                       Jue-Acc
                     </Th>
-                    <Th className="min-w-[150px] bg-white dark:bg-[#1e1e1e]">
+                    <Th className="min-w-37.5 bg-white dark:bg-[#1e1e1e]">
                       Jue-Obs
                     </Th>
                   </>
@@ -1391,13 +1390,13 @@ const BaseDatosBitrix = () => {
                 {/* VIERNES */}
                 {columnVisibility.viernes && (
                   <>
-                    <Th className="min-w-[150px] bg-indigo-50 dark:bg-indigo-900">
+                    <Th className="min-w-37.5 bg-indigo-50 dark:bg-indigo-900">
                       Vie {getFormattedDateForDay(5)}
                     </Th>
-                    <Th className="min-w-[150px] bg-indigo-50 dark:bg-indigo-900">
+                    <Th className="min-w-37.5 bg-indigo-50 dark:bg-indigo-900">
                       Vie-Acc
                     </Th>
-                    <Th className="min-w-[150px] bg-indigo-50 dark:bg-indigo-900">
+                    <Th className="min-w-37.5 bg-indigo-50 dark:bg-indigo-900">
                       Vie-Obs
                     </Th>
                   </>
