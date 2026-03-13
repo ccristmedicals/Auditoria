@@ -1,15 +1,15 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import React, { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   Users,
   Search,
   TrendingUp,
   Target,
   CheckCircle2,
-  MapPin,
-  Store,
+  // MapPin,
+  // Store,
   Loader2,
-  Navigation,
+  // Navigation,
 } from "lucide-react";
 
 import { useToast } from "../components/ui/Toast";
@@ -127,13 +127,14 @@ const Vendedores = () => {
           </div>
           <div>
             <h2 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">
-              Tablero de{" "}
+              Tabla de{" "}
               <span className="text-[#1a9888] dark:text-teal-400">
                 Vendedores
               </span>
             </h2>
             <p className="text-sm text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-              Auditoría Profit • Geolocalización en tiempo real
+              Auditoría Profit 
+              {/* &bull; Geolocalización en tiempo real */}
             </p>
           </div>
         </div>
@@ -181,75 +182,75 @@ const Vendedores = () => {
           <Thead>
             <tr className="uppercase leading-tight">
               {/* 1. VENDEDOR */}
-              <Th className="bg-amber-50 dark:bg-amber-900/30 text-amber-900 dark:text-amber-100 min-w-[200px] border-b dark:border-gray-700 font-bold">
+              <Th className="bg-amber-100 dark:bg-amber-900 text-amber-900 dark:text-amber-100 min-w-50 border-b dark:border-gray-700 font-bold">
                 Vendedores_P Profit
               </Th>
               {/* 2. SALIDA */}
-              <Th className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-900 dark:text-emerald-100 border-b dark:border-gray-700 font-bold">
+              <Th className="bg-emerald-100 dark:bg-emerald-900 text-emerald-900 dark:text-emerald-100 border-b dark:border-gray-700 font-bold">
                 Salida
               </Th>
               {/* 3. LLEGADA */}
-              <Th className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-900 dark:text-emerald-100 border-b dark:border-gray-700 font-bold">
+              <Th className="bg-emerald-100 dark:bg-emerald-900 text-emerald-900 dark:text-emerald-100 border-b dark:border-gray-700 font-bold">
                 Llegada
               </Th>
               {/* 4. PLAN */}
-              <Th className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-900 dark:text-emerald-100 border-b dark:border-gray-700 font-bold">
+              <Th className="bg-emerald-100 dark:bg-emerald-900 text-emerald-900 dark:text-emerald-100 border-b dark:border-gray-700 font-bold">
                 Rep. Establecidos
               </Th>
               {/* 5. REAL */}
-              <Th className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-900 dark:text-emerald-100 border-b dark:border-gray-700 font-bold">
+              <Th className="bg-emerald-100 dark:bg-emerald-900 text-emerald-900 dark:text-emerald-100 border-b dark:border-gray-700 font-bold">
                 Rep. Logrados
               </Th>
               {/* 6. % CUMPLIMIENTO */}
-              <Th className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-900 dark:text-emerald-100 border-b dark:border-gray-700 font-bold">
+              <Th className="bg-emerald-100 dark:bg-emerald-900 text-emerald-900 dark:text-emerald-100 border-b dark:border-gray-700 font-bold">
                 % Visitas
               </Th>
               {/* 7. LOGRADO (Faltante) */}
-              <Th className="bg-emerald-100 dark:bg-emerald-900/50 text-emerald-900 dark:text-emerald-100 border-b dark:border-gray-700 font-bold">
+              <Th className="bg-emerald-200 dark:bg-emerald-900 text-emerald-900 dark:text-emerald-100 border-b dark:border-gray-700 font-bold">
                 Logrado (Resta)
               </Th>
               {/* 8. GEOCERCA */}
-              <Th className="bg-yellow-50 dark:bg-yellow-900/30 text-yellow-900 dark:text-yellow-100 min-w-[220px] text-center border-b dark:border-gray-700 font-bold">
+              {/* <Th className="bg-yellow-50 dark:bg-yellow-900 text-yellow-900 dark:text-yellow-100 min-w-55 text-center border-b dark:border-gray-700 font-bold">
                 Geocerca
-              </Th>
+              </Th> */}
               {/* 9. NEGOCIACIONES */}
-              <Th className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-900 dark:text-emerald-100 border-b dark:border-gray-700 font-bold">
+              <Th className="bg-indigo-50 dark:bg-indigo-900 text-indigo-900 dark:text-indigo-100 border-b dark:border-gray-700 font-bold">
                 Negoc.
               </Th>
               {/* 10. COBRADO */}
-              <Th className="bg-orange-50 dark:bg-orange-900/30 text-orange-900 dark:text-orange-100 min-w-[120px] border-b dark:border-gray-700 font-bold">
+              <Th className="bg-orange-50 dark:bg-orange-900 text-orange-900 dark:text-orange-100 min-w-30 border-b dark:border-gray-700 font-bold">
                 Cobrado Día
               </Th>
               {/* 11. % COBRANZA */}
-              <Th className="bg-orange-50 dark:bg-orange-900/30 text-orange-900 dark:text-orange-100 border-b dark:border-gray-700 font-bold">
+              {/* <Th className="bg-orange-50 dark:bg-orange-900 text-orange-900 dark:text-orange-100 border-b dark:border-gray-700 font-bold">
                 % Cobranza del Día
-              </Th>
+              </Th> */}
               {/* 12. VENTAS */}
-              <Th className="bg-amber-50 dark:bg-amber-900/30 text-amber-900 dark:text-amber-100 min-w-[120px] border-b dark:border-gray-700 font-bold">
+              <Th className="bg-amber-50 dark:bg-amber-900 text-amber-900 dark:text-amber-100 min-w-30 border-b dark:border-gray-700 font-bold">
                 Ventas
               </Th>
               {/* 13. CARTERA */}
-              <Th className="bg-cyan-50 dark:bg-cyan-900/30 text-cyan-900 dark:text-cyan-100 border-b dark:border-gray-700 font-bold">
+              <Th className="bg-cyan-50 dark:bg-cyan-900 text-cyan-900 dark:text-cyan-100 border-b dark:border-gray-700 font-bold">
                 Cartera Activa
               </Th>
               {/* 14. % META */}
-              <Th className="bg-cyan-50 dark:bg-cyan-900/30 text-cyan-900 dark:text-cyan-100 border-b dark:border-gray-700 font-bold">
+              <Th className="bg-cyan-50 dark:bg-cyan-900 text-cyan-900 dark:text-cyan-100 border-b dark:border-gray-700 font-bold">
                 % Meta
               </Th>
               {/* 15. NUEVOS */}
-              <Th className="bg-blue-50 dark:bg-blue-900/30 text-blue-900 dark:text-blue-100 border-b dark:border-gray-700 font-bold">
+              <Th className="bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100 border-b dark:border-gray-700 font-bold">
                 Nuevos
               </Th>
               {/* 16. GESTIONES PLANIF */}
-              <Th className="bg-rose-50 dark:bg-rose-900/30 text-rose-900 dark:text-rose-100 border-b dark:border-gray-700 font-bold">
+              <Th className="bg-rose-50 dark:bg-rose-900 text-rose-900 dark:text-rose-100 border-b dark:border-gray-700 font-bold">
                 Gest. Planif.
               </Th>
               {/* 17. CUMPLIMIENTO PLANIF */}
-              <Th className="bg-rose-50 dark:bg-rose-900/30 text-rose-900 dark:text-rose-100 border-b dark:border-gray-700 font-bold">
+              <Th className="bg-rose-50 dark:bg-rose-900 text-rose-900 dark:text-rose-100 border-b dark:border-gray-700 font-bold">
                 % Planif.
               </Th>
               {/* 18. OBSERVACION */}
-              <Th className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 min-w-[200px] border-b dark:border-gray-700 font-bold">
+              <Th className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 min-w-50 border-b dark:border-gray-700 font-bold">
                 Observación
               </Th>
             </tr>
@@ -273,10 +274,10 @@ const Vendedores = () => {
                     : 0;
                 const restaLogrado =
                   row.reportesEstablecidos - row.reportesLogrados;
-                const percCobranza =
-                  row.metaCobranza > 0
-                    ? (row.cobradoDia / row.metaCobranza) * 100
-                    : 0;
+                // const percCobranza =
+                //   row.metaCobranza > 0
+                //     ? (row.cobrado_dia / row.metaCobranza) * 100
+                //     : 0;
                 const percMetaMensual =
                   row.metaVentasMensual > 0
                     ? (row.ventas / row.metaVentasMensual) * 100
@@ -326,7 +327,7 @@ const Vendedores = () => {
                     </Td>
 
                     {/* 8. GEOCERCA */}
-                    <Td className="text-center p-2 align-middle">
+                    {/* <Td className="text-center p-2 align-middle">
                       {row.direccionTexto === "Sin actividad" ? (
                         <span className="text-[10px] text-gray-400 italic">
                           -- Inactivo --
@@ -336,13 +337,13 @@ const Vendedores = () => {
                           <div className="flex items-center gap-1.5 text-blue-700 dark:text-blue-400 font-bold text-[11px]">
                             <Store size={12} className="shrink-0" />
                             <span
-                              className="truncate max-w-[150px]"
+                              className="truncate max-w-37.5"
                               title={row.ultimoCliente}
                             >
                               {row.ultimoCliente}
                             </span>
                           </div>
-                          <div className="flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400 max-w-[180px]">
+                          <div className="flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400 max-w-45">
                             <MapPin
                               size={10}
                               className="shrink-0 text-slate-400"
@@ -363,7 +364,7 @@ const Vendedores = () => {
                           )}
                         </div>
                       )}
-                    </Td>
+                    </Td> */}
 
                     {/* 9. NEGOCIACIONES */}
                     <Td className="text-center">{row.negociaciones}</Td>
@@ -374,9 +375,9 @@ const Vendedores = () => {
                     </Td>
 
                     {/* 11. % COBRO */}
-                    <Td className="text-center font-bold">
+                    {/* <Td className="text-center font-bold">
                       {formatPercent(percCobranza)}
-                    </Td>
+                    </Td> */}
 
                     {/* 12. VENTAS */}
                     <Td className="text-right text-emerald-600 dark:text-emerald-400 font-bold text-xs">

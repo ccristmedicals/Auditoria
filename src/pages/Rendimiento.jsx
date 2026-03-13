@@ -360,13 +360,13 @@ const Rendimiento = () => {
           </div>
           <div>
             <h2 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">
-              Tablero de{" "}
+              Tabla de{" "}
               <span className="text-[#1a9888] dark:text-teal-400">
                 Rendimiento
               </span>
             </h2>
             <p className="text-sm text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-              Análisis de efectividad &bull; Ejecutiva vs Vendedor
+              Análisis de efectividad &bull; Ejecutiva y Vendedor
             </p>
           </div>
         </div>

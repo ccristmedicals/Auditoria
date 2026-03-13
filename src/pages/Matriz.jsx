@@ -1362,6 +1362,14 @@ const Matriz = () => {
               <Download size={18} />
               <span className="hidden sm:inline font-bold">Excel</span>
             </button>
+
+            {/* Refresh */}
+            {/* <button
+              onClick={refresh}
+              className="flex items-center justify-center w-12 h-12 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
+            >
+              <RefreshCw size={20} />
+            </button> */}
           </div>
         </div>
       </div>

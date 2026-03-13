@@ -5,7 +5,7 @@ import {
   analizarGeocerca,
   calcularDistanciaMetros,
 } from "../utils/geolocalizacion";
-import { obtenerDireccionBDC } from "../utils/obtenerDireccion";
+// import { obtenerDireccionBDC } from "../utils/obtenerDireccion";
 
 // --- HELPER ROBUSTO PARA FECHAS ---
 const esSemanaActual = (fechaString) => {
@@ -69,11 +69,29 @@ export const useTableroVendedores = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
+
+        // Calcular fechas dinámicamente
+        const now = new Date();
+        const startDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+        const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+        const today = now.toISOString().split('T')[0];
+
+        const payload = {
+          startDate,
+          endDate,
+          startDateCobrado: today,
+          endDateCobrado: today
+        };
+
         const [planificacionResponse, metasResponse] = await Promise.all([
           apiService.getPlanificacion(),
-          fetch("https://98.94.185.164.nip.io/api/auditoria/kpi-metas").then(
-            (res) => res.json(),
-          ),
+          fetch("https://98.94.185.164.nip.io/api/auditoria/kpi-metas", {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+          }).then((res) => res.json()),
         ]);
 
         // Manejo seguro de arrays
@@ -185,7 +203,7 @@ export const useTableroVendedores = () => {
           ultimoCliente: "N/A",
           distancia: 0,
           negociaciones: Number(metaVendedor.negociacion) || 0,
-          cobradoDia: Number(metaVendedor.valorCobranza) || 0,
+          cobradoDia: Number(metaVendedor.cobrado_dia) || 0,
           metaCobranza: Number(metaVendedor.metaCobranza) || 1,
           ventas: Number(metaVendedor.ventas_factura_sum) || 0,
           carteraActiva: Number(metaVendedor.clientes_activos_factura) || 0,
